@@ -1,29 +1,25 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Switch, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Switch, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { useNavigation } from "@react-navigation/native";
-import { auth } from "../firebase"; // Ensure Firebase is set up correctly
+import { auth } from "../firebase"; 
 
 const LoginScreen = () => {
-  const [email, setEmail] = useState(""); // 🔹 Changed "username" to "email"
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const navigation = useNavigation();
 
-  // ✅ Handle Firebase Login
-  const handleLogin = async () => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      console.log("User logged in successfully!");
-      navigation.navigate("HomeTabs"); // ✅ Navigate to Home Screen
-    } catch (error) {
-      Alert.alert("Login Failed", error.message); // ✅ Show error alert
-    }
-  };
-
-  return (
+const handleLogin = async (email, password) => {
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    console.log("User logged in successfully!");
+  } catch (error) {
+    console.error("Login error:", error.message);
+  } 
+};
+    
+ return (
     <View style={styles.container}>
       <Text style={styles.title}>FitVibe</Text>
       <View style={styles.logoContainer}>
@@ -31,14 +27,12 @@ const LoginScreen = () => {
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>Username</Text>
         <TextInput 
           style={styles.input} 
-          placeholder="Enter email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
+          placeholder="Enter username"
+          value={username}
+          onChangeText={setUsername}
         />
       </View>
 
@@ -63,11 +57,11 @@ const LoginScreen = () => {
       </View>
 
       <View style={styles.rememberContainer}>
-        <Text style={{ color: "#fff" }}>Remember Me</Text>
+        <Text>Remember Me</Text>
         <Switch value={rememberMe} onValueChange={setRememberMe} />
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>  
+      <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>Log in</Text>
       </TouchableOpacity>
 
@@ -77,7 +71,6 @@ const LoginScreen = () => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -163,3 +156,4 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
+
