@@ -1,8 +1,10 @@
 import React from "react";
+import { View, ActivityIndicator } from "react-native"; // Loading indicator
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { useFonts } from "expo-font"; // Import font loader
 import LoginScreen from "./screens/LoginScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ProfileScreen from "./screens/ProfileScreen";
@@ -10,6 +12,30 @@ import WorkoutScreen from "./screens/WorkoutScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+
+// Load Tilt Warp Font
+export default function App() {
+  let [fontsLoaded] = useFonts({
+    "TiltWarp-Regular": require("./assets/TiltWarp-Regular.ttf"), // Font path
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#8e24aa" />
+      </View>
+    ); // Show a loading spinner while fonts load
+  }
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="HomeTabs" component={BottomTabs} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
 
 // Bottom Navigation (Home, Workout, Profile)
 function BottomTabs() {
@@ -36,17 +62,5 @@ function BottomTabs() {
       <Tab.Screen name="Workout" component={WorkoutScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
-  );
-}
-
-// Stack Navigation (Login → Home)
-export default function App() {
-  return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="HomeTabs" component={BottomTabs} />
-      </Stack.Navigator>
-    </NavigationContainer>
   );
 }
