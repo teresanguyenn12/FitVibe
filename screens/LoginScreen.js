@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAuth } from "../authProvider";
 
 import {
   View,
@@ -28,12 +29,15 @@ const LoginScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigation = useNavigation();
 
+  const { login } = useAuth();
+
   //User authentication for loging in
   const handleLogin = async () => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      login({email});
       console.log("User logged in successfully!");
-      navigation.navigate("HomeTabs");
+      //navigation.navigate("HomeTabs");
     } catch (error) {
       Alert.alert("Login Failed", error.message);
     }
@@ -68,6 +72,7 @@ const LoginScreen = () => {
               placeholderTextColor="#000"
               value={email}
               onChangeText={setEmail}
+              autoCapitalize="none"
             />
           </View>
 

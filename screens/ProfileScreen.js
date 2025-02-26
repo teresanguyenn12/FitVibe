@@ -1,10 +1,15 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, Button, StyleSheet } from "react-native";
+import { useAuth } from "../authProvider";
 
 const ProfileScreen = () => {
+  const { user, logout } = useAuth();
+
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Profile Screen</Text>
+      <Text style={styles.text}>Logged in as: {user?.name}</Text>
+      <Button title="Logout" onPress={logout} color="#8e24aa" />
     </View>
   );
 };
@@ -19,6 +24,7 @@ const styles = StyleSheet.create({
   text: {
     color: "#fff",
     fontSize: 20,
+    marginBottom: 10,
   },
 });
 
