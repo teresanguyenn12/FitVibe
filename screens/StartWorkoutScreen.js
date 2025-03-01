@@ -1,12 +1,10 @@
 import React from "react";
-import { View, Text, Button, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useAuth } from "../authProvider";
-import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for back button
+import { Ionicons } from "@expo/vector-icons";
 
-const ProfileScreen = () => {
-  const { user, logout } = useAuth();
-  const navigation = useNavigation(); // Access navigation
+const StartWorkoutScreen = () => {
+  const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
@@ -15,9 +13,8 @@ const ProfileScreen = () => {
         <Ionicons name="arrow-back" size={30} color="#fff" />
       </TouchableOpacity>
 
-      <Text style={styles.text}>Profile Screen</Text>
-      <Text style={styles.text}>Logged in as: {user?.name}</Text>
-      <Button title="Logout" onPress={logout} color="#8e24aa" />
+      <Text style={styles.text}>Start Workout</Text>
+      <Text style={styles.subtext}>Coming Soon!</Text>
     </View>
   );
 };
@@ -28,7 +25,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#121212",
     justifyContent: "center",
     alignItems: "center",
-    paddingTop: 50, // Adjust padding to accommodate the back button
+    paddingTop: 50,
   },
   backButton: {
     position: "absolute",
@@ -40,10 +37,14 @@ const styles = StyleSheet.create({
   },
   text: {
     color: "#fff",
-    fontSize: 20,
-    marginBottom: 10,
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  subtext: {
+    color: "#bbb",
+    fontSize: 16,
+    marginTop: 10,
   },
 });
 
-export default ProfileScreen;
-
+export default StartWorkoutScreen;

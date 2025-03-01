@@ -1,10 +1,10 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
-const WorkoutScreen = () => {
+const ChallengeScreen = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Workout Screen</Text>
+      <Text style={styles.text}>Challenges Page Coming Soon!</Text>
     </View>
   );
 };
@@ -12,14 +12,15 @@ const WorkoutScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#121212",
   },
   text: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: 24,
+    fontWeight: "bold",
   },
 });
 
-export default WorkoutScreen;
+export default ChallengeScreen;
