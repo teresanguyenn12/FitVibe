@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, collection, getDocs } from "firebase/firestore"; 
+import { getFirestore, doc, getDoc, collection, getDocs } from "firebase/firestore"; 
 
 const firebaseConfig = {
   apiKey: "AIzaSyCsQIG9D3RayftfIIV-rtP_RUZOFlX6Ev4", 
@@ -17,18 +17,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Firestore Test Function
-async function testFirestoreConnection() {
-  try {
-    const querySnapshot = await getDocs(collection(db, "testCollection"));
-    console.log("Firestore Connected! Found documents:", querySnapshot.docs.map(doc => doc.data()));
-  } catch (error) {
-    console.error("Firestore Connection Failed:", error);
-  }
-}
-
-// Call this function once when the app starts
-testFirestoreConnection();
 
 // Export Firebase services
 export { auth, db };

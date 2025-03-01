@@ -16,7 +16,7 @@ const ProfileScreen = () => {
       </TouchableOpacity>
 
       <Text style={styles.text}>Profile Screen</Text>
-      <Text style={styles.text}>Logged in as: {user?.name}</Text>
+      <Text style={styles.text}>Logged in as: {user?.fullName}</Text>
       <Button title="Logout" onPress={logout} color="#8e24aa" />
     </View>
   );

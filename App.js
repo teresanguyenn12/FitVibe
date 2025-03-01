@@ -11,12 +11,13 @@ import { AuthProvider, useAuth } from "./authProvider";
 import LoginScreen from "./screens/LoginScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ProfileScreen from "./screens/ProfileScreen";
-import ChallengeScreen from "./screens/ChallengeScreen"; // New screen added
-import FeedScreen from "./screens/FeedScreen"; // New screen added
-import StartWorkoutScreen from "./screens/StartWorkoutScreen"; // New screen added
-import MyWorkoutScreen from "./screens/MyWorkoutScreen"; // New screen added
-import RewardsScreen from "./screens/RewardsScreen"; // New screen added
-import ProgressionScreen from "./screens/ProgressionScreen"; // New screen added
+import ChallengeScreen from "./screens/ChallengeScreen"; 
+import FeedScreen from "./screens/FeedScreen"; 
+import StartWorkoutScreen from "./screens/StartWorkoutScreen"; 
+import MyWorkoutScreen from "./screens/MyWorkoutScreen"; 
+import RewardsScreen from "./screens/RewardsScreen"; 
+import ProgressionScreen from "./screens/ProgressionScreen"; 
+import SignupScreen from "./screens/SignupScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -66,7 +67,12 @@ function Navigation() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {user ? (
+        {!user ? (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="SignUp" component={SignupScreen} />
+          </>
+        ) : (
           <>
             <Stack.Screen name="HomeTabs" component={BottomTabs} />
             <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
@@ -75,8 +81,6 @@ function Navigation() {
             <Stack.Screen name="Rewards" component={RewardsScreen} />
             <Stack.Screen name="Progression" component={ProgressionScreen} />
           </>
-        ) : (
-          <Stack.Screen name="Login" component={LoginScreen} />
         )}
       </Stack.Navigator>
     </NavigationContainer>
