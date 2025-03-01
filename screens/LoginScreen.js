@@ -20,7 +20,7 @@ import { getDoc, doc } from "firebase/firestore";
 
 const { width, height } = Dimensions.get("window");
 
-// ✅ Ensure the component receives `navigation`
+//  Ensure the component receives `navigation`
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,13 +28,13 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
 
-  // 🔥 User authentication for login
+  //  User authentication for login
   const handleLogin = async () => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
-      // 🔥 Fetch user details from Firestore
+      //  Fetch user details from Firestore
       const userDocRef = doc(db, "users", firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
 
@@ -60,13 +60,13 @@ export default function LoginScreen({ navigation }) {
       style={styles.background}
     >
       <View style={styles.container}>
-        {/* 🔥 App Logo */}
+        {/*  App Logo */}
         <View style={styles.logoContainer}>
           <Text style={styles.title}>FitVibe</Text>
           <Image source={require("../assets/FVLOGO.png")} style={styles.logoImage} />
         </View>
 
-        {/* 🔥 Input Form */}
+        {/*  Input Form */}
         <View style={styles.formContainer}>
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email Address</Text>
@@ -108,7 +108,7 @@ export default function LoginScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* 🔥 Remember Me Toggle */}
+          {/*  Remember Me Toggle */}
           <View style={styles.rememberContainer}>
             <Switch
               value={rememberMe}
@@ -119,15 +119,15 @@ export default function LoginScreen({ navigation }) {
             <Text style={styles.rememberText}>Remember Me</Text>
           </View>
 
-          {/* 🔥 Login Button */}
+          {/*  Login Button */}
           <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
             <Text style={styles.loginButtonText}>Log in</Text>
           </TouchableOpacity>
 
-          {/* 🔥 Navigate to SignUp */}
+          {/*  Navigate to SignUp */}
           <TouchableOpacity
             style={styles.createAccountButton}
-            onPress={() => navigation.navigate("SignUp")} // ✅ Match with Stack.Screen name="SignUp"
+            onPress={() => navigation.navigate("SignUp")} 
           >
             <Text style={styles.createAccountText}>Create Account</Text>
           </TouchableOpacity>
@@ -137,7 +137,7 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-// 🔥 Styling
+//  Styling
 const styles = StyleSheet.create({
   background: { flex: 1 },
   container: {
