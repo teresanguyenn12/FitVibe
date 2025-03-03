@@ -18,9 +18,11 @@ import MyWorkoutScreen from "./screens/MyWorkoutScreen";
 import RewardsScreen from "./screens/RewardsScreen"; 
 import ProgressionScreen from "./screens/ProgressionScreen"; 
 import SignupScreen from "./screens/SignupScreen";
+import GoalsScreen from "./screens/GoalsScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+
 
 function BottomTabs() {
   return (
@@ -80,6 +82,7 @@ function Navigation() {
             <Stack.Screen name="MyWorkouts" component={MyWorkoutScreen} />
             <Stack.Screen name="Rewards" component={RewardsScreen} />
             <Stack.Screen name="Progression" component={ProgressionScreen} />
+            <Stack.Screen name="Goals" component={GoalsScreen} />
           </>
         )}
       </Stack.Navigator>
