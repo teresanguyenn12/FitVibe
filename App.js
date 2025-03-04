@@ -19,6 +19,8 @@ import RewardsScreen from "./screens/RewardsScreen";
 import ProgressionScreen from "./screens/ProgressionScreen"; 
 import SignupScreen from "./screens/SignupScreen";
 import GoalsScreen from "./screens/GoalsScreen";
+import SettingsScreen from "./screens/SettingsScreen";
+
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -83,6 +85,7 @@ function Navigation() {
             <Stack.Screen name="Rewards" component={RewardsScreen} />
             <Stack.Screen name="Progression" component={ProgressionScreen} />
             <Stack.Screen name="Goals" component={GoalsScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
           </>
         )}
       </Stack.Navigator>
