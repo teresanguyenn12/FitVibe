@@ -1,13 +1,12 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
-import { useAuth } from "../authProvider";
 import { Ionicons } from "@expo/vector-icons"; // For back arrow icon
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient"; // Import LinearGradient
+import { auth, createUserWithEmailAndPassword } from "../firebaseConfig"; // Import Firebase Auth
 
 export default function SignUpScreen() {
   const navigation = useNavigation();
-  const { register } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
@@ -28,7 +27,8 @@ export default function SignUpScreen() {
     setLoading(true);
     setError("");
     try {
-      await register(email, password, `${firstName} ${lastName}`);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      console.log("User registered:", userCredential.user);
       navigation.navigate("HomeTabs");
     } catch (err) {
       setError(err.message);
