@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   backButton: {
-    marginTop: 35,
+    marginTop: 30,
   },
   title: {
     fontSize: 24,
