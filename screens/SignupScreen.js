@@ -2,8 +2,11 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
 import { useAuth } from "../authProvider";
 import { Ionicons } from "@expo/vector-icons"; // For back arrow icon
+import { useNavigation } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient"; // Import LinearGradient
 
-export default function SignUpScreen({ navigation }) {
+export default function SignUpScreen() {
+  const navigation = useNavigation();
   const { register } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -35,9 +38,11 @@ export default function SignUpScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={24} color="white" />
+      {/* Back Button */}
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={30} color="#fff" />
       </TouchableOpacity>
+      
       <Text style={styles.title}>Sign Up!</Text>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
       
@@ -54,8 +59,10 @@ export default function SignUpScreen({ navigation }) {
       {loading ? (
         <ActivityIndicator size="large" color="#8e24aa" />
       ) : (
-        <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-          <Text style={styles.buttonText}>Create Account</Text>
+        <TouchableOpacity onPress={handleSignUp}>
+          <LinearGradient colors={["#1a1a2e", "#662d8c", "#ed1e79"]} style={styles.button}>
+            <Text style={styles.buttonText}>Create Account</Text>
+          </LinearGradient>
         </TouchableOpacity>
       )}
     </View>
@@ -88,7 +95,6 @@ const styles = StyleSheet.create({
     borderColor: "#333",
   },
   button: {
-    backgroundColor: "#8e24aa",
     padding: 15,
     borderRadius: 50,
     alignItems: "center",
