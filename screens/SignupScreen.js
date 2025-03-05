@@ -3,13 +3,11 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet,
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import { useAuth } from "../authProvider";
-<<<<<<< HEAD
 import { Ionicons } from "@expo/vector-icons"; // For back arrow icon
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient"; // Import LinearGradient
-=======
-import { Ionicons } from "@expo/vector-icons";
->>>>>>> 1967aaf (Improved Sign Up Screen)
+//import { Ionicons } from "@expo/vector-icons";
+
 
 export default function SignUpScreen() {
   const navigation = useNavigation();
