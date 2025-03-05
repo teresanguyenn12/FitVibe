@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet 
 import { Ionicons } from "@expo/vector-icons"; // For back arrow icon
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient"; // Import LinearGradient
-import { auth, createUserWithEmailAndPassword } from "../firebaseConfig"; // Import Firebase Auth
+import { auth, createUserWithEmailAndPassword } from "../firebase"; // Import Firebase Auth
 
 export default function SignUpScreen() {
   const navigation = useNavigation();
