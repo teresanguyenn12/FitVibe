@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,18 +10,54 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { getAuth, onAuthStateChanged } from "firebase/auth"; 
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { app } from "../firebase"; 
+
 
 const { width, height } = Dimensions.get("window");
 
-// Placeholder user data (Replace with Firebase later)
-const mockUser = {
-  firstName: "Sammy", // Replace with dynamic user data later
-  profilePicture: null, // Replace with Firebase Storage URL later
-};
-
 const HomeScreen = () => {
   const navigation = useNavigation();
-  const [user] = useState(mockUser); // Temporary state before integrating Firebase
+  const [user, setUser] = useState({
+    firstName: "Loading...", // Default until we fetch user data
+    profilePicture: null, 
+  });
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        fetchUserData(firebaseUser.uid);
+      } else {
+        setUser({ firstName: "Guest", profilePicture: null });
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  //Fetch user's first name from firebase to display name on homepage.
+  const fetchUserData = async (uid) => {
+    try {
+      const db = getFirestore(app); 
+      const userRef = doc(db, "users", uid); 
+      const userSnap = await getDoc(userRef); 
+  
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        setUser({
+          firstName: userData.fullName.split(" ")[0] || "User", // Extract first name
+          profilePicture: userData.profilePicture || null,
+        });
+        console.log("User data loaded:", userData);
+      } else {
+        console.log("No such user document!");
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -34,49 +70,32 @@ const HomeScreen = () => {
           <Text style={styles.subtext}>Let's get active!</Text>
         </View>
 
-        {/* Profile Picture (Clickable) */}
+        {/* Profile Picture */}
         <TouchableOpacity onPress={() => navigation.navigate("ProfileScreen")}>
           <Image
             source={
               user.profilePicture
                 ? { uri: user.profilePicture }
-                : require("../assets/default-profile.png") // Default profile image
+                : require("../assets/default-profile.png")
             }
             style={styles.profileImage}
           />
         </TouchableOpacity>
       </View>
 
-      {/* Full-Screen Background for Buttons */}
+      {/* Main Buttons */}
       <View style={styles.cardBackground}>
-        {/* Action Buttons Section (Centered 2x2 Grid) */}
         <View style={styles.cardContainer}>
           <View style={styles.row}>
-            <LinearGradient
-              colors={["#5A1A9B", "#1A4A80", "#8A1E50"]} // Gradient colors
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.cardBorder} // Gradient border style
-            >
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => navigation.navigate("StartWorkout")}
-              >
+            <LinearGradient colors={["#5A1A9B", "#1A4A80", "#8A1E50"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardBorder}>
+              <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("StartWorkout")}>
                 <Ionicons name="time" size={40} color="#fff" />
                 <Text style={styles.cardText}>Start Workout</Text>
               </TouchableOpacity>
             </LinearGradient>
 
-            <LinearGradient
-              colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.cardBorder}
-            >
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => navigation.navigate("MyWorkouts")}
-              >
+            <LinearGradient colors={["#5A1A9B", "#1A4A80", "#8A1E50"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardBorder}>
+              <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("MyWorkouts")}>
                 <Ionicons name="calendar" size={40} color="#fff" />
                 <Text style={styles.cardText}>My Workouts</Text>
               </TouchableOpacity>
@@ -84,31 +103,15 @@ const HomeScreen = () => {
           </View>
 
           <View style={styles.row}>
-            <LinearGradient
-              colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.cardBorder}
-            >
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => navigation.navigate("Rewards")}
-              >
+            <LinearGradient colors={["#5A1A9B", "#1A4A80", "#8A1E50"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardBorder}>
+              <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("Rewards")}>
                 <Ionicons name="trophy" size={40} color="#fff" />
                 <Text style={styles.cardText}>Rewards</Text>
               </TouchableOpacity>
             </LinearGradient>
 
-            <LinearGradient
-              colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.cardBorder}
-            >
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => navigation.navigate("Progression")}
-              >
+            <LinearGradient colors={["#5A1A9B", "#1A4A80", "#8A1E50"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardBorder}>
+              <TouchableOpacity style={styles.card} onPress={() => navigation.navigate("Progression")}>
                 <Ionicons name="stats-chart" size={40} color="#fff" />
                 <Text style={styles.cardText}>Progression</Text>
               </TouchableOpacity>
@@ -120,7 +123,7 @@ const HomeScreen = () => {
   );
 };
 
-// Styles
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -176,16 +179,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 25,
   },
-  card: {
+  cardBorder: {
     width: "48%",
     height: 155,
+    borderRadius: 20,
+    padding: 3,
+  },
+  card: {
+    flex: 1,
     backgroundColor: "#000",
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    elevation: 5,
-    borderWidth: 1.5,
-    borderColor: "#8e24aa",
   },
   cardText: {
     color: "#fff",
@@ -193,21 +198,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 10,
     fontFamily: "TiltWarp-Regular",
-  },
-
-  cardBorder: {
-    width: "48%", // Same width as the card
-    height: 155, // Same height as the card
-    borderRadius: 20, // Matches card border
-    padding: 3, // Creates the border effect
-  },
-
-  card: {
-    flex: 1, // Ensures it fills the gradient container
-    backgroundColor: "#000", // Inner card background
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
   },
 });
 
