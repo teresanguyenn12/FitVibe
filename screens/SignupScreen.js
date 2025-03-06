@@ -117,7 +117,7 @@ export default function SignUpScreen() {
         <ActivityIndicator size="large" color="#8e24aa" />
       ) : (
         <TouchableOpacity onPress={handleSignUp}>
-          <LinearGradient colors={["#1a1a2e", "#662d8c", "#ed1e79"]} style={styles.button}>
+          <LinearGradient colors={["#800080", "#4B0082"]} style={styles.button}>
             <Text style={styles.buttonText}>Create Account</Text>
           </LinearGradient>
         </TouchableOpacity>
