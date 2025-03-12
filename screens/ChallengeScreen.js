@@ -1,14 +1,13 @@
 import React from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
-import { useNavigation } from "@react-navigation/native"; // If you plan to navigate
+import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 
-
 const challenges = [
-  { month: "January", status: "Completed" },
-  { month: "February", status: "Completed" }, // Moved to Completed
-  { month: "March", status: "Active" }, // Updated Active Month
-  { month: "April", status: "Upcoming" },
+  { month: "January", status: "Completed", name: "January Challenge", distance: "5 miles", duration: "7 days", reward: "300 XP" },
+  { month: "February", status: "Completed", name: "February Challenge", distance: "10 miles", duration: "24 hours", reward: "500 XP" },
+  { month: "March", status: "Active", name: "March Challenge", distance: "8 miles", duration: "3 days", reward: "400 XP" },
+  { month: "April", status: "Upcoming", name: "April Challenge", distance: "6 miles", duration: "5 days", reward: "350 XP" },
   { month: "May", status: "Upcoming" },
   { month: "June", status: "Upcoming" },
   { month: "July", status: "Upcoming" },
@@ -20,6 +19,8 @@ const challenges = [
 ];
 
 const ChallengesScreen = () => {
+  const navigation = useNavigation();
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Challenges</Text>
@@ -36,7 +37,10 @@ const ChallengesScreen = () => {
         data={challenges}
         keyExtractor={(item) => item.month}
         renderItem={({ item }) => (
-          <TouchableOpacity>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate("ChallengeDetails", { challenge: item })}
+
+          >
             <LinearGradient
               colors={item.status === "Active" ? ["#A0006D", "#552082"] : ["#333", "#333"]}
               style={[
@@ -91,7 +95,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#A0006D",
     textAlign: "center",
-
   },
   challengeTitle: {
     fontSize: 23,

@@ -8,6 +8,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { AuthProvider, useAuth } from "./authProvider";
+
 import LoginScreen from "./screens/LoginScreen";
 import ForgotPasswordScreen from "./screens/ForgotPasswordScreen";
 import HomeScreen from "./screens/HomeScreen";
@@ -21,11 +22,15 @@ import ProgressionScreen from "./screens/ProgressionScreen";
 import SignupScreen from "./screens/SignupScreen";
 import GoalsScreen from "./screens/GoalsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
+import MyChallengesScreen from "./screens/MyChallengesScreen";
+import InviteFriendsScreen from "./screens/InviteFriendsScreen";
+import ChallengeDetailsScreen from "./screens/ChallengeDetailsScreen";
+import ChallengeProgressScreen from "./screens/ChallengeProgressScreen";
+import JoinChallengesScreen from "./screens/JoinChallengesScreen";
 
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-
 
 function BottomTabs() {
   return (
@@ -88,6 +93,11 @@ function Navigation() {
             <Stack.Screen name="Progression" component={ProgressionScreen} />
             <Stack.Screen name="Goals" component={GoalsScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="MyChallenges" component={MyChallengesScreen} />
+            <Stack.Screen name="InviteFriends" component={InviteFriendsScreen} />
+            <Stack.Screen name="ChallengeDetails" component={ChallengeDetailsScreen} />
+            <Stack.Screen name="ChallengeProgress" component={ChallengeProgressScreen} />
+            <Stack.Screen name="JoinChallenges" component={JoinChallengesScreen} />
           </>
         )}
       </Stack.Navigator>
