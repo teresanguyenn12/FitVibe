@@ -1,60 +1,74 @@
-import { db } from "../firebase";
-import { collection, addDoc, doc, updateDoc, arrayUnion, serverTimestamp } from "firebase/firestore";
-import { auth } from "../firebase"; 
+import { db } from "../firebase";  
+import { collection, doc, getDoc, getDocs, updateDoc, arrayUnion } from "firebase/firestore";
+import { auth } from "../firebase";  
 
 /**
- * Function to create a new challenge.
- * @param {Object} challengeData - Challenge details (name, duration, etc.)
- * @returns {Promise<string>} - Returns challenge ID if successful
+ * Fetches all available challenges from Firestore.
+ * @returns {Promise<Array>} - Array of challenge objects.
  */
-export const createChallenge = async (challengeData) => {
-  const user = auth.currentUser;
-  if (!user) {
-    console.error("No user logged in. Cannot create challenge.");
-    return null;
-  }
-
+export const fetchChallenges = async () => {
   try {
-    const challengeRef = await addDoc(collection(db, "challenges"), {
-      ...challengeData,
-      createdBy: user.uid,
-      createdAt: serverTimestamp(),
-      participants: [user.uid], // Creator automatically joins
-      progress: { [user.uid]: 0 }, // Initialize progress for the creator
-    });
+    const challengesCollection = collection(db, "challenges"); // Reference to challenges collection
+    const challengesSnapshot = await getDocs(challengesCollection);
+    const challengesList = challengesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    console.log("Challenge created with ID:", challengeRef.id);
-    return challengeRef.id; // Return challenge ID for navigation
+    return challengesList;
   } catch (error) {
-    console.error("Error creating challenge:", error);
-    throw error;
+    console.error("Error fetching challenges:", error);
+    return [];
   }
 };
 
 /**
- * Function to join a challenge.
- * @param {string} challengeId - The ID of the challenge to join.
- * @returns {Promise<void>}
+ * Fetch completed challenges for the current user.
+ * @returns {Promise<Array>} - Array of completed challenge IDs
  */
-export const joinChallenge = async (challengeId) => {
+export const fetchCompletedChallenges = async () => {
+  console.log(" Running fetchCompletedChallenges..."); // <-- Debugging log
+
   const user = auth.currentUser;
   if (!user) {
-    console.error("No user logged in. Cannot join challenge.");
+    console.log(" No user logged in");
+    return [];
+  }
+
+  try {
+    const userRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists() && userDoc.data().completedChallenges) {
+      console.log(" Completed Challenges from Firestore:", userDoc.data().completedChallenges);
+      return userDoc.data().completedChallenges; // Return array of challenge IDs
+    } else {
+      console.log("⚠️ No completed challenges found.");
+      return [];
+    }
+  } catch (error) {
+    console.error(" Error fetching completed challenges:", error);
+    return [];
+  }
+};
+
+/**
+ * Function to mark a challenge as completed for a user.
+ * @param {string} challengeId - The ID of the completed challenge.
+ */
+export const markChallengeAsCompleted = async (challengeId) => {
+  const user = auth.currentUser;
+  if (!user) {
+    console.error("No user logged in. Cannot update completed challenges.");
     return;
   }
 
-  const challengeRef = doc(db, "challenges", challengeId);
+  const userRef = doc(db, "users", user.uid);
 
   try {
-    await updateDoc(challengeRef, {
-      participants: arrayUnion(user.uid), // Add user to participants array
-      [`progress.${user.uid}`]: 0, // Initialize progress for the user
+    await updateDoc(userRef, {
+      completedChallenges: arrayUnion(challengeId), // Add challenge ID to completed array
     });
-
-    console.log(`User ${user.uid} successfully joined the challenge!`);
+    console.log(`Challenge ${challengeId} marked as completed!`);
   } catch (error) {
-    console.error("Error joining challenge:", error);
-    throw error;
+    console.error("Error updating completed challenges:", error);
   }
 };
 

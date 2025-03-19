@@ -1,3 +1,4 @@
+// This screen shows progress, track how much distance user has left and update progress in real-time
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert } from "react-native";
 import { updateChallengeProgress } from "../services/challengeService";

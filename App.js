@@ -30,6 +30,8 @@ import JoinChallengesScreen from "./screens/JoinChallengesScreen";
 import * as SettingsScreens from "./screens/settings";
 
 
+import CompletedChallengeDetails from "./screens/CompletedChallengeDetails";
+
 
 
 const Stack = createStackNavigator();
@@ -116,6 +118,7 @@ function Navigation() {
             <Stack.Screen name="ReportProblem" component={SettingsScreens.ReportProblem} />
             <Stack.Screen name="ThemeSettings" component={SettingsScreens.ThemeSettings} />
             <Stack.Screen name="UnitsSettings" component={SettingsScreens.UnitsSettings} />
+            <Stack.Screen name="CompletedChallengeDetails" component={CompletedChallengeDetails} />
           </>
         )}
       </Stack.Navigator>

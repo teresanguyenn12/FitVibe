@@ -1,66 +1,127 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { joinChallenge } from "../services/challengeService";
+import React, { useState } from "react";
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRoute } from "@react-navigation/native";
+import { MaterialIcons } from "@expo/vector-icons";
 
-// Predefined challenges with unique IDs
+const categories = ["Run", "Walk", "Yoga", "Lifting", "Cycling"];
+
 const challenges = [
-  { id: "challenge_100m", name: "100 Meter Race" },
-  { id: "challenge_10mile", name: "10 Mile Run in 24 hrs" },
-  { id: "challenge_12hill", name: "12 Mile Hill Sprint" },
-  { id: "challenge_5k7days", name: "5K-a-Day for 7 Days" },
-  { id: "challenge_treadmill", name: "Treadmill Marathon" },
+  { id: "1", name: "100 Meter Race", category: "Run" },
+  { id: "2", name: "10 Mile Run in 24 hrs", category: "Run" },
+  { id: "3", name: "12 Mile Hill Sprint", category: "Run" },
+  { id: "4", name: "5K-a-Day for 7 Days", category: "Run" },
+  { id: "5", name: "Treadmill Marathon", category: "Run" },
 ];
 
-export default function JoinChallengesScreen() {
-  const navigation = useNavigation();
-
-  // Function to join a challenge
-  const handleJoinChallenge = async (challengeId) => {
-    Alert.alert(
-      "Join Challenge",
-      "Are you sure you want to join this challenge?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Join", 
-          onPress: async () => {
-            try {
-              await joinChallenge(challengeId);
-              alert("You've joined the challenge!");
-            } catch (error) {
-              console.error("Error joining challenge:", error);
-              alert("Failed to join the challenge. Try again!");
-            }
-          }
-        }
-      ]
-    );
-  };
+const JoinChallengesScreen = () => {
+  const route = useRoute();
+  const { challenge } = route.params;
+  const [selectedCategory, setSelectedCategory] = useState("Run");
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Join Challenges</Text>
-      {challenges.map((challenge) => (
-        <TouchableOpacity
-          key={challenge.id}
-          style={styles.challengeItem}
-          onPress={() =>
-            navigation.navigate("ChallengeDetails", { challenge })
-          }
-          onLongPress={() => handleJoinChallenge(challenge.id)} // Long press to join challenge
-        >
-          <Text style={styles.challengeText}>{challenge.name}</Text>
-        </TouchableOpacity>
-      ))}
+      <Text style={styles.header}>Join Challenges</Text>
+
+      {/* Selected Month Button */}
+      <LinearGradient colors={["#A0006D", "#552082"]} style={styles.selectedMonthButton}>
+        <Text style={styles.selectedMonthText}>{challenge.month} Challenges</Text>
+      </LinearGradient>
+
+      {/* Category Filter */}
+      <Text style={styles.categoryHeader}>Choose Fitness Challenge</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
+        {categories.map((category) => (
+          <TouchableOpacity key={category} onPress={() => setSelectedCategory(category)}>
+            <Text
+              style={[
+                styles.category,
+                selectedCategory === category && styles.selectedCategory,
+              ]}
+            >
+              {category}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Challenge List */}
+      <FlatList
+        data={challenges.filter((item) => item.category === selectedCategory)}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.challengeItem}>
+            <Text style={styles.challengeText}>{item.name}</Text>
+            <MaterialIcons name="chevron-right" size={22} color="#aaa" />
+          </TouchableOpacity>
+        )}
+        showsVerticalScrollIndicator={false}
+      />
     </View>
   );
-}
+};
 
-// Styles
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#121212" },
-  title: { fontSize: 24, fontWeight: "bold", color: "white", textAlign: "center", marginBottom: 20 },
-  challengeItem: { backgroundColor: "#1E1E1E", padding: 15, borderRadius: 10, marginBottom: 10 },
-  challengeText: { color: "white", fontSize: 16 },
+  container: {
+    flex: 1,
+    backgroundColor: "#121212",
+    paddingTop: 80,
+    paddingHorizontal: 20,
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  selectedMonthButton: {
+    paddingVertical: 12,
+    borderRadius: 20,
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  selectedMonthText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  categoryHeader: {
+    fontSize: 14,
+    color: "#bbb",
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  categoryContainer: {
+    flexDirection: "row",
+    marginBottom: 20,
+  },
+  category: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 15,
+    marginHorizontal: 5,
+    backgroundColor: "#222",
+    color: "#bbb",
+    fontSize: 14,
+  },
+  selectedCategory: {
+    backgroundColor: "#A0006D",
+    color: "#fff",
+  },
+  challengeItem: {
+    backgroundColor: "#222",
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 5,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  challengeText: {
+    color: "#fff",
+    fontSize: 16,
+  },
 });
+
+export default JoinChallengesScreen;

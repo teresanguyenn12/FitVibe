@@ -1,62 +1,111 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { joinChallenge } from "../services/challengeService";
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from "react-native";
+import { useRoute } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 
-export default function ChallengeDetailsScreen() {
-  const navigation = useNavigation();
+const ChallengeDetailsScreen = () => {
   const route = useRoute();
-  const { challenge } = route.params;
-
-  if (!challenge) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>No challenge details available.</Text>
-      </View>
-    );
-  }
-
-  const handleJoinChallenge = async () => {
-    Alert.alert(
-      "Join Challenge",
-      `Do you want to join ${challenge.name}?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Join", 
-          onPress: async () => {
-            try {
-              await joinChallenge(challenge.id); 
-              alert("You've joined the challenge!");
-              navigation.navigate("MyChallenges"); // Redirect after joining
-            } catch (error) {
-              alert("Error joining challenge.");
-            }
-          }
-        }
-      ]
-    );
-  };
+  const { challenge } = route.params; // Get the challenge data
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{challenge.name}</Text>
-      <Text style={styles.details}>Distance: {challenge.distance}</Text>
-      <Text style={styles.details}>Duration: {challenge.duration}</Text>
-      <Text style={styles.details}>Reward: {challenge.reward}</Text>
+      {/* Map Background */}
+      <ImageBackground source={require("../assets/map.png")} style={styles.map} />
 
-      <TouchableOpacity style={styles.joinButton} onPress={handleJoinChallenge}>
-        <Text style={styles.joinButtonText}>Join Challenge</Text>
-      </TouchableOpacity>
+      {/* Challenge Details Card */}
+      <View style={styles.detailsContainer}>
+        <Text style={styles.challengeTitle}>{challenge.name}</Text>
+        <Text style={styles.location}>
+          <Text style={{ fontWeight: "bold" }}>Location:</Text> California State University, Long Beach
+        </Text>
+        <Text style={styles.detailText}>
+          <Text style={{ fontWeight: "bold" }}>Distance:</Text> {challenge.distance || "10 miles"}
+        </Text>
+        <Text style={styles.detailText}>
+          <Text style={{ fontWeight: "bold" }}>Duration:</Text> {challenge.duration || "24 hours"}
+        </Text>
+        <Text style={styles.detailText}>
+          <Text style={{ fontWeight: "bold" }}>Reward:</Text> {challenge.reward || "+500 XP"}
+        </Text>
+
+        {/* Buttons */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button}>
+            <Text style={styles.buttonText}>Join Solo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.buttonOutline}>
+            <Text style={styles.buttonTextOutline}>Invite a Friend</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#121212" },
-  title: { fontSize: 24, fontWeight: "bold", color: "white", textAlign: "center", marginBottom: 20 },
-  details: { color: "#bbb", fontSize: 16, marginBottom: 10 },
-  joinButton: { backgroundColor: "#5A1A9B", padding: 15, borderRadius: 10, alignItems: "center", marginTop: 20 },
-  joinButtonText: { color: "white", fontWeight: "bold" },
-  errorText: { color: "red", fontSize: 18, textAlign: "center", marginTop: 20 },
+  container: {
+    flex: 1,
+    backgroundColor: "#121212",
+  },
+  map: {
+    width: "100%",
+    height: "45%",
+    resizeMode: "cover",
+  },
+  detailsContainer: {
+    backgroundColor: "#1A1A1A",
+    padding: 20,
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
+    marginTop: -30,
+  },
+  challengeTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 8,
+  },
+  location: {
+    fontSize: 14,
+    color: "#bbb",
+    marginBottom: 10,
+  },
+  detailText: {
+    fontSize: 14,
+    color: "#bbb",
+    marginBottom: 6,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 15,
+  },
+  button: {
+    flex: 1,
+    backgroundColor: "#A0006D",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginRight: 10,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  buttonOutline: {
+    flex: 1,
+    borderColor: "#A0006D",
+    borderWidth: 2,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  buttonTextOutline: {
+    color: "#A0006D",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
 });
+
+export default ChallengeDetailsScreen;
