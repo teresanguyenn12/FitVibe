@@ -28,14 +28,13 @@ import ProgressionScreen from "./screens/ProgressionScreen";
 import SignupScreen from "./screens/SignupScreen";
 import GoalsScreen from "./screens/GoalsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
-import InviteFriendsScreen from "./screens/InviteFriendsScreen";
 import * as SettingsScreens from "./screens/settings";
 import * as ChallengeScreens from "./screens/challenges";
 
 
 import AddFriendsScreen from "./screens/AddFriendsScreen";
 import FriendsScreen from "./screens/FriendsScreen";
-
+import InviteFriendsScreen from "./screens/InviteFriendsScreen";
 
 
 
@@ -67,7 +66,7 @@ function BottomTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Challenges" component={ChallengeScreen} />
+      <Tab.Screen name="Challenges" component={ChallengeScreens.ChallengeScreen} />
       <Tab.Screen name="Feed" component={FeedScreen} />
     </Tab.Navigator>
   );

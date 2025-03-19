@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { fetchCompletedChallenges } from "../services/challengeService"; 
+import { fetchCompletedChallenges } from "../../services/challengeService"; 
 
 const challenges = [
   { id: "challengeId1", month: "January", status: "Completed", name: "January Challenge", distance: "5 miles", duration: "7 days", reward: "300 XP", isPast: true },

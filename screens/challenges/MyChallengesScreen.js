@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from "react-native";
-import { db, auth } from "../firebase";
+import { db, auth } from "../../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
 export default function MyChallengesScreen() {

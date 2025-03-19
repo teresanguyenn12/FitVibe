@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-
+import mapImage from "../../assets/map.png";
 const ChallengeDetailsScreen = () => {
   const route = useRoute();
   const { challenge } = route.params; // Get the challenge data
@@ -10,7 +10,7 @@ const ChallengeDetailsScreen = () => {
   return (
     <View style={styles.container}>
       {/* Map Background */}
-      <ImageBackground source={require("../assets/map.png")} style={styles.map} />
+      <ImageBackground source={mapImage} style={styles.map} />
 
       {/* Challenge Details Card */}
       <View style={styles.detailsContainer}>

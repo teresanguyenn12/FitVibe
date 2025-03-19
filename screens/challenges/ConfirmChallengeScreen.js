@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { db, auth } from "../firebase"; 
+import { db, auth } from "../../firebase"; 
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 
 export default function ConfirmChallengeScreen() {
