@@ -13,7 +13,6 @@ import LoginScreen from "./screens/LoginScreen";
 import ForgotPasswordScreen from "./screens/ForgotPasswordScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ProfileScreen from "./screens/ProfileScreen";
-import ChallengeScreen from "./screens/ChallengeScreen"; 
 import FeedScreen from "./screens/FeedScreen"; 
 import StartWorkoutScreen from "./screens/StartWorkoutScreen"; 
 import CardioScreen from "./screens/CardioScreen";
@@ -29,15 +28,11 @@ import ProgressionScreen from "./screens/ProgressionScreen";
 import SignupScreen from "./screens/SignupScreen";
 import GoalsScreen from "./screens/GoalsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
-import MyChallengesScreen from "./screens/MyChallengesScreen";
 import InviteFriendsScreen from "./screens/InviteFriendsScreen";
-import ChallengeDetailsScreen from "./screens/ChallengeDetailsScreen";
-import ChallengeProgressScreen from "./screens/ChallengeProgressScreen";
-import JoinChallengesScreen from "./screens/JoinChallengesScreen";
 import * as SettingsScreens from "./screens/settings";
+import * as ChallengeScreens from "./screens/challenges";
 
 
-import CompletedChallengeDetails from "./screens/CompletedChallengeDetails";
 import AddFriendsScreen from "./screens/AddFriendsScreen";
 import FriendsScreen from "./screens/FriendsScreen";
 
@@ -100,6 +95,7 @@ function Navigation() {
           </>
         ) : (
           <>
+            {/*  Main App Screens */}
             <Stack.Screen name="HomeTabs" component={BottomTabs} />
             <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
             <Stack.Screen name="StartWorkout" component={StartWorkoutScreen} />
@@ -114,13 +110,18 @@ function Navigation() {
             <Stack.Screen name="Rewards" component={RewardsScreen} />
             <Stack.Screen name="Progression" component={ProgressionScreen} />
             <Stack.Screen name="Goals" component={GoalsScreen} />
+
+            {/*  Challenges Screens */}
+            <Stack.Screen name="Challenges" component={ChallengeScreens.ChallengeScreen} />
+            <Stack.Screen name="ChallengeDetails" component={ChallengeScreens.ChallengeDetailsScreen} />
+            <Stack.Screen name="ChallengeProgress" component={ChallengeScreens.ChallengeProgressScreen} />
+            <Stack.Screen name="JoinChallenges" component={ChallengeScreens.JoinChallengesScreen} />
+            <Stack.Screen name="CompletedChallengeDetails" component={ChallengeScreens.CompletedChallengeDetails} />
+            <Stack.Screen name="ConfirmChallenge" component={ChallengeScreens.ConfirmChallengeScreen} />
+            <Stack.Screen name="MyChallenges" component={ChallengeScreens.MyChallengesScreen} />
+
+            {/* Settings Screens */}
             <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="MyChallenges" component={MyChallengesScreen} />
-            <Stack.Screen name="InviteFriends" component={InviteFriendsScreen} />
-            <Stack.Screen name="ChallengeDetails" component={ChallengeDetailsScreen} />
-            <Stack.Screen name="ChallengeProgress" component={ChallengeProgressScreen} />
-            <Stack.Screen name="JoinChallenges" component={JoinChallengesScreen} />
-            
             <Stack.Screen name="ActivityTracking" component={SettingsScreens.ActivityTracking} />
             <Stack.Screen name="ConnectedApps" component={SettingsScreens.ConnectedApps} />
             <Stack.Screen name="ConnectedDevices" component={SettingsScreens.ConnectedDevices} />
@@ -135,7 +136,8 @@ function Navigation() {
             <Stack.Screen name="ReportProblem" component={SettingsScreens.ReportProblem} />
             <Stack.Screen name="ThemeSettings" component={SettingsScreens.ThemeSettings} />
             <Stack.Screen name="UnitsSettings" component={SettingsScreens.UnitsSettings} />
-            <Stack.Screen name="CompletedChallengeDetails" component={CompletedChallengeDetails} />
+
+            {/*  Friends & Social Screens */}
             <Stack.Screen name="FriendsScreen" component={FriendsScreen} />
             <Stack.Screen name="AddFriendsScreen" component={AddFriendsScreen} />
           </>
