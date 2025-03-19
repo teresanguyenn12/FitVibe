@@ -54,6 +54,22 @@ const ProfileScreen = () => {
           <Text style={styles.cardText}>Goals</Text>
         </TouchableOpacity>
       </LinearGradient>
+
+          {/* Friends Button */}
+          <LinearGradient
+              colors={["#5A1A9B", "#1A4A80", "#8A1E50"]} // Gradient colors
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.cardBorder}
+          >
+              <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => navigation.navigate("FriendsScreen")}
+              >
+                  <Ionicons name="flag" size={40} color="#fff" />
+                  <Text style={styles.cardText}>Friends</Text>
+              </TouchableOpacity>
+          </LinearGradient>
     </View>
   );
 };

@@ -31,6 +31,9 @@ import * as SettingsScreens from "./screens/settings";
 
 
 import CompletedChallengeDetails from "./screens/CompletedChallengeDetails";
+import AddFriendsScreen from "./screens/AddFriendsScreen";
+import FriendsScreen from "./screens/FriendsScreen";
+
 
 
 
@@ -119,6 +122,8 @@ function Navigation() {
             <Stack.Screen name="ThemeSettings" component={SettingsScreens.ThemeSettings} />
             <Stack.Screen name="UnitsSettings" component={SettingsScreens.UnitsSettings} />
             <Stack.Screen name="CompletedChallengeDetails" component={CompletedChallengeDetails} />
+            <Stack.Screen name="FriendsScreen" component={FriendsScreen} />
+            <Stack.Screen name="AddFriendsScreen" component={AddFriendsScreen} />
           </>
         )}
       </Stack.Navigator>
