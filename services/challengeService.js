@@ -24,7 +24,7 @@ export const fetchChallenges = async () => {
  * @returns {Promise<Array>} - Array of completed challenge IDs
  */
 export const fetchCompletedChallenges = async () => {
-  console.log(" Running fetchCompletedChallenges..."); // <-- Debugging log
+  console.log(" Running fetchCompletedChallenges..."); //  Debugging log
 
   const user = auth.currentUser;
   if (!user) {
