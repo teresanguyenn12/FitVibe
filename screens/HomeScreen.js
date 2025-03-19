@@ -11,9 +11,8 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { getAuth, onAuthStateChanged } from "firebase/auth"; 
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, onSnapshot } from "firebase/firestore";
 import { app } from "../firebase"; 
-
 
 const { width, height } = Dimensions.get("window");
 
@@ -23,41 +22,32 @@ const HomeScreen = () => {
     firstName: "Loading...", // Default until we fetch user data
     profilePicture: null, 
   });
+  const [updateKey, setUpdateKey] = useState(0); // Key to force re-render
 
   useEffect(() => {
     const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        fetchUserData(firebaseUser.uid);
-      } else {
-        setUser({ firstName: "Guest", profilePicture: null });
-      }
+    if (!auth.currentUser) return;
+
+    const db = getFirestore(app);
+    const userDocRef = doc(db, "users", auth.currentUser.uid);
+
+    // Listen for real-time profile updates
+    const unsubscribe = onSnapshot(userDocRef, (doc) => {
+        if (doc.exists()) {
+            const data = doc.data();
+            console.log("Profile picture updated in Firestore:", data.profilePicture);
+            setUser({
+                firstName: data.fullName?.split(" ")[0] || "User",
+                profilePicture: data.profilePicture || null,
+            });
+            setUpdateKey(prevKey => prevKey + 1);  //Force re-render
+        } else {
+            console.log("No user document found!");
+        }
     });
 
-    return () => unsubscribe();
+    return () => unsubscribe(); // Cleanup listener on unmount
   }, []);
-
-  //Fetch user's first name from firebase to display name on homepage.
-  const fetchUserData = async (uid) => {
-    try {
-      const db = getFirestore(app); 
-      const userRef = doc(db, "users", uid); 
-      const userSnap = await getDoc(userRef); 
-  
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
-        setUser({
-          firstName: userData.fullName.split(" ")[0] || "User", // Extract first name
-          profilePicture: userData.profilePicture || null,
-        });
-        console.log("User data loaded:", userData);
-      } else {
-        console.log("No such user document!");
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    }
-  };
 
   return (
     <View style={styles.container}>
@@ -73,6 +63,7 @@ const HomeScreen = () => {
         {/* Profile Picture */}
         <TouchableOpacity onPress={() => navigation.navigate("ProfileScreen")}>
           <Image
+            key={updateKey}
             source={
               user.profilePicture
                 ? { uri: user.profilePicture }
@@ -122,7 +113,6 @@ const HomeScreen = () => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {

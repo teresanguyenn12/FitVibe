@@ -27,6 +27,9 @@ import InviteFriendsScreen from "./screens/InviteFriendsScreen";
 import ChallengeDetailsScreen from "./screens/ChallengeDetailsScreen";
 import ChallengeProgressScreen from "./screens/ChallengeProgressScreen";
 import JoinChallengesScreen from "./screens/JoinChallengesScreen";
+import * as SettingsScreens from "./screens/settings";
+
+
 
 
 const Stack = createStackNavigator();
@@ -98,6 +101,21 @@ function Navigation() {
             <Stack.Screen name="ChallengeDetails" component={ChallengeDetailsScreen} />
             <Stack.Screen name="ChallengeProgress" component={ChallengeProgressScreen} />
             <Stack.Screen name="JoinChallenges" component={JoinChallengesScreen} />
+            
+            <Stack.Screen name="ActivityTracking" component={SettingsScreens.ActivityTracking} />
+            <Stack.Screen name="ConnectedApps" component={SettingsScreens.ConnectedApps} />
+            <Stack.Screen name="ConnectedDevices" component={SettingsScreens.ConnectedDevices} />
+            <Stack.Screen name="DeleteAccount" component={SettingsScreens.DeleteAccount} />
+            <Stack.Screen name="HelpCenter" component={SettingsScreens.HelpCenter} />
+            <Stack.Screen name="LanguageSettings" component={SettingsScreens.LanguageSettings} />
+            <Stack.Screen name="LogoutScreen" component={SettingsScreens.LogoutScreen} />
+            <Stack.Screen name="NotificationSettings" component={SettingsScreens.NotificationSettings} />
+            <Stack.Screen name="PrivacyPolicy" component={SettingsScreens.PrivacyPolicy} />
+            <Stack.Screen name="PrivacySettings" component={SettingsScreens.PrivacySettings} />
+            <Stack.Screen name="ProfileSettings" component={SettingsScreens.ProfileSettings} />
+            <Stack.Screen name="ReportProblem" component={SettingsScreens.ReportProblem} />
+            <Stack.Screen name="ThemeSettings" component={SettingsScreens.ThemeSettings} />
+            <Stack.Screen name="UnitsSettings" component={SettingsScreens.UnitsSettings} />
           </>
         )}
       </Stack.Navigator>

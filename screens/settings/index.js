@@ -1,0 +1,14 @@
+export { default as ActivityTracking } from "./ActivityTracking";
+export { default as ConnectedApps } from "./ConnectedApps";
+export { default as ConnectedDevices } from "./ConnectedDevices";
+export { default as DeleteAccount } from "./DeleteAccount";
+export { default as HelpCenter } from "./HelpCenter";
+export { default as LanguageSettings } from "./LanguageSettings";
+export { default as LogoutScreen } from "./LogoutScreen";
+export { default as NotificationSettings } from "./NotificationSettings";
+export { default as PrivacyPolicy } from "./PrivacyPolicy";
+export { default as PrivacySettings } from "./PrivacySettings";
+export { default as ProfileSettings } from "./ProfileSettings";
+export { default as ReportProblem } from "./ReportProblem";
+export { default as ThemeSettings } from "./ThemeSettings";
+export { default as UnitsSettings } from "./UnitsSettings";
