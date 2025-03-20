@@ -16,6 +16,13 @@ import ProfileScreen from "./screens/ProfileScreen";
 import ChallengeScreen from "./screens/ChallengeScreen"; 
 import FeedScreen from "./screens/FeedScreen"; 
 import StartWorkoutScreen from "./screens/StartWorkoutScreen"; 
+import CardioScreen from "./screens/CardioScreen";
+import CyclingScreen from "./screens/CyclingScreen";
+import HikingScreen from "./screens/HikingScreen";
+import PilatesScreen from "./screens/PilatesScreen";
+import StrengthTrainingScreen from "./screens/StrengthTrainingScreen";
+import SwimmingScreen from "./screens/SwimmingScreen";
+import YogaScreen from "./screens/YogaScreen";
 import MyWorkoutScreen from "./screens/MyWorkoutScreen"; 
 import RewardsScreen from "./screens/RewardsScreen"; 
 import ProgressionScreen from "./screens/ProgressionScreen"; 
@@ -96,6 +103,13 @@ function Navigation() {
             <Stack.Screen name="HomeTabs" component={BottomTabs} />
             <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
             <Stack.Screen name="StartWorkout" component={StartWorkoutScreen} />
+            <Stack.Screen name="Cardio" component={CardioScreen} />
+            <Stack.Screen name="Cycling" component={CyclingScreen} />
+            <Stack.Screen name="Hiking" component={HikingScreen} />
+            <Stack.Screen name="Pilates" component={PilatesScreen} />
+            <Stack.Screen name="StrengthTraining" component={StrengthTrainingScreen} />
+            <Stack.Screen name="Swimming" component={SwimmingScreen} />
+            <Stack.Screen name="Yoga" component={YogaScreen} />
             <Stack.Screen name="MyWorkouts" component={MyWorkoutScreen} />
             <Stack.Screen name="Rewards" component={RewardsScreen} />
             <Stack.Screen name="Progression" component={ProgressionScreen} />

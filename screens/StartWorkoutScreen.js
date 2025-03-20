@@ -6,7 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 const { width } = Dimensions.get("window");
 
 const workoutOptions = [
-    { name: "Strength Training", image: require("../assets/workouts/strength.jpg") },
+    { name: "StrengthTraining", image: require("../assets/workouts/strength.jpg") },
     { name: "Cardio", image: require("../assets/workouts/cardio.jpg") },
     { name: "Yoga", image: require("../assets/workouts/yoga.jpg") },
     { name: "Cycling", image: require("../assets/workouts/cycling.jpg") },
@@ -31,10 +31,18 @@ const StartWorkoutScreen = () => {
             {/* Workout Options List */}
             <ScrollView contentContainerStyle={styles.listContainer}>
                 {workoutOptions.map((item, index) => (
-                    <TouchableOpacity key={index} style={styles.workoutCard}>
+                    <TouchableOpacity 
+                        key={index} 
+                        style={styles.workoutCard}
+                        onPress={() => {navigation.navigate(item.name)}
+                        }
+                    >
+                        
                         <Image source={item.image} style={styles.image} />
                         <View style={styles.overlay} />
-                        <Text style={styles.workoutText}>{item.name}</Text>
+                        <Text style={styles.workoutText}>
+                            {item.name === "StrengthTraining" ? "Strength Training" : item.name}
+                        </Text>
                     </TouchableOpacity>
                 ))}
             </ScrollView>

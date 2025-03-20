@@ -6,7 +6,6 @@ import { useAuth } from "../authProvider";
 import { Ionicons } from "@expo/vector-icons"; // For back arrow icon
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient"; // Import LinearGradient
-//import { Ionicons } from "@expo/vector-icons";
 
 
 export default function SignUpScreen() {
