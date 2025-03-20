@@ -17,6 +17,6 @@ export default function CompletedChallengeDetails({ route }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#121212" },
-  title: { fontSize: 24, fontWeight: "bold", color: "white", textAlign: "center", marginBottom: 20 },
-  details: { color: "#bbb", fontSize: 16, marginBottom: 10 },
+  title: { fontSize: 24, fontWeight: "bold", color: "white", textAlign: "center", marginTop:100, marginBottom: 20 },
+  details: { color: "#bbb", fontSize: 16, marginTop: 20, marginBottom: 10 },
 });
