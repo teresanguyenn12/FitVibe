@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRoute } from "@react-navigation/native";
-import { MaterialIcons } from "@expo/vector-icons";
+import { useRoute, useNavigation } from "@react-navigation/native";
+import { Entypo } from "@expo/vector-icons"; 
 
 const categories = ["Run", "Walk", "Yoga", "Lifting", "Cycling"];
 
@@ -16,6 +16,7 @@ const challenges = [
 
 const JoinChallengesScreen = () => {
   const route = useRoute();
+  const navigation = useNavigation(); 
   const { challenge } = route.params;
   const [selectedCategory, setSelectedCategory] = useState("Run");
 
@@ -29,16 +30,10 @@ const JoinChallengesScreen = () => {
       </LinearGradient>
 
       {/* Category Filter */}
-      <Text style={styles.categoryHeader}>Choose Fitness Challenge</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
         {categories.map((category) => (
           <TouchableOpacity key={category} onPress={() => setSelectedCategory(category)}>
-            <Text
-              style={[
-                styles.category,
-                selectedCategory === category && styles.selectedCategory,
-              ]}
-            >
+            <Text style={[styles.category, selectedCategory === category && styles.selectedCategory]}>
               {category}
             </Text>
           </TouchableOpacity>
@@ -50,9 +45,12 @@ const JoinChallengesScreen = () => {
         data={challenges.filter((item) => item.category === selectedCategory)}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity style={styles.challengeItem}>
+          <TouchableOpacity 
+            style={styles.challengeItem} 
+            onPress={() => navigation.navigate("ChallengeDetails", { challenge: item })} 
+          >
             <Text style={styles.challengeText}>{item.name}</Text>
-            <MaterialIcons name="chevron-right" size={22} color="#aaa" />
+            <Entypo name="chevron-right" size={18} color="#bbb" /> 
           </TouchableOpacity>
         )}
         showsVerticalScrollIndicator={false}
@@ -86,15 +84,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
-  categoryHeader: {
-    fontSize: 14,
-    color: "#bbb",
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
   categoryContainer: {
     flexDirection: "row",
-    marginBottom: 20,
+    marginBottom: 10,
   },
   category: {
     paddingHorizontal: 12,
@@ -108,6 +100,7 @@ const styles = StyleSheet.create({
   selectedCategory: {
     backgroundColor: "#A0006D",
     color: "#fff",
+    fontWeight: "bold",
   },
   challengeItem: {
     backgroundColor: "#222",

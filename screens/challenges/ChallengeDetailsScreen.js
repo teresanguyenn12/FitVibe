@@ -1,21 +1,52 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from "react-native";
-import { useRoute } from "@react-navigation/native";
-import { LinearGradient } from "expo-linear-gradient";
-import mapImage from "../../assets/map.png";
-const ChallengeDetailsScreen = () => {
-  const route = useRoute();
-  const { challenge } = route.params; // Get the challenge data
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import MapView, { Marker } from "react-native-maps";
+import * as Location from "expo-location";
+
+const ChallengeDetailsScreen = ({ route }) => {
+  const { challenge } = route.params;
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setErrorMsg("Permission to access location was denied");
+        return;
+      }
+
+      let userLocation = await Location.getCurrentPositionAsync({});
+      setLocation(userLocation.coords);
+    })();
+  }, []);
 
   return (
     <View style={styles.container}>
-      {/* Map Background */}
-      <ImageBackground source={mapImage} style={styles.map} />
+      <MapView
+        style={styles.map}
+        initialRegion={{
+          latitude: location ? location.latitude : 33.7838,  // Default to Cal State Long Beach
+          longitude: location ? location.longitude : -118.1141,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        }}
+        showsUserLocation={true} 
+      >
+        {/* Show Marker Only If Location Exists */}
+        {location && (
+          <Marker
+            coordinate={{ latitude: location.latitude, longitude: location.longitude }}
+            title="Your Location"
+            pinColor="blue"
+          />
+        )}
+      </MapView>
 
-      {/* Challenge Details Card */}
+      {/* Challenge Details */}
       <View style={styles.detailsContainer}>
         <Text style={styles.challengeTitle}>{challenge.name}</Text>
-        <Text style={styles.location}>
+        <Text style={styles.detailText}>
           <Text style={{ fontWeight: "bold" }}>Location:</Text> California State University, Long Beach
         </Text>
         <Text style={styles.detailText}>
@@ -42,6 +73,7 @@ const ChallengeDetailsScreen = () => {
   );
 };
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -50,7 +82,6 @@ const styles = StyleSheet.create({
   map: {
     width: "100%",
     height: "45%",
-    resizeMode: "cover",
   },
   detailsContainer: {
     backgroundColor: "#1A1A1A",
