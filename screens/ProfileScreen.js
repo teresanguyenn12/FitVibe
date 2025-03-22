@@ -1,117 +1,317 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { Ionicons } from "@expo/vector-icons"; 
-import { LinearGradient } from "expo-linear-gradient"; 
+import React, { useEffect, useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { getAuth } from "firebase/auth";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 const ProfileScreen = () => {
-  const navigation = useNavigation(); 
+  const navigation = useNavigation();
+  const auth = getAuth();
+  const db = getFirestore();
+  const currentUser = auth.currentUser;
+
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUserData = async () => {
+        try {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          if (userDoc.exists()) {
+            setUserData(userDoc.data());
+          }
+        } catch (err) {
+          console.error("Failed to fetch user data:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchUserData();
+    }, [])
+  );
+
+  if (loading || !userData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#8e24aa" />
+      </View>
+    );
+  }
+
+  const {
+    fullName,
+    username,
+    profilePicture,
+    followers = [],
+    following = [],
+    challenges = 0,
+    calories = 0,
+    workouts = 0,
+    showcasedGoals = [],
+  } = userData;
 
   return (
-    <View style={styles.container}>
-      {/* Settings Button */}
-      <LinearGradient
-        colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.cardBorder}
-      >
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => navigation.navigate("Settings")}
-        >
-          <Ionicons name="settings" size={40} color="#fff" />
-          <Text style={styles.cardText}>Settings</Text>
+    <ScrollView style={styles.container}>
+      {/* Header with back and settings */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={26} color="#fff" />
         </TouchableOpacity>
-      </LinearGradient>
 
-      {/* Back Button */}
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Ionicons name="arrow-back" size={30} color="#fff" />
-      </TouchableOpacity>
-
-      <Text style={styles.text}>Profile Screen</Text>
-
-      {/* Goals Button */}
-      <LinearGradient
-        colors={["#5A1A9B", "#1A4A80", "#8A1E50"]} 
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.cardBorder}
-      >
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => navigation.navigate("Goals")}
-        >
-          <Ionicons name="flag" size={40} color="#fff" />
-          <Text style={styles.cardText}>Goals</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Settings")}>
+          <Ionicons name="settings-outline" size={26} color="#fff" />
         </TouchableOpacity>
-      </LinearGradient>
+      </View>
 
-      {/* Friends Button */}
-      <LinearGradient
-        colors={["#5A1A9B", "#1A4A80", "#8A1E50"]} 
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.cardBorder}
-      >
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => navigation.navigate("FriendsScreen")}
-        >
-          <Ionicons name="people" size={40} color="#fff" />
-          <Text style={styles.cardText}>Friends</Text>
-        </TouchableOpacity>
-      </LinearGradient>
-    </View>
+      {/* Profile Section */}
+      <View style={styles.profileSection}>
+        <Image
+          source={{ uri: profilePicture || "https://via.placeholder.com/100" }}
+          style={styles.profileImage}
+        />
+        <Text style={styles.fullName}>{fullName}</Text>
+        <Text style={styles.username}>@{username || "no-username"}</Text>
+
+        <View style={styles.countContainer}>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("FriendsList", { type: "followers" })
+            }
+          >
+            <Text style={styles.countNumber}>{followers.length}</Text>
+            <Text style={styles.countLabel}>Followers</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.separator}>|</Text>
+
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("FriendsList", { type: "following" })
+            }
+          >
+            <Text style={styles.countNumber}>{following.length}</Text>
+            <Text style={styles.countLabel}>Following</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Rank */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Rank</Text>
+        <Text style={styles.sectionContent}>Prestige 0 - Rookie</Text>
+      </View>
+
+      {/* Career Stats */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>My Career Stats</Text>
+        <View style={styles.statBox}>
+          <View style={styles.statItem}>
+            <Ionicons
+              name="trophy-outline"
+              size={22}
+              color="#fff"
+              style={styles.statIcon}
+            />
+            <Text style={styles.statValue}>{challenges}</Text>
+            <Text style={styles.statLabel}>Challenges</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Ionicons
+              name="flame-outline"
+              size={22}
+              color="#fff"
+              style={styles.statIcon}
+            />
+            <Text style={styles.statValue}>{calories}</Text>
+            <Text style={styles.statLabel}>Calories</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Ionicons
+              name="barbell-outline"
+              size={22}
+              color="#fff"
+              style={styles.statIcon}
+            />
+            <Text style={styles.statValue}>{workouts}</Text>
+            <Text style={styles.statLabel}>Workouts</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* My Goals */}
+      <View style={styles.section}>
+        <View style={styles.goalsHeader}>
+          <Text style={styles.sectionTitle}>My Goals</Text>
+          <TouchableOpacity onPress={() => navigation.navigate("Goals")}>
+            <Ionicons name="add-circle-outline" size={22} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        {showcasedGoals.length === 0 ? (
+          <Text style={styles.emptyText}>No goals showcased.</Text>
+        ) : (
+          showcasedGoals.map((goal, index) => (
+            <Text key={index} style={styles.sectionContent}>
+              • {goal.text}
+            </Text>
+          ))
+        )}
+      </View>
+
+      {/* My Posts */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>My Posts</Text>
+        <Text style={styles.emptyText}>No posts yet.</Text>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "#131417",
+    paddingHorizontal: 20,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "#131417",
     justifyContent: "center",
     alignItems: "center",
-    paddingTop: 50, 
   },
-  backButton: {
-    position: "absolute",
-    top: 90,
-    left: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    padding: 10,
-    borderRadius: 10,
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 70,
+    paddingBottom: 10,
+    paddingHorizontal: 5,
   },
-  text: {
+
+  headerIcon: {
+    padding: 8,
+  },
+  headerTitle: {
     color: "#fff",
     fontSize: 20,
-    marginBottom: 10,
-    marginTop: 20,
+    fontWeight: "bold",
   },
-  cardBorder: {
-    width: "50%", 
-    height: 155, 
-    borderRadius: 20, 
-    padding: 3, 
-    marginTop: 20,
+  profileSection: {
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 30,
   },
-  card: {
-    flex: 1, 
-    backgroundColor: "#000", 
-    borderRadius: 20,
+
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 12,
+  },
+
+  fullName: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+
+  username: {
+    color: "#aaa",
+    fontSize: 15,
+    fontStyle: "italic",
+    marginTop: 2,
+  },
+
+  countContainer: {
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 16,
   },
-  cardText: {
+
+  countNumber: {
     color: "#fff",
-    fontSize: 16,
     fontWeight: "bold",
+    fontSize: 18,
+    textAlign: "center",
+  },
+
+  countLabel: {
+    color: "#aaa",
+    fontSize: 15 ,
+    textAlign: "center",
+  },
+
+  separator: {
+    marginHorizontal: 16,
+    color: "#555",
+    fontSize: 18,
+  },
+
+  section: {
+    marginVertical: 15,
+  },
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 6,
+  },
+  sectionContent: {
+    color: "#ccc",
+    fontSize: 15,
+    marginLeft: 5,
+    marginBottom: 2,
+  },
+  goalsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  emptyText: {
+    color: "#888",
+    fontStyle: "italic",
+    marginTop: 5,
+  },
+
+  statBox: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#2B2D31",
+    padding: 15,
+    borderRadius: 10,
     marginTop: 10,
-    fontFamily: "TiltWarp-Regular",
+  },
+
+  statItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+
+  statValue: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+
+  statLabel: {
+    color: "#aaa",
+    fontSize: 13,
+    marginTop: 2,
+  },
+  statIcon: {
+    marginBottom: 6,
   },
 });
 

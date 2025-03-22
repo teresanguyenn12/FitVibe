@@ -36,6 +36,7 @@ import SettingsScreen from "./screens/SettingsScreen";
 import * as SettingsScreens from "./screens/settings";
 import * as ChallengeScreens from "./screens/challenges";
 
+import FriendsListScreen from "./screens/FriendsListScreen";
 import AddFriendsScreen from "./screens/AddFriendsScreen";
 import FriendsScreen from "./screens/FriendsScreen";
 import InviteFriendsScreen from "./screens/InviteFriendsScreen";
@@ -215,7 +216,7 @@ function Navigation() {
               component={SettingsScreens.BlockedUsers}
             />
 
-<Stack.Screen name="FAQ" component={SettingsScreens.FAQ} />
+            <Stack.Screen name="FAQ" component={SettingsScreens.FAQ} />
 
             <Stack.Screen
               name="ContactSupport"
@@ -237,8 +238,13 @@ function Navigation() {
             {/*  Friends & Social Screens */}
             <Stack.Screen name="FriendsScreen" component={FriendsScreen} />
             <Stack.Screen
-              name="AddFriendsScreen"
+              name="AddFriends"
               component={AddFriendsScreen}
+            />
+            <Stack.Screen
+              name="FriendsList"
+              component={FriendsListScreen}
+              options={{ headerShown: false }}
             />
           </>
         )}
