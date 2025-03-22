@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
-const PrivacyPolicy = () => {
+const CommunityGuidelines = () => {
   const navigation = useNavigation();
 
   return (
@@ -11,38 +11,36 @@ const PrivacyPolicy = () => {
       {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={30} color="#fff" />
+          <Ionicons name="chevron-back" size={28} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Privacy Policy</Text>
+        <Text style={styles.headerText}>Community Guidelines</Text>
       </View>
 
       {/* Content */}
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sectionTitle}>1. Introduction</Text>
+      <ScrollView style={styles.content}>
+        <Text style={styles.sectionTitle}>1. Be Respectful</Text>
         <Text style={styles.text}>
-          FitVibe respects your privacy. This Privacy Policy explains how we collect, use,
-          and safeguard your information when you use the app.
+          Treat others with kindness and respect. We do not tolerate harassment, hate speech, or bullying of any kind.
         </Text>
 
-        <Text style={styles.sectionTitle}>2. Data Collection</Text>
+        <Text style={styles.sectionTitle}>2. Share Responsibly</Text>
         <Text style={styles.text}>
-          We may collect personal information such as your name, email, and workout data.
+          Only share content that is appropriate, safe, and fitness-related. Do not post misleading or inappropriate content.
         </Text>
 
-        <Text style={styles.sectionTitle}>3. Use of Data</Text>
+        <Text style={styles.sectionTitle}>3. Stay Safe</Text>
         <Text style={styles.text}>
-          We use your data to personalize your experience and to improve our services.
+          Never share personal information like your home address or phone number. Be cautious when meeting others.
         </Text>
 
-        <Text style={styles.sectionTitle}>4. Third-Party Services</Text>
+        <Text style={styles.sectionTitle}>4. Report Misconduct</Text>
         <Text style={styles.text}>
-          We may use third-party services like Google Fit or Apple Health to enhance your experience.
+          If you encounter content or behavior that violates these guidelines, please report it immediately through the app.
         </Text>
 
-        <Text style={styles.sectionTitle}>5. Contact Us</Text>
+        <Text style={styles.sectionTitle}>5. Supportive Vibes</Text>
         <Text style={styles.text}>
-          If you have questions about this policy, contact us at{" "}
-          <Text style={styles.email}>support@fitvibeapp.com</Text>
+          FitVibe is a space for motivation and community. Celebrate others’ wins, encourage progress, and stay positive.
         </Text>
       </ScrollView>
     </View>
@@ -57,26 +55,25 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 15,
     paddingHorizontal: 20,
     backgroundColor: "#131417",
-    marginTop: 20,
+    position: "relative",
   },
   backButton: {
-    marginRight: 10,
+    position: "absolute",
+    left: 20,
+    top: 60,
   },
   headerText: {
-    flex: 1,
     fontSize: 22,
     color: "#fff",
     fontWeight: "bold",
-    textAlign: "center",
-    marginRight: 30,
   },
   content: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
   },
   sectionTitle: {
     color: "#8e24aa",
@@ -90,10 +87,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     lineHeight: 22,
   },
-  email: {
-    color: "#8e24aa",
-    fontWeight: "600",
-  },
 });
 
-export default PrivacyPolicy;
+export default CommunityGuidelines;

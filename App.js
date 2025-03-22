@@ -2,19 +2,24 @@ import React from "react";
 import { View, ActivityIndicator } from "react-native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+} from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Entypo } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import { AuthProvider, useAuth } from "./authProvider";
+import { ThemeProvider, ThemeContext } from "./contexts/ThemeContext.js";
 
 import LoginScreen from "./screens/LoginScreen";
 import ForgotPasswordScreen from "./screens/ForgotPasswordScreen";
 import HomeScreen from "./screens/HomeScreen";
 import ProfileScreen from "./screens/ProfileScreen";
-import FeedScreen from "./screens/FeedScreen"; 
-import StartWorkoutScreen from "./screens/StartWorkoutScreen"; 
+import FeedScreen from "./screens/FeedScreen";
+import StartWorkoutScreen from "./screens/StartWorkoutScreen";
 import CardioScreen from "./screens/CardioScreen";
 import CyclingScreen from "./screens/CyclingScreen";
 import HikingScreen from "./screens/HikingScreen";
@@ -22,21 +27,18 @@ import PilatesScreen from "./screens/PilatesScreen";
 import StrengthTrainingScreen from "./screens/StrengthTrainingScreen";
 import SwimmingScreen from "./screens/SwimmingScreen";
 import YogaScreen from "./screens/YogaScreen";
-import MyWorkoutScreen from "./screens/MyWorkoutScreen"; 
-import RewardsScreen from "./screens/RewardsScreen"; 
-import ProgressionScreen from "./screens/ProgressionScreen"; 
+import MyWorkoutScreen from "./screens/MyWorkoutScreen";
+import RewardsScreen from "./screens/RewardsScreen";
+import ProgressionScreen from "./screens/ProgressionScreen";
 import SignupScreen from "./screens/SignupScreen";
 import GoalsScreen from "./screens/GoalsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import * as SettingsScreens from "./screens/settings";
 import * as ChallengeScreens from "./screens/challenges";
 
-
 import AddFriendsScreen from "./screens/AddFriendsScreen";
 import FriendsScreen from "./screens/FriendsScreen";
 import InviteFriendsScreen from "./screens/InviteFriendsScreen";
-
-
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -66,7 +68,10 @@ function BottomTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Challenges" component={ChallengeScreens.ChallengeScreen} />
+      <Tab.Screen
+        name="Challenges"
+        component={ChallengeScreens.ChallengeScreen}
+      />
       <Tab.Screen name="Feed" component={FeedScreen} />
     </Tab.Navigator>
   );
@@ -74,6 +79,7 @@ function BottomTabs() {
 
 function Navigation() {
   const { user, isLoading } = useAuth();
+  const { theme } = React.useContext(ThemeContext); // Use theme from context
 
   if (isLoading) {
     return (
@@ -84,13 +90,16 @@ function Navigation() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={theme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="SignUp" component={SignupScreen} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen
+              name="ForgotPassword"
+              component={ForgotPasswordScreen}
+            />
           </>
         ) : (
           <>
@@ -102,7 +111,10 @@ function Navigation() {
             <Stack.Screen name="Cycling" component={CyclingScreen} />
             <Stack.Screen name="Hiking" component={HikingScreen} />
             <Stack.Screen name="Pilates" component={PilatesScreen} />
-            <Stack.Screen name="StrengthTraining" component={StrengthTrainingScreen} />
+            <Stack.Screen
+              name="StrengthTraining"
+              component={StrengthTrainingScreen}
+            />
             <Stack.Screen name="Swimming" component={SwimmingScreen} />
             <Stack.Screen name="Yoga" component={YogaScreen} />
             <Stack.Screen name="MyWorkouts" component={MyWorkoutScreen} />
@@ -111,34 +123,123 @@ function Navigation() {
             <Stack.Screen name="Goals" component={GoalsScreen} />
 
             {/*  Challenges Screens */}
-            <Stack.Screen name="Challenges" component={ChallengeScreens.ChallengeScreen} />
-            <Stack.Screen name="ChallengeDetails" component={ChallengeScreens.ChallengeDetailsScreen} />
-            <Stack.Screen name="ChallengeProgress" component={ChallengeScreens.ChallengeProgressScreen} />
-            <Stack.Screen name="JoinChallenges" component={ChallengeScreens.JoinChallengesScreen} />
-            <Stack.Screen name="CompletedChallengeDetails" component={ChallengeScreens.CompletedChallengeDetails} />
-            <Stack.Screen name="ConfirmChallenge" component={ChallengeScreens.ConfirmChallengeScreen} />
-            <Stack.Screen name="MyChallenges" component={ChallengeScreens.MyChallengesScreen} />
+            <Stack.Screen
+              name="Challenges"
+              component={ChallengeScreens.ChallengeScreen}
+            />
+            <Stack.Screen
+              name="ChallengeDetails"
+              component={ChallengeScreens.ChallengeDetailsScreen}
+            />
+            <Stack.Screen
+              name="ChallengeProgress"
+              component={ChallengeScreens.ChallengeProgressScreen}
+            />
+            <Stack.Screen
+              name="JoinChallenges"
+              component={ChallengeScreens.JoinChallengesScreen}
+            />
+            <Stack.Screen
+              name="CompletedChallengeDetails"
+              component={ChallengeScreens.CompletedChallengeDetails}
+            />
+            <Stack.Screen
+              name="ConfirmChallenge"
+              component={ChallengeScreens.ConfirmChallengeScreen}
+            />
+            <Stack.Screen
+              name="MyChallenges"
+              component={ChallengeScreens.MyChallengesScreen}
+            />
 
             {/* Settings Screens */}
             <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="ActivityTracking" component={SettingsScreens.ActivityTracking} />
-            <Stack.Screen name="ConnectedApps" component={SettingsScreens.ConnectedApps} />
-            <Stack.Screen name="ConnectedDevices" component={SettingsScreens.ConnectedDevices} />
-            <Stack.Screen name="DeleteAccount" component={SettingsScreens.DeleteAccount} />
-            <Stack.Screen name="HelpCenter" component={SettingsScreens.HelpCenter} />
-            <Stack.Screen name="LanguageSettings" component={SettingsScreens.LanguageSettings} />
-            <Stack.Screen name="LogoutScreen" component={SettingsScreens.LogoutScreen} />
-            <Stack.Screen name="NotificationSettings" component={SettingsScreens.NotificationSettings} />
-            <Stack.Screen name="PrivacyPolicy" component={SettingsScreens.PrivacyPolicy} />
-            <Stack.Screen name="PrivacySettings" component={SettingsScreens.PrivacySettings} />
-            <Stack.Screen name="ProfileSettings" component={SettingsScreens.ProfileSettings} />
-            <Stack.Screen name="ReportProblem" component={SettingsScreens.ReportProblem} />
-            <Stack.Screen name="ThemeSettings" component={SettingsScreens.ThemeSettings} />
-            <Stack.Screen name="UnitsSettings" component={SettingsScreens.UnitsSettings} />
+            <Stack.Screen
+              name="ActivityTracking"
+              component={SettingsScreens.ActivityTracking}
+            />
+            <Stack.Screen
+              name="ConnectedApps"
+              component={SettingsScreens.ConnectedApps}
+            />
+            <Stack.Screen
+              name="ConnectedDevices"
+              component={SettingsScreens.ConnectedDevices}
+            />
+            <Stack.Screen
+              name="DeleteAccount"
+              component={SettingsScreens.DeleteAccount}
+            />
+            <Stack.Screen
+              name="HelpCenter"
+              component={SettingsScreens.HelpCenter}
+            />
+            <Stack.Screen
+              name="LanguageSettings"
+              component={SettingsScreens.LanguageSettings}
+            />
+            <Stack.Screen
+              name="LogoutScreen"
+              component={SettingsScreens.LogoutScreen}
+            />
+            <Stack.Screen
+              name="NotificationSettings"
+              component={SettingsScreens.NotificationSettings}
+            />
+            <Stack.Screen
+              name="PrivacyPolicy"
+              component={SettingsScreens.PrivacyPolicy}
+            />
+            <Stack.Screen
+              name="PrivacySettings"
+              component={SettingsScreens.PrivacySettings}
+            />
+            <Stack.Screen
+              name="ProfileSettings"
+              component={SettingsScreens.ProfileSettings}
+            />
+            <Stack.Screen
+              name="ReportProblem"
+              component={SettingsScreens.ReportProblem}
+            />
+            <Stack.Screen
+              name="ThemeSettings"
+              component={SettingsScreens.ThemeSettings}
+            />
+            <Stack.Screen
+              name="UnitsSettings"
+              component={SettingsScreens.UnitsSettings}
+            />
+            <Stack.Screen
+              name="BlockedUsers"
+              component={SettingsScreens.BlockedUsers}
+            />
+
+<Stack.Screen name="FAQ" component={SettingsScreens.FAQ} />
+
+            <Stack.Screen
+              name="ContactSupport"
+              component={SettingsScreens.ContactSupport}
+            />
+            <Stack.Screen
+              name="TermsOfService"
+              component={SettingsScreens.TermsOfService}
+            />
+            <Stack.Screen
+              name="CommunityGuidelines"
+              component={SettingsScreens.CommunityGuidelines}
+            />
+            <Stack.Screen
+              name="Troubleshooting"
+              component={SettingsScreens.Troubleshooting}
+            />
 
             {/*  Friends & Social Screens */}
             <Stack.Screen name="FriendsScreen" component={FriendsScreen} />
-            <Stack.Screen name="AddFriendsScreen" component={AddFriendsScreen} />
+            <Stack.Screen
+              name="AddFriendsScreen"
+              component={AddFriendsScreen}
+            />
           </>
         )}
       </Stack.Navigator>
@@ -161,7 +262,9 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <Navigation />
+      <ThemeProvider>
+        <Navigation />
+      </ThemeProvider>
     </AuthProvider>
   );
 }

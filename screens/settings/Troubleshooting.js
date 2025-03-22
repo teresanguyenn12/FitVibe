@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 
-const PrivacyPolicy = () => {
+const Troubleshooting = () => {
   const navigation = useNavigation();
 
   return (
@@ -11,38 +11,36 @@ const PrivacyPolicy = () => {
       {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={30} color="#fff" />
+          <Ionicons name="chevron-back" size={28} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Privacy Policy</Text>
+        <Text style={styles.headerText}>Troubleshooting</Text>
       </View>
 
       {/* Content */}
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sectionTitle}>1. Introduction</Text>
+      <ScrollView style={styles.content}>
+        <Text style={styles.sectionTitle}>App Not Loading?</Text>
         <Text style={styles.text}>
-          FitVibe respects your privacy. This Privacy Policy explains how we collect, use,
-          and safeguard your information when you use the app.
+          Try restarting the app or checking your internet connection. Make sure you’re running the latest version of FitVibe.
         </Text>
 
-        <Text style={styles.sectionTitle}>2. Data Collection</Text>
+        <Text style={styles.sectionTitle}>Can't Log In?</Text>
         <Text style={styles.text}>
-          We may collect personal information such as your name, email, and workout data.
+          Double check your email and password. If you've forgotten your password, use the "Forgot Password" option on the login screen.
         </Text>
 
-        <Text style={styles.sectionTitle}>3. Use of Data</Text>
+        <Text style={styles.sectionTitle}>Workout Data Missing?</Text>
         <Text style={styles.text}>
-          We use your data to personalize your experience and to improve our services.
+          Sync your device or app again and verify that permissions are granted for activity tracking in your phone settings.
         </Text>
 
-        <Text style={styles.sectionTitle}>4. Third-Party Services</Text>
+        <Text style={styles.sectionTitle}>Push Notifications Not Working?</Text>
         <Text style={styles.text}>
-          We may use third-party services like Google Fit or Apple Health to enhance your experience.
+          Make sure notifications are enabled for FitVibe in your device’s system settings. Also check notification settings in the app.
         </Text>
 
-        <Text style={styles.sectionTitle}>5. Contact Us</Text>
+        <Text style={styles.sectionTitle}>Still Having Issues?</Text>
         <Text style={styles.text}>
-          If you have questions about this policy, contact us at{" "}
-          <Text style={styles.email}>support@fitvibeapp.com</Text>
+          Head over to Contact Support so our team can help you out directly!
         </Text>
       </ScrollView>
     </View>
@@ -57,26 +55,25 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 15,
     paddingHorizontal: 20,
     backgroundColor: "#131417",
-    marginTop: 20,
+    position: "relative",
   },
   backButton: {
-    marginRight: 10,
+    position: "absolute",
+    left: 20,
+    top: 60,
   },
   headerText: {
-    flex: 1,
     fontSize: 22,
     color: "#fff",
     fontWeight: "bold",
-    textAlign: "center",
-    marginRight: 30,
   },
   content: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
   },
   sectionTitle: {
     color: "#8e24aa",
@@ -90,10 +87,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     lineHeight: 22,
   },
-  email: {
-    color: "#8e24aa",
-    fontWeight: "600",
-  },
 });
 
-export default PrivacyPolicy;
+export default Troubleshooting;
