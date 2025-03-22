@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from "react-native";
+import { useNavigation } from "@react-navigation/native"; 
 import { db, auth } from "../../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
 export default function MyChallengesScreen() {
+  const navigation = useNavigation(); 
   const [challenges, setChallenges] = useState([]);
   const user = auth.currentUser;
 
@@ -29,24 +31,38 @@ export default function MyChallengesScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>My Challenges</Text>
-      <FlatList
-        data={challenges}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.challengeItem}>
-            <Text style={styles.challengeText}>{item.name}</Text>
-            <Text style={styles.progressText}>Progress: {item.progress[user.uid]}%</Text>
-          </TouchableOpacity>
-        )}
-      />
+      
+      {challenges.length === 0 ? ( // Check if there are no challenges
+        <Text style={styles.noChallengesText}>
+          You haven't joined any challenges yet.
+        </Text>
+      ) : (
+        <FlatList
+          data={challenges}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <TouchableOpacity 
+              style={styles.challengeItem} 
+              onPress={() => navigation.navigate("MyChallengeInfoScreen", { challenge: item })} 
+            >
+              <Text style={styles.challengeText}>{item.name}</Text>
+              <Text style={styles.progressText}>
+                Progress: {item.progress ? `${item.progress[user.uid] || 0}%` : "0%"}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#121212" },
-  title: { fontSize: 24, fontWeight: "bold", color: "white", textAlign: "center", marginBottom: 20 },
+  title: { fontSize: 24, fontWeight: "bold", color: "white", textAlign: "center", marginTop: 30, marginBottom: 20 },
   challengeItem: { backgroundColor: "#1E1E1E", padding: 15, borderRadius: 10, marginBottom: 10 },
   challengeText: { color: "white", fontSize: 16 },
   progressText: { color: "#bbb", fontSize: 14, marginTop: 5 },
+  noChallengesText: { color: "#bbb", fontSize: 16, textAlign: "center", marginTop: 20 }
+
 });

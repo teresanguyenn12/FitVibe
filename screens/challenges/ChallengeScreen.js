@@ -1,3 +1,4 @@
+// Entry point to all challenge-related screens
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -53,7 +54,8 @@ const ChallengesScreen = () => {
       <Text style={styles.header}>Challenges</Text>
 
       {/* "My Challenges" Button */}
-      <TouchableOpacity>
+      <TouchableOpacity 
+        onPress={() => navigation.navigate("MyChallengesScreen")} >
         <LinearGradient colors={["#A0006D", "#552082"]} style={styles.myChallengesButton}>
           <Text style={styles.myChallengesText}>My Challenges</Text>
         </LinearGradient>

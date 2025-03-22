@@ -5,3 +5,5 @@ export { default as JoinChallengesScreen } from "./JoinChallengesScreen";
 export { default as CompletedChallengeDetails } from "./CompletedChallengeDetails";
 export { default as ConfirmChallengeScreen } from "./ConfirmChallengeScreen";
 export { default as MyChallengesScreen } from "./MyChallengesScreen";
+export { default as MyChallengeInfoScreen } from "./MyChallengeInfoScreen";
+ 

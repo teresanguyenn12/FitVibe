@@ -1,3 +1,4 @@
+// View info about one challenge
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import MapView, { Marker } from "react-native-maps";

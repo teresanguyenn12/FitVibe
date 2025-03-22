@@ -124,34 +124,13 @@ function Navigation() {
             <Stack.Screen name="Goals" component={GoalsScreen} />
 
             {/*  Challenges Screens */}
-            <Stack.Screen
-              name="Challenges"
-              component={ChallengeScreens.ChallengeScreen}
-            />
-            <Stack.Screen
-              name="ChallengeDetails"
-              component={ChallengeScreens.ChallengeDetailsScreen}
-            />
-            <Stack.Screen
-              name="ChallengeProgress"
-              component={ChallengeScreens.ChallengeProgressScreen}
-            />
-            <Stack.Screen
-              name="JoinChallenges"
-              component={ChallengeScreens.JoinChallengesScreen}
-            />
-            <Stack.Screen
-              name="CompletedChallengeDetails"
-              component={ChallengeScreens.CompletedChallengeDetails}
-            />
-            <Stack.Screen
-              name="ConfirmChallenge"
-              component={ChallengeScreens.ConfirmChallengeScreen}
-            />
-            <Stack.Screen
-              name="MyChallenges"
-              component={ChallengeScreens.MyChallengesScreen}
-            />
+            <Stack.Screen name="Challenges" component={ChallengeScreens.ChallengeScreen} />
+            <Stack.Screen name="ChallengeDetails" component={ChallengeScreens.ChallengeDetailsScreen} />
+            <Stack.Screen name="ChallengeProgress" component={ChallengeScreens.ChallengeProgressScreen} />
+            <Stack.Screen name="JoinChallenges" component={ChallengeScreens.JoinChallengesScreen} />
+            <Stack.Screen name="CompletedChallengeDetails" component={ChallengeScreens.CompletedChallengeDetails} />
+            <Stack.Screen name="ConfirmChallenge" component={ChallengeScreens.ConfirmChallengeScreen} />
+            <Stack.Screen name="MyChallenges" component={ChallengeScreens.MyChallengesScreen} />
 
             {/* Settings Screens */}
             <Stack.Screen name="Settings" component={SettingsScreen} />
