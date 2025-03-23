@@ -1,53 +1,72 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  ActivityIndicator,
+    View,
+    Text,
+    StyleSheet,
+    ScrollView,
+    Image,
+    TouchableOpacity,
+    ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { getAuth } from "firebase/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDoc, getDocs, doc } from "firebase/firestore";
 
 const ProfileScreen = () => {
-  const navigation = useNavigation();
-  const auth = getAuth();
-  const db = getFirestore();
-  const currentUser = auth.currentUser;
+    const navigation = useNavigation();
+    const auth = getAuth();
+    const db = getFirestore();
+    const currentUser = auth.currentUser;
 
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+    const [userData, setUserData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [featuredGoals, setFeaturedGoals] = useState([]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const fetchUserData = async () => {
-        try {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          if (userDoc.exists()) {
-            setUserData(userDoc.data());
-          }
-        } catch (err) {
-          console.error("Failed to fetch user data:", err);
-        } finally {
-          setLoading(false);
-        }
-      };
+    useFocusEffect(
+        useCallback(() => {
+            const fetchUserData = async () => {
+                try {
+                    const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                    if (userDoc.exists()) {
+                        setUserData(userDoc.data());
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch user data:", err);
+                } finally {
+                    setLoading(false);
+                }
+            };
 
-      fetchUserData();
-    }, [])
-  );
+            const fetchFeaturedGoals = async () => {
+                try {
+                    const goalsRef = collection(db, "goals");
+                    const q = query(goalsRef, where("displayFeatured", "==", true));
+                    const querySnapshot = await getDocs(q);
 
-  if (loading || !userData) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8e24aa" />
-      </View>
+                    const goals = querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data(),
+                    }));
+
+                    setFeaturedGoals(goals);
+                } catch (err) {
+                    console.error("Failed to fetch featured goals:", err);
+                }
+            };
+
+            fetchUserData();
+            fetchFeaturedGoals();
+        }, [])
     );
-  }
+
+    if (loading || !userData) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#8e24aa" />
+            </View>
+        );
+    }
 
   const {
     fullName,
@@ -60,6 +79,8 @@ const ProfileScreen = () => {
     workouts = 0,
     showcasedGoals = [],
   } = userData;
+
+ 
 
   return (
     <ScrollView style={styles.container}>
@@ -149,24 +170,24 @@ const ProfileScreen = () => {
         </View>
       </View>
 
-      {/* My Goals */}
-      <View style={styles.section}>
-        <View style={styles.goalsHeader}>
-          <Text style={styles.sectionTitle}>My Goals</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("Goals")}>
-            <Ionicons name="add-circle-outline" size={22} color="#fff" />
-          </TouchableOpacity>
-        </View>
-        {showcasedGoals.length === 0 ? (
-          <Text style={styles.emptyText}>No goals showcased.</Text>
-        ) : (
-          showcasedGoals.map((goal, index) => (
-            <Text key={index} style={styles.sectionContent}>
-              • {goal.text}
-            </Text>
-          ))
-        )}
-      </View>
+          {/* Featured Goals */}
+          <View style={styles.section}>
+              <View style={styles.goalsHeader}>
+                  <Text style={styles.sectionTitle}>Featured Goals</Text>
+                  <TouchableOpacity onPress={() => navigation.navigate("Goals")}>
+                      <Ionicons name="add-circle-outline" size={22} color="#fff" />
+                  </TouchableOpacity>
+              </View>
+              {featuredGoals.length === 0 ? (
+                  <Text style={styles.emptyText}>No featured goals.</Text>
+              ) : (
+                  featuredGoals.map((goal) => (
+                      <Text key={goal.id} style={styles.sectionContent}>
+                          • {goal.text}
+                      </Text>
+                  ))
+              )}
+          </View>
 
       {/* My Posts */}
       <View style={styles.section}>

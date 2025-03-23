@@ -1,257 +1,273 @@
-    import React, { useState, useEffect } from "react";
-    import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, ScrollView, TouchableWithoutFeedback, Keyboard } from "react-native";
-    import { useNavigation } from "@react-navigation/native";
-    import { Ionicons } from "@expo/vector-icons";
-    import { LinearGradient } from "expo-linear-gradient";
-    import DateTimePicker from '@react-native-community/datetimepicker';
-    import { fetchGoals, addGoal, deleteGoal, toggleGoalCompletion, updateGoal } from "../api/todoApi";
+import React, { useState, useEffect } from "react";
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, ScrollView, TouchableWithoutFeedback, Keyboard } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { fetchGoals, addGoal, deleteGoal, toggleGoalCompletion, updateGoal } from "../api/todoApi";
 
-    const GoalsScreen = () => {
-        const navigation = useNavigation();
-        const [task, setTask] = useState("");
-        const [description, setDescription] = useState("");
-        const [dueDate, setDueDate] = useState(new Date());
-        const [tasks, setTasks] = useState([]);
-        const [loading, setLoading] = useState(true);
-        const [error, setError] = useState(null);
-        const [activeTab, setActiveTab] = useState("active"); // 'active' or 'completed'
-        const [modalVisible, setModalVisible] = useState(false);
-        const [editModalVisible, setEditModalVisible] = useState(false);
-        const [showDatePicker, setShowDatePicker] = useState(false);
-        const [currentGoal, setCurrentGoal] = useState(null);
+const GoalsScreen = () => {
+    const navigation = useNavigation();
+    const [task, setTask] = useState("");
+    const [description, setDescription] = useState("");
+    const [dueDate, setDueDate] = useState(new Date());
+    const [tasks, setTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [activeTab, setActiveTab] = useState("active"); // 'active' or 'completed'
+    const [modalVisible, setModalVisible] = useState(false);
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [currentGoal, setCurrentGoal] = useState(null);
+    const [displayFeatured, setDisplayFeatured] = useState(false); // New state for display feature
 
-        // Fetch goals when component mounts
-        useEffect(() => {
-            loadGoals();
-        }, []);
+    // Fetch goals when component mounts
+    useEffect(() => {
+        loadGoals();
+    }, []);
 
-        // Function to load goals from Firebase
-        const loadGoals = async () => {
+    // Function to load goals from Firebase
+    const loadGoals = async () => {
+        try {
+            setLoading(true);
+            const goalsData = await fetchGoals();
+            setTasks(goalsData);
+        } catch (err) {
+            setError("Failed to load goals. Please try again.");
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Function to add a task
+    const handleAddTask = async () => {
+        if (task.trim().length > 0) {
             try {
-                setLoading(true);
-                const goalsData = await fetchGoals();
-                setTasks(goalsData);
+                const newGoal = await addGoal({
+                    text: task,
+                    description: description,
+                    dueDate: dueDate.toISOString(),
+                    completed: false,
+                    displayFeatured: false // Initialize as not featured
+                });
+                setTasks([...tasks, newGoal]);
+                clearForm();
+                setModalVisible(false);
+                // Switch to active tab when adding a new goal
+                setActiveTab("active");
             } catch (err) {
-                setError("Failed to load goals. Please try again.");
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        // Function to add a task
-        const handleAddTask = async () => {
-            if (task.trim().length > 0) {
-                try {
-                    const newGoal = await addGoal({
-                        text: task,
-                        description: description,
-                        dueDate: dueDate.toISOString(),
-                        completed: false
-                    });
-                    setTasks([...tasks, newGoal]);
-                    clearForm();
-                    setModalVisible(false);
-                    // Switch to active tab when adding a new goal
-                    setActiveTab("active");
-                } catch (err) {
-                    setError("Failed to add goal. Please try again.");
-                    console.error(err);
-                }
-            }
-        };
-
-        // Function to clear the form
-        const clearForm = () => {
-            setTask("");
-            setDescription("");
-            setDueDate(new Date());
-        };
-
-        // Function to remove a task
-        const handleRemoveTask = async (id) => {
-            try {
-                await deleteGoal(id);
-                setTasks(tasks.filter((item) => item.id !== id));
-            } catch (err) {
-                setError("Failed to delete goal. Please try again.");
+                setError("Failed to add goal. Please try again.");
                 console.error(err);
             }
-        };
+        }
+    };
 
-        // Function to toggle task completion
-        const handleToggleCompletion = async (id, completed) => {
+    // Function to clear the form
+    const clearForm = () => {
+        setTask("");
+        setDescription("");
+        setDueDate(new Date());
+        setDisplayFeatured(false);
+    };
+
+    // Function to remove a task
+    const handleRemoveTask = async (id) => {
+        try {
+            await deleteGoal(id);
+            setTasks(tasks.filter((item) => item.id !== id));
+        } catch (err) {
+            setError("Failed to delete goal. Please try again.");
+            console.error(err);
+        }
+    };
+
+    // Function to toggle task completion
+    const handleToggleCompletion = async (id, completed) => {
+        try {
+            await toggleGoalCompletion(id, completed);
+            setTasks(tasks.map(item =>
+                item.id === id ? { ...item, completed: !item.completed } : item
+            ));
+        } catch (err) {
+            setError("Failed to update goal. Please try again.");
+            console.error(err);
+        }
+    };
+
+    // Function to open edit modal
+    const openEditModal = (goal) => {
+        setCurrentGoal(goal);
+        setTask(goal.text);
+        setDescription(goal.description || "");
+        setDueDate(goal.dueDate ? new Date(goal.dueDate) : new Date());
+        setDisplayFeatured(goal.displayFeatured || false); // Set featured display option
+        setEditModalVisible(true);
+    };
+
+    // Function to update a goal
+    const handleUpdateGoal = async () => {
+        if (task.trim().length > 0 && currentGoal) {
             try {
-                await toggleGoalCompletion(id, completed);
+                const updatedGoalData = {
+                    ...currentGoal,
+                    text: task,
+                    description: description,
+                    dueDate: dueDate.toISOString(),
+                    displayFeatured: currentGoal.completed ? displayFeatured : false // Only allow featured if completed
+                };
+
+                await updateGoal(currentGoal.id, updatedGoalData);
+
                 setTasks(tasks.map(item =>
-                    item.id === id ? { ...item, completed: !item.completed } : item
+                    item.id === currentGoal.id ? updatedGoalData : item
                 ));
+
+                clearForm();
+                setEditModalVisible(false);
+                setCurrentGoal(null);
             } catch (err) {
                 setError("Failed to update goal. Please try again.");
                 console.error(err);
             }
-        };
-
-        // Function to open edit modal
-        const openEditModal = (goal) => {
-            setCurrentGoal(goal);
-            setTask(goal.text);
-            setDescription(goal.description || "");
-            setDueDate(goal.dueDate ? new Date(goal.dueDate) : new Date());
-            setEditModalVisible(true);
-        };
-
-        // Function to update a goal
-        const handleUpdateGoal = async () => {
-            if (task.trim().length > 0 && currentGoal) {
-                try {
-                    const updatedGoalData = {
-                        ...currentGoal,
-                        text: task,
-                        description: description,
-                        dueDate: dueDate.toISOString()
-                    };
-                
-                    await updateGoal(currentGoal.id, updatedGoalData);
-                
-                    setTasks(tasks.map(item =>
-                        item.id === currentGoal.id ? updatedGoalData : item
-                    ));
-                
-                    clearForm();
-                    setEditModalVisible(false);
-                    setCurrentGoal(null);
-                } catch (err) {
-                    setError("Failed to update goal. Please try again.");
-                    console.error(err);
-                }
-            }
-        };
-
-        // Handle date change
-        const onDateChange = (event, selectedDate) => {
-            const currentDate = selectedDate || dueDate;
-            setShowDatePicker(false);
-            setDueDate(currentDate);
-        };
-
-        // Format date for display
-        const formatDate = (dateString) => {
-            if (!dateString) return "No due date";
-            const date = new Date(dateString);
-            return date.toLocaleDateString() + " at " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        };
-
-        // Filter tasks based on active tab
-        const filteredTasks = tasks.filter(task => {
-            if (activeTab === "active") {
-                return !task.completed;
-            } else {
-                return task.completed;
-            }
-        });
-
-        if (loading) {
-            return (
-                <View style={[styles.container, styles.centerContent]}>
-                    <ActivityIndicator size="large" color="#5A1A9B" />
-                </View>
-            );
         }
+    };
 
-        // Count active and completed tasks
-        const activeTasks = tasks.filter(task => !task.completed).length;
-        const completedTasks = tasks.filter(task => task.completed).length;
+    // Handle date change
+    const onDateChange = (event, selectedDate) => {
+        const currentDate = selectedDate || dueDate;
+        setShowDatePicker(false);
+        setDueDate(currentDate);
+    };
 
+    // Format date for display
+    const formatDate = (dateString) => {
+        if (!dateString) return "No due date";
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + " at " + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    // Filter tasks based on active tab
+    const filteredTasks = tasks.filter(task => {
+        if (activeTab === "active") {
+            return !task.completed;
+        } else {
+            return task.completed;
+        }
+    });
+
+    if (loading) {
         return (
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <View style={styles.container}>
-                    {/* Back Button */}
-                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                        <Ionicons name="arrow-back" size={30} color="#fff" />
+            <View style={[styles.container, styles.centerContent]}>
+                <ActivityIndicator size="large" color="#5A1A9B" />
+            </View>
+        );
+    }
+
+    // Count active and completed tasks
+    const activeTasks = tasks.filter(task => !task.completed).length;
+    const completedTasks = tasks.filter(task => task.completed).length;
+
+    // Count featured completed tasks
+    const featuredTasks = tasks.filter(task => task.completed && task.displayFeatured).length;
+
+    return (
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={styles.container}>
+                {/* Back Button */}
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                    <Ionicons name="arrow-back" size={30} color="#fff" />
+                </TouchableOpacity>
+                <Text style={styles.title}>My Goals</Text>
+
+                {/* Error message if any */}
+                {error && <Text style={styles.errorText}>{error}</Text>}
+
+                {/* Add Goal Button */}
+                <LinearGradient
+                    colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.addGoalButton}
+                >
+                    <TouchableOpacity onPress={() => setModalVisible(true)}>
+                        <Text style={styles.addGoalButtonText}>
+                            Create New Goal
+                        </Text>
                     </TouchableOpacity>
-                    <Text style={styles.title}>My Goals</Text>
+                </LinearGradient>
 
-                    {/* Error message if any */}
-                    {error && <Text style={styles.errorText}>{error}</Text>}
-
-                    {/* Add Goal Button */}
-                    <LinearGradient
-                        colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.addGoalButton}
+                {/* Tabs */}
+                <View style={styles.tabContainer}>
+                    <TouchableOpacity
+                        style={[
+                            styles.tab,
+                            activeTab === "active" && styles.activeTab
+                        ]}
+                        onPress={() => setActiveTab("active")}
                     >
-                        <TouchableOpacity onPress={() => setModalVisible(true)}>
-                            <Text style={styles.addGoalButtonText}>
-                                Create New Goal
-                            </Text>
-                        </TouchableOpacity>
-                    </LinearGradient>
+                        <Text style={[
+                            styles.tabText,
+                            activeTab === "active" && styles.activeTabText
+                        ]}>
+                            Active ({activeTasks})
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[
+                            styles.tab,
+                            activeTab === "completed" && styles.activeTab
+                        ]}
+                        onPress={() => setActiveTab("completed")}
+                    >
+                        <Text style={[
+                            styles.tabText,
+                            activeTab === "completed" && styles.activeTabText
+                        ]}>
+                            Completed ({completedTasks})
+                        </Text>
+                    </TouchableOpacity>
+                </View>
 
-                    {/* Tabs */}
-                    <View style={styles.tabContainer}>
+                {/* Task List */}
+                <FlatList
+                    data={filteredTasks}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
                         <TouchableOpacity
                             style={[
-                                styles.tab,
-                                activeTab === "active" && styles.activeTab
+                                styles.taskItem,
+                                item.completed && item.displayFeatured && styles.featuredTaskItem
                             ]}
-                            onPress={() => setActiveTab("active")}
+                            onPress={() => openEditModal(item)}
                         >
-                            <Text style={[
-                                styles.tabText,
-                                activeTab === "active" && styles.activeTabText
-                            ]}>
-                                Active ({activeTasks})
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[
-                                styles.tab,
-                                activeTab === "completed" && styles.activeTab
-                            ]}
-                            onPress={() => setActiveTab("completed")}
-                        >
-                            <Text style={[
-                                styles.tabText,
-                                activeTab === "completed" && styles.activeTabText
-                            ]}>
-                                Completed ({completedTasks})
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
+                            <View style={styles.taskTopRow}>
+                                <TouchableOpacity
+                                    style={styles.taskCheckboxContainer}
+                                    onPress={(e) => {
+                                        e.stopPropagation();
+                                        handleToggleCompletion(item.id, item.completed);
+                                    }}
+                                >
+                                    <Ionicons
+                                        name={item.completed ? "checkbox" : "square-outline"}
+                                        size={24}
+                                        color={item.completed ? "#5A1A9B" : "#aaa"}
+                                        style={styles.checkbox}
+                                    />
+                                    <Text style={[
+                                        styles.taskText,
+                                        item.completed && styles.completedTask
+                                    ]}>
+                                        {item.text}
+                                    </Text>
+                                </TouchableOpacity>
 
-                    {/* Task List */}
-                    <FlatList
-                        data={filteredTasks}
-                        keyExtractor={(item) => item.id}
-                        renderItem={({ item }) => (
-                            <TouchableOpacity 
-                                style={styles.taskItem}
-                                onPress={() => openEditModal(item)}
-                            >
-                                <View style={styles.taskTopRow}>
+                                <View style={styles.taskActions}>
+                                    {item.completed && item.displayFeatured && (
+                                        <Ionicons name="star" size={24} color="#FFD700" style={styles.starIcon} />
+                                    )}
                                     <TouchableOpacity
-                                        style={styles.taskCheckboxContainer}
-                                        onPress={(e) => {
-                                            e.stopPropagation();
-                                            handleToggleCompletion(item.id, item.completed);
-                                        }}
-                                    >
-                                        <Ionicons
-                                            name={item.completed ? "checkbox" : "square-outline"}
-                                            size={24}
-                                            color={item.completed ? "#5A1A9B" : "#aaa"}
-                                            style={styles.checkbox}
-                                        />
-                                        <Text style={[
-                                            styles.taskText,
-                                            item.completed && styles.completedTask
-                                        ]}>
-                                            {item.text}
-                                        </Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity 
                                         onPress={(e) => {
                                             e.stopPropagation();
                                             handleRemoveTask(item.id);
@@ -260,195 +276,214 @@
                                         <Ionicons name="trash-outline" size={24} color="red" />
                                     </TouchableOpacity>
                                 </View>
-                        
-                                {item.description && (
-                                    <Text style={styles.descriptionText}>
-                                        {item.description.length > 50 
-                                            ? item.description.substring(0, 50) + "..." 
-                                            : item.description}
+                            </View>
+
+                            {item.description && (
+                                <Text style={styles.descriptionText}>
+                                    {item.description.length > 50
+                                        ? item.description.substring(0, 50) + "..."
+                                        : item.description}
+                                </Text>
+                            )}
+
+                            {item.dueDate && (
+                                <View style={styles.dueDateContainer}>
+                                    <Ionicons name="time-outline" size={18} color="#aaa" />
+                                    <Text style={styles.dueDateText}>
+                                        {formatDate(item.dueDate)}
                                     </Text>
-                                )}
-                        
-                                {item.dueDate && (
-                                    <View style={styles.dueDateContainer}>
-                                        <Ionicons name="time-outline" size={18} color="#aaa" />
-                                        <Text style={styles.dueDateText}>
-                                            {formatDate(item.dueDate)}
-                                        </Text>
-                                    </View>
-                                )}
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    )}
+                    ListEmptyComponent={
+                        <Text style={styles.emptyText}>
+                            {activeTab === "active"
+                                ? "You don't have any active goals. Add one to get started!"
+                                : "You haven't completed any goals yet. Keep going!"}
+                        </Text>
+                    }
+                />
+
+                {/* Add Goal Modal */}
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={modalVisible}
+                    onRequestClose={() => setModalVisible(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Create New Goal</Text>
+
+                            <Text style={styles.inputLabel}>Goal Name</Text>
+                            <TextInput
+                                style={styles.modalInput}
+                                placeholder="Enter your goal..."
+                                placeholderTextColor="#aaa"
+                                value={task}
+                                onChangeText={setTask}
+                            />
+
+                            <Text style={styles.inputLabel}>Description</Text>
+                            <TextInput
+                                style={[styles.modalInput, styles.textArea]}
+                                placeholder="Add details about your goal..."
+                                placeholderTextColor="#aaa"
+                                value={description}
+                                onChangeText={setDescription}
+                                multiline
+                                numberOfLines={4}
+                            />
+
+                            <Text style={styles.inputLabel}>Due Date</Text>
+                            <TouchableOpacity
+                                style={styles.dateSelector}
+                                onPress={() => setShowDatePicker(true)}
+                            >
+                                <Ionicons name="calendar-outline" size={24} color="#aaa" />
+                                <Text style={styles.dateText}>{formatDate(dueDate.toISOString())}</Text>
                             </TouchableOpacity>
-                        )}
-                        ListEmptyComponent={
-                            <Text style={styles.emptyText}>
-                                {activeTab === "active"
-                                    ? "You don't have any active goals. Add one to get started!"
-                                    : "You haven't completed any goals yet. Keep going!"}
-                            </Text>
-                        }
-                    />
 
-                    {/* Add Goal Modal */}
-                    <Modal
-                        animationType="slide"
-                        transparent={true}
-                        visible={modalVisible}
-                        onRequestClose={() => setModalVisible(false)}
-                    >
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalContent}>
-                                <Text style={styles.modalTitle}>Create New Goal</Text>
-                        
-                                <Text style={styles.inputLabel}>Goal Name</Text>
-                                <TextInput
-                                    style={styles.modalInput}
-                                    placeholder="Enter your goal..."
-                                    placeholderTextColor="#aaa"
-                                    value={task}
-                                    onChangeText={setTask}
+                            {showDatePicker && (
+                                <DateTimePicker
+                                    value={dueDate}
+                                    mode="datetime"
+                                    display="default"
+                                    onChange={onDateChange}
                                 />
-                        
-                                <Text style={styles.inputLabel}>Description</Text>
-                                <TextInput
-                                    style={[styles.modalInput, styles.textArea]}
-                                    placeholder="Add details about your goal..."
-                                    placeholderTextColor="#aaa"
-                                    value={description}
-                                    onChangeText={setDescription}
-                                    multiline
-                                    numberOfLines={4}
-                                />
-                        
-                                <Text style={styles.inputLabel}>Due Date</Text>
-                                <TouchableOpacity 
-                                    style={styles.dateSelector}
-                                    onPress={() => setShowDatePicker(true)}
+                            )}
+
+                            <View style={styles.modalButtons}>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.cancelButton]}
+                                    onPress={() => {
+                                        clearForm();
+                                        setModalVisible(false);
+                                    }}
                                 >
-                                    <Ionicons name="calendar-outline" size={24} color="#aaa" />
-                                    <Text style={styles.dateText}>{formatDate(dueDate.toISOString())}</Text>
+                                    <Text style={styles.buttonText}>Cancel</Text>
                                 </TouchableOpacity>
-                        
-                                {showDatePicker && (
-                                    <DateTimePicker
-                                        value={dueDate}
-                                        mode="datetime"
-                                        display="default"
-                                        onChange={onDateChange}
-                                    />
-                                )}
-                        
-                                <View style={styles.modalButtons}>
-                                    <TouchableOpacity 
-                                        style={[styles.modalButton, styles.cancelButton]} 
-                                        onPress={() => {
-                                            clearForm();
-                                            setModalVisible(false);
-                                        }}
-                                    >
-                                        <Text style={styles.buttonText}>Cancel</Text>
-                                    </TouchableOpacity>
-                            
-                                    <LinearGradient
-                                        colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
-                                        style={styles.gradientButton}
-                                    >
-                                        <TouchableOpacity
-                                            style={[styles.modalButton, { flex: 1, justifyContent: "center", alignItems: "center" }]}
-                                            onPress={handleAddTask}
-                                        >
-                                            <Text style={styles.buttonText}>Create</Text>
-                                        </TouchableOpacity>
-                                    </LinearGradient>
 
-                                </View>
+                                <LinearGradient
+                                    colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.gradientButton}
+                                >
+                                    <TouchableOpacity
+                                        style={[styles.modalButton, { flex: 1, justifyContent: "center", alignItems: "center" }]}
+                                        onPress={handleAddTask}
+                                    >
+                                        <Text style={styles.buttonText}>Create</Text>
+                                    </TouchableOpacity>
+                                </LinearGradient>
+
                             </View>
                         </View>
-                    </Modal>
+                    </View>
+                </Modal>
 
-                    {/* Edit Goal Modal */}
-                    <Modal
-                        animationType="slide"
-                        transparent={true}
-                        visible={editModalVisible}
-                        onRequestClose={() => setEditModalVisible(false)}
-                    >
-                        <View style={styles.modalContainer}>
-                            <View style={styles.modalContent}>
-                                <Text style={styles.modalTitle}>Edit Goal</Text>
-                        
-                                <Text style={styles.inputLabel}>Goal Name</Text>
-                                <TextInput
-                                    style={styles.modalInput}
-                                    placeholder="Enter your goal..."
-                                    placeholderTextColor="#aaa"
-                                    value={task}
-                                    onChangeText={setTask}
+                {/* Edit Goal Modal */}
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={editModalVisible}
+                    onRequestClose={() => setEditModalVisible(false)}
+                >
+                    <View style={styles.modalContainer}>
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>Edit Goal</Text>
+
+                            <Text style={styles.inputLabel}>Goal Name</Text>
+                            <TextInput
+                                style={styles.modalInput}
+                                placeholder="Enter your goal..."
+                                placeholderTextColor="#aaa"
+                                value={task}
+                                onChangeText={setTask}
+                            />
+
+                            <Text style={styles.inputLabel}>Description</Text>
+                            <TextInput
+                                style={[styles.modalInput, styles.textArea]}
+                                placeholder="Add details about your goal..."
+                                placeholderTextColor="#aaa"
+                                value={description}
+                                onChangeText={setDescription}
+                                multiline
+                                numberOfLines={4}
+                            />
+
+                            <Text style={styles.inputLabel}>Due Date</Text>
+                            <TouchableOpacity
+                                style={styles.dateSelector}
+                                onPress={() => setShowDatePicker(true)}
+                            >
+                                <Ionicons name="calendar-outline" size={24} color="#aaa" />
+                                <Text style={styles.dateText}>{formatDate(dueDate.toISOString())}</Text>
+                            </TouchableOpacity>
+
+                            {showDatePicker && (
+                                <DateTimePicker
+                                    value={dueDate}
+                                    mode="datetime"
+                                    display="default"
+                                    onChange={onDateChange}
                                 />
-                        
-                                <Text style={styles.inputLabel}>Description</Text>
-                                <TextInput
-                                    style={[styles.modalInput, styles.textArea]}
-                                    placeholder="Add details about your goal..."
-                                    placeholderTextColor="#aaa"
-                                    value={description}
-                                    onChangeText={setDescription}
-                                    multiline
-                                    numberOfLines={4}
-                                />
-                        
-                                <Text style={styles.inputLabel}>Due Date</Text>
-                                <TouchableOpacity 
-                                    style={styles.dateSelector}
-                                    onPress={() => setShowDatePicker(true)}
+                            )}
+
+                            {/* Featured Display Option - Only shown for completed goals */}
+                            {currentGoal && currentGoal.completed && (
+                                <TouchableOpacity
+                                    style={styles.featuredOption}
+                                    onPress={() => setDisplayFeatured(!displayFeatured)}
                                 >
-                                    <Ionicons name="calendar-outline" size={24} color="#aaa" />
-                                    <Text style={styles.dateText}>{formatDate(dueDate.toISOString())}</Text>
-                                </TouchableOpacity>
-                        
-                                {showDatePicker && (
-                                    <DateTimePicker
-                                        value={dueDate}
-                                        mode="datetime"
-                                        display="default"
-                                        onChange={onDateChange}
+                                    <Ionicons
+                                        name={displayFeatured ? "star" : "star-outline"}
+                                        size={24}
+                                        color={displayFeatured ? "#FFD700" : "#aaa"}
+                                        
                                     />
-                                )}
-                        
-                                <View style={styles.modalButtons}>
-                                    <TouchableOpacity 
-                                        style={[styles.modalButton, styles.cancelButton]} 
-                                        onPress={() => {
-                                            clearForm();
-                                            setEditModalVisible(false);
-                                            setCurrentGoal(null);
-                                        }}
+                                    <Text style={styles.featuredText}>
+                                        {displayFeatured ? "Featured in Completed Goals" : "Mark as Featured"}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+
+                            <View style={styles.modalButtons}>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.cancelButton]}
+                                    onPress={() => {
+                                        clearForm();
+                                        setEditModalVisible(false);
+                                        setCurrentGoal(null);
+                                    }}
+                                >
+                                    <Text style={styles.buttonText}>Cancel</Text>
+                                </TouchableOpacity>
+
+                                <LinearGradient
+                                    colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.gradientButton}
+                                >
+                                    <TouchableOpacity
+                                        style={[styles.modalButton, { flex: 1, justifyContent: "center", alignItems: "center" }]}
+                                        onPress={handleUpdateGoal}
                                     >
-                                        <Text style={styles.buttonText}>Cancel</Text>
+                                        <Text style={styles.buttonText}>Update</Text>
                                     </TouchableOpacity>
-                            
-                                    <LinearGradient
-                                        colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
-                                        style={styles.gradientButton}
-                                    >
-                                        <TouchableOpacity 
-                                            style={[styles.modalButton, { flex: 1, justifyContent: "center", alignItems: "center" }]} 
-                                            onPress={handleUpdateGoal}
-                                        >
-                                            <Text style={styles.buttonText}>Update</Text>
-                                        </TouchableOpacity>
-                                    </LinearGradient>
-                                </View>
+                                </LinearGradient>
                             </View>
                         </View>
-                    </Modal>
-                </View>
-            </TouchableWithoutFeedback>
-        );
-    };
+                    </View>
+                </Modal>
+            </View>
+        </TouchableWithoutFeedback>
+    );
+};
 
     const styles = StyleSheet.create({
         container: {
@@ -644,6 +679,28 @@
             fontWeight: 'bold',
             fontSize: 16,
         },
+        featuredOption: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: 'rgba(255, 215, 0, 0.1)',
+            padding: 12,
+            borderRadius: 8,
+            marginTop: 15,
+            marginBottom: 10,
+            borderWidth: 1,
+            borderColor: 'rgba(255, 215, 0, 0.3)',
+        },
+
+        featuredText: {
+            marginLeft: 10,
+            fontSize: 16,
+            fontWeight: '500',
+            color: '#ffff',
+        },
+        taskActions: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        }
     });
 
     export default GoalsScreen;
