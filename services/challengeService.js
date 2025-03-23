@@ -40,7 +40,7 @@ export const fetchCompletedChallenges = async () => {
       console.log(" Completed Challenges from Firestore:", userDoc.data().completedChallenges);
       return userDoc.data().completedChallenges; // Return array of challenge IDs
     } else {
-      console.log("⚠️ No completed challenges found.");
+      console.log(" No completed challenges found.");
       return [];
     }
   } catch (error) {

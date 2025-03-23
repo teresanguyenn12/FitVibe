@@ -1,40 +1,60 @@
 // List all available challenges
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRoute, useNavigation } from "@react-navigation/native";
-import { Entypo } from "@expo/vector-icons"; 
+import { useNavigation } from "@react-navigation/native";
+import { Entypo } from "@expo/vector-icons";
+import { db } from "../../firebase"; 
+import { collection, getDocs } from "firebase/firestore";
 
 const categories = ["Run", "Walk", "Yoga", "Lifting", "Cycling"];
 
-const challenges = [
-  { id: "1", name: "100 Meter Race", category: "Run" },
-  { id: "2", name: "10 Mile Run in 24 hrs", category: "Run" },
-  { id: "3", name: "12 Mile Hill Sprint", category: "Run" },
-  { id: "4", name: "5K-a-Day for 7 Days", category: "Run" },
-  { id: "5", name: "Treadmill Marathon", category: "Run" },
-];
-
 const JoinChallengesScreen = () => {
-  const route = useRoute();
-  const navigation = useNavigation(); 
-  const { challenge } = route.params;
+  const navigation = useNavigation();
   const [selectedCategory, setSelectedCategory] = useState("Run");
+  const [allChallenges, setAllChallenges] = useState([]);
+
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "challenges"));
+        const challengeList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setAllChallenges(challengeList);
+      } catch (error) {
+        console.error("Error fetching challenges:", error);
+      }
+    };
+
+    fetchChallenges();
+  }, []);
+
+  const filteredChallenges = allChallenges.filter(
+    (challenge) => challenge.category === selectedCategory
+  );
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Join Challenges</Text>
 
-      {/* Selected Month Button */}
       <LinearGradient colors={["#A0006D", "#552082"]} style={styles.selectedMonthButton}>
-        <Text style={styles.selectedMonthText}>{challenge.month} Challenges</Text>
+        <Text style={styles.selectedMonthText}>March Challenges</Text>
       </LinearGradient>
 
-      {/* Category Filter */}
+      {/* Category Filters */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
         {categories.map((category) => (
-          <TouchableOpacity key={category} onPress={() => setSelectedCategory(category)}>
-            <Text style={[styles.category, selectedCategory === category && styles.selectedCategory]}>
+          <TouchableOpacity
+            key={category}
+            onPress={() => setSelectedCategory(category)}
+            style={[
+              styles.category,
+              selectedCategory === category && styles.selectedCategory,
+            ]}
+          >
+            <Text style={{ color: selectedCategory === category ? "#fff" : "#bbb" }}>
               {category}
             </Text>
           </TouchableOpacity>
@@ -43,15 +63,21 @@ const JoinChallengesScreen = () => {
 
       {/* Challenge List */}
       <FlatList
-        data={challenges.filter((item) => item.category === selectedCategory)}
+        data={filteredChallenges}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.challengeItem} 
-            onPress={() => navigation.navigate("ChallengeDetails", { challenge: item })} 
+          <TouchableOpacity
+            style={styles.challengeItem}
+            onPress={() => {
+              if (item.id === "run_10mile_24hr") {
+                navigation.navigate("ChallengeDetails", { challenge: item });
+              } else {
+                navigation.navigate("ConfirmChallengeScreen", { challenge: item });
+              }
+            }}
           >
             <Text style={styles.challengeText}>{item.name}</Text>
-            <Entypo name="chevron-right" size={18} color="#bbb" /> 
+            <Entypo name="chevron-right" size={18} color="#bbb" />
           </TouchableOpacity>
         )}
         showsVerticalScrollIndicator={false}

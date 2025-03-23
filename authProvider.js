@@ -3,14 +3,23 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "./firebase";
 import { registerUser, loginUser, logoutUser } from "./api/authApi";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
+  const createUserDoc = async (userId, fullName, email) => {
+    const userRef = doc(db, "users", userId);
+    await setDoc(userRef, {
+      fullName,
+      email,
+      activeChallenges: [],
+      completedChallenges: [],
+      createdAt: new Date(),
+    });
+  };
   useEffect(() => {
     const handleAuthChange = async (firebaseUser) => {
       if (firebaseUser) {

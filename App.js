@@ -129,7 +129,7 @@ function Navigation() {
             <Stack.Screen name="ChallengeProgress" component={ChallengeScreens.ChallengeProgressScreen} />
             <Stack.Screen name="JoinChallenges" component={ChallengeScreens.JoinChallengesScreen} />
             <Stack.Screen name="CompletedChallengeDetails" component={ChallengeScreens.CompletedChallengeDetails} />
-            <Stack.Screen name="ConfirmChallenge" component={ChallengeScreens.ConfirmChallengeScreen} />
+            <Stack.Screen name="ConfirmChallengeScreen" component={ChallengeScreens.ConfirmChallengeScreen} />
             <Stack.Screen name="MyChallengesScreen" component={ChallengeScreens.MyChallengesScreen} />
             <Stack.Screen name="MyChallengeInfoScreen" component={ChallengeScreens.MyChallengeInfoScreen} />
 

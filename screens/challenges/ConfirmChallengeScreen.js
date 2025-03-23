@@ -1,3 +1,4 @@
+// Join challenge
 import React from "react";
 import { View, Text, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
@@ -45,3 +46,29 @@ export default function ConfirmChallengeScreen() {
     </View>
   );
 }
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#121212",
+    padding: 20,
+    justifyContent: "center",
+  },
+  title: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 30,
+    textAlign: "center",
+  },
+  confirmButton: {
+    backgroundColor: "#A0006D",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  confirmButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+});
