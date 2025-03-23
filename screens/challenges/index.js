@@ -6,4 +6,5 @@ export { default as CompletedChallengeDetails } from "./CompletedChallengeDetail
 export { default as ConfirmChallengeScreen } from "./ConfirmChallengeScreen";
 export { default as MyChallengesScreen } from "./MyChallengesScreen";
 export { default as MyChallengeInfoScreen } from "./MyChallengeInfoScreen";
- 
+export {default as ConfirmSoloChallengeScreen} from "./ConfirmSoloChallengeScreen"; 
+export {default as RunChallengeProgressScreen} from "./RunChallengeProgressScreen";

@@ -5,11 +5,15 @@ import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { joinChallenge } from "../../services/joinChallenge";
 import { auth } from "../../firebase";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 const ChallengeDetailsScreen = ({ route }) => {
   const { challenge } = route.params;
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
+  const navigation = useNavigation();
+
+
 
   useEffect(() => {
     (async () => {
@@ -64,9 +68,13 @@ const ChallengeDetailsScreen = ({ route }) => {
 
         {/* Buttons */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => navigation.navigate("ConfirmSoloChallengeScreen", { challenge })}
+          >
             <Text style={styles.buttonText}>Join Solo</Text>
           </TouchableOpacity>
+
           <TouchableOpacity style={styles.buttonOutline}>
             <Text style={styles.buttonTextOutline}>Invite a Friend</Text>
           </TouchableOpacity>
@@ -106,8 +114,9 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: "#bbb",
+    color: "#fff",
     marginBottom: 6,
+    fontWeight: "bold",
   },
   buttonContainer: {
     flexDirection: "row",

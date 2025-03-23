@@ -73,10 +73,7 @@ function BottomTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen
-        name="Challenges"
-        component={ChallengeScreens.ChallengeScreen}
-      />
+      <Tab.Screen name="Challenges" component={ChallengeScreens.ChallengeScreen}/>
       <Tab.Screen name="Feed" component={FeedScreen} />
     </Tab.Navigator>
   );
@@ -101,10 +98,7 @@ function Navigation() {
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="SignUp" component={SignupScreen} />
-            <Stack.Screen
-              name="ForgotPassword"
-              component={ForgotPasswordScreen}
-            />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen}/>
           </>
         ) : (
           <>
@@ -116,10 +110,7 @@ function Navigation() {
             <Stack.Screen name="Cycling" component={CyclingScreen} />
             <Stack.Screen name="Hiking" component={HikingScreen} />
             <Stack.Screen name="Pilates" component={PilatesScreen} />
-            <Stack.Screen
-              name="StrengthTraining"
-              component={StrengthTrainingScreen}
-            />
+            <Stack.Screen name="StrengthTraining" component={StrengthTrainingScreen}/>
             <Stack.Screen name="Swimming" component={SwimmingScreen} />
             <Stack.Screen name="Yoga" component={YogaScreen} />
             <Stack.Screen name="MyWorkouts" component={MyWorkoutScreen} />
@@ -136,8 +127,8 @@ function Navigation() {
             <Stack.Screen name="ConfirmChallengeScreen" component={ChallengeScreens.ConfirmChallengeScreen} />
             <Stack.Screen name="MyChallengesScreen" component={ChallengeScreens.MyChallengesScreen} />
             <Stack.Screen name="MyChallengeInfoScreen" component={ChallengeScreens.MyChallengeInfoScreen} />
-
-
+            <Stack.Screen name="ConfirmSoloChallengeScreen" component={ChallengeScreens.ConfirmSoloChallengeScreen} />
+            <Stack.Screen name="RunChallengeProgressScreen" component={ChallengeScreens.RunChallengeProgressScreen}/>
 
             {/* Settings Screens */}
             <Stack.Screen name="Settings" component={SettingsScreen} />

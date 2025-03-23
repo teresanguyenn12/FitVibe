@@ -1,8 +1,9 @@
-//Display after clicking "My Challenge" 
+// Detail Info of User's active challenges
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { auth } from "../../firebase";
+// import { completeChallenge } from "../../services/completeChallenge"; 
 
 
 export default function MyChallengeDetailsScreen() {

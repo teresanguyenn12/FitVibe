@@ -13,7 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, onSnapshot, getDocs, collection } from "firebase/firestore";
 import { app } from "../firebase";
-import { seedChallenges } from "./challenges/seedChallenges";
+//import { seedChallenges } from "./challenges/seedChallenges";
 
 const { width, height } = Dimensions.get("window");
 
@@ -25,21 +25,21 @@ const HomeScreen = () => {
   });
   const [updateKey, setUpdateKey] = useState(0);
 
-  useEffect(() => {
+  //useEffect(() => {
     // Seed challenges once if not already present
-    const maybeSeedChallenges = async () => {
-      const db = getFirestore(app);
-      const snapshot = await getDocs(collection(db, "challenges"));
-      if (snapshot.empty) {
-        await seedChallenges();
-        console.log(" Challenges seeded.");
-      } else {
-        console.log(" Challenges already exist. Skipping seeding.");
-      }
-    };
+    //const maybeSeedChallenges = async () => {
+      //const db = getFirestore(app);
+      //const snapshot = await getDocs(collection(db, "challenges"));
+      //if (snapshot.empty) {
+        //await seedChallenges();
+        //console.log(" Challenges seeded.");
+      //} else {
+        //console.log(" Challenges already exist. Skipping seeding.");
+      //}
+    //};
 
-    maybeSeedChallenges();
-  }, []);
+    //maybeSeedChallenges();
+  //}, []);
 
   useEffect(() => {
     const auth = getAuth();
