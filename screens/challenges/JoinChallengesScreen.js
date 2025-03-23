@@ -42,9 +42,9 @@ const JoinChallengesScreen = () => {
       <LinearGradient colors={["#A0006D", "#552082"]} style={styles.selectedMonthButton}>
         <Text style={styles.selectedMonthText}>March Challenges</Text>
       </LinearGradient>
-
+      <Text style={styles.sectionTitle}>Choose Fitness Challenge</Text>
       {/* Category Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryContainer}>
         {categories.map((category) => (
           <TouchableOpacity
             key={category}
@@ -94,17 +94,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: "bold",
     color: "#fff",
     textAlign: "center",
     marginBottom: 20,
+    marginTop: 30,
   },
   selectedMonthButton: {
     paddingVertical: 12,
     borderRadius: 20,
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 10,
   },
   selectedMonthText: {
     color: "#fff",
@@ -113,21 +114,24 @@ const styles = StyleSheet.create({
   },
   categoryContainer: {
     flexDirection: "row",
-    marginBottom: 10,
+    justifyContent: "center",
+    //alignItems: "center",
+    marginBottom: 10, 
+    paddingVertical: 10,
+     
   },
   category: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 15,
-    marginHorizontal: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginHorizontal: 2,
     backgroundColor: "#222",
-    color: "#bbb",
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: "600",
   },
   selectedCategory: {
     backgroundColor: "#A0006D",
     color: "#fff",
-    fontWeight: "bold",
   },
   challengeItem: {
     backgroundColor: "#222",
@@ -141,6 +145,14 @@ const styles = StyleSheet.create({
   challengeText: {
     color: "#fff",
     fontSize: 16,
+  },
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "bold",
+    //marginBottom: 6,
+    marginTop: 60,
+    textAlign: "left",
   },
 });
 
