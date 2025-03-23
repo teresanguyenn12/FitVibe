@@ -40,6 +40,10 @@ import FriendsListScreen from "./screens/FriendsListScreen";
 import AddFriendsScreen from "./screens/AddFriendsScreen";
 import FriendsScreen from "./screens/FriendsScreen";
 import InviteFriendsScreen from "./screens/InviteFriendsScreen";
+import AddPostsScreen from "./screens/AddPostsScreen";
+import MessagesScreen from "./screens/MessagesScreen";
+import NewMessageScreen from "./screens/NewMessageScreen";
+import ChatScreen from "./screens/ChatScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -227,6 +231,22 @@ function Navigation() {
               name="FriendsList"
               component={FriendsListScreen}
               options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="AddPostsScreen"
+                component={AddPostsScreen}
+            />
+            <Stack.Screen
+                name="MessagesScreen"
+                component={MessagesScreen}
+            />
+            <Stack.Screen
+                name="NewMessageScreen"
+                component={NewMessageScreen}
+            />
+            <Stack.Screen
+                name="ChatScreen"
+                component={ChatScreen}
             />
           </>
         )}

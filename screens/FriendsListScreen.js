@@ -1,181 +1,188 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  View,
-  Text,
-  FlatList,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  Alert,
+    View,
+    Text,
+    FlatList,
+    Image,
+    StyleSheet,
+    TouchableOpacity,
+    SafeAreaView,
+    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import {
-  followUser,
-  unfollowUser,
-  fetchUserById,
+    followUser,
+    unfollowUser,
+    fetchUserById,
 } from '../api/addFriendsApi';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 const FriendsListScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { type = 'followers' } = route.params || {};
+    const navigation = useNavigation();
+    const route = useRoute();
+    const { type = 'followers' } = route.params || {};
 
-  const [activeTab, setActiveTab] = useState(type);
-  const [list, setList] = useState([]);
-  const [followingMap, setFollowingMap] = useState({});
-  const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState(type);
+    const [list, setList] = useState([]);
+    const [followingMap, setFollowingMap] = useState({});
+    const [loading, setLoading] = useState(true);
 
-  const auth = getAuth();
-  const db = getFirestore();
-  const currentUser = auth.currentUser;
+    const auth = getAuth();
+    const db = getFirestore();
+    const currentUser = auth.currentUser;
 
-  useEffect(() => {
-    fetchFriends(activeTab);
-  }, [activeTab]);
+    // Function to fetch updated friends list
+    const fetchFriends = async (tabType) => {
+        try {
+            setLoading(true);
+            const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+            const userData = userDoc.data();
 
-  const fetchFriends = async (tabType) => {
-    try {
-      setLoading(true);
-      const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-      const userData = userDoc.data();
+            const ids = userData?.[tabType] || [];
+            const tempList = [];
+            const tempFollowing = {};
 
-      const ids = userData?.[tabType] || [];
-      const tempList = [];
-      const tempFollowing = {};
+            for (const id of ids) {
+                const friendDoc = await fetchUserById(id);
+                if (friendDoc) {
+                    tempList.push(friendDoc);
+                    tempFollowing[id] = userData.following?.includes(id);
+                }
+            }
 
-      for (const id of ids) {
-        const friendDoc = await fetchUserById(id);
-        if (friendDoc) {
-          tempList.push(friendDoc);
-          tempFollowing[id] = userData.following?.includes(id);
+            setList(tempList);
+            setFollowingMap(tempFollowing);
+        } catch (error) {
+            console.error('Failed to load friends:', error);
+        } finally {
+            setLoading(false);
         }
-      }
+    };
 
-      setList(tempList);
-      setFollowingMap(tempFollowing);
-    } catch (error) {
-      console.error('Failed to load friends:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Ensure the list updates when navigating back
+    useFocusEffect(
+        useCallback(() => {
+            fetchFriends(activeTab);
+        }, [activeTab])
+    );
 
-  const handleFollowToggle = async (userId, isFollowing) => {
-    try {
-      if (isFollowing) {
-        await unfollowUser(userId);
-      } else {
-        await followUser(userId);
-      }
+    const handleFollowToggle = async (userId, isFollowing) => {
+        try {
+            if (isFollowing) {
+                await unfollowUser(userId);
+            } else {
+                await followUser(userId);
+            }
 
-      setFollowingMap((prev) => ({
-        ...prev,
-        [userId]: !isFollowing,
-      }));
-    } catch (err) {
-      Alert.alert('Error', 'Failed to update follow status.');
-      console.error(err);
-    }
-  };
+            setFollowingMap((prev) => ({
+                ...prev,
+                [userId]: !isFollowing,
+            }));
 
-  const renderItem = ({ item }) => {
-    const isFollowing = followingMap[item.id];
+            fetchFriends(activeTab); // Refresh list after following/unfollowing
+        } catch (err) {
+            Alert.alert('Error', 'Failed to update follow status.');
+            console.error(err);
+        }
+    };
+
+    const renderItem = ({ item }) => {
+        const isFollowing = followingMap[item.id];
+
+        return (
+            <View style={styles.userItem}>
+                <Image
+                    source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }}
+                    style={styles.avatar}
+                />
+                <View style={styles.userInfo}>
+                    <Text style={styles.name}>{item.fullName}</Text>
+                    <Text style={styles.handle}>@{item.username || item.email?.split('@')[0]}</Text>
+                </View>
+                <TouchableOpacity
+                    style={[
+                        styles.followButton,
+                        isFollowing ? styles.followingButton : styles.notFollowingButton,
+                    ]}
+                    onPress={() => handleFollowToggle(item.id, isFollowing)}
+                >
+                    <Text style={styles.followText}>
+                        {isFollowing ? 'Following' : 'Follow'}
+                    </Text>
+                </TouchableOpacity>
+            </View>
+        );
+    };
 
     return (
-      <View style={styles.userItem}>
-        <Image
-          source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }}
-          style={styles.avatar}
-        />
-        <View style={styles.userInfo}>
-          <Text style={styles.name}>{item.fullName}</Text>
-          <Text style={styles.handle}>@{item.username || item.email?.split('@')[0]}</Text>
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.followButton,
-            isFollowing ? styles.followingButton : styles.notFollowingButton,
-          ]}
-          onPress={() => handleFollowToggle(item.id, isFollowing)}
-        >
-          <Text style={styles.followText}>
-            {isFollowing ? 'Following' : 'Follow'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+        <SafeAreaView style={styles.container}>
+            {/* Top Bar */}
+            <View style={styles.headerRow}>
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={styles.backButton}
+                >
+                    <Ionicons name="arrow-back" size={24} color="#fff" />
+                </TouchableOpacity>
+
+                <Text style={styles.headerText}>Friends</Text>
+
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('AddFriends')}
+                    style={styles.addButton}
+                >
+                    <Ionicons name="person-add-outline" size={24} color="#fff" />
+                </TouchableOpacity>
+            </View>
+
+            {/* Tabs */}
+            <View style={styles.tabContainer}>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'followers' && styles.activeTab]}
+                    onPress={() => setActiveTab('followers')}
+                >
+                    <Text
+                        style={[
+                            styles.tabText,
+                            activeTab === 'followers' && styles.activeTabText,
+                        ]}
+                    >
+                        Followers
+                    </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'following' && styles.activeTab]}
+                    onPress={() => setActiveTab('following')}
+                >
+                    <Text
+                        style={[
+                            styles.tabText,
+                            activeTab === 'following' && styles.activeTabText,
+                        ]}
+                    >
+                        Following
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Friend List */}
+            {list.length === 0 ? (
+                <Text style={styles.emptyText}>
+                    No {activeTab === 'followers' ? 'followers' : 'followings'} yet.
+                </Text>
+            ) : (
+                <FlatList
+                    data={list}
+                    keyExtractor={(item) => item.id}
+                    renderItem={renderItem}
+                />
+            )}
+        </SafeAreaView>
     );
-  };
-
-  return (
-    <SafeAreaView style={styles.container}>
-      {/* Top Bar */}
-      <View style={styles.headerRow}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-
-        <Text style={styles.headerText}>Friends</Text>
-
-        <TouchableOpacity
-          onPress={() => navigation.navigate('AddFriends')}
-          style={styles.addButton}
-        >
-          <Ionicons name="person-add-outline" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'followers' && styles.activeTab]}
-          onPress={() => setActiveTab('followers')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'followers' && styles.activeTabText,
-            ]}
-          >
-            Followers
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'following' && styles.activeTab]}
-          onPress={() => setActiveTab('following')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === 'following' && styles.activeTabText,
-            ]}
-          >
-            Following
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Friend List */}
-      {list.length === 0 ? (
-        <Text style={styles.emptyText}>
-          No {activeTab === 'followers' ? 'followers' : 'followings'} yet.
-        </Text>
-      ) : (
-        <FlatList
-          data={list}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-        />
-      )}
-    </SafeAreaView>
-  );
 };
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#111' },
