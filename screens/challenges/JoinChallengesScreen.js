@@ -1,13 +1,20 @@
 // List all available challenges
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, FlatList, StyleSheet,TouchableOpacity, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { Entypo } from "@expo/vector-icons";
-import { db } from "../../firebase"; 
+import { db } from "../../firebase";
 import { collection, getDocs } from "firebase/firestore";
 
 const categories = ["Run", "Walk", "Yoga", "Lifting", "Cycling"];
+
+const categoryToConfirmScreen = {
+  Walk: "WalkConfirmSoloChallenge",
+  Yoga: "YogaConfirmSoloChallenge",
+  Lifting: "LiftingConfirmSoloChallenge",
+  Cycling: "CyclingConfirmSoloChallenge",
+};
 
 const JoinChallengesScreen = () => {
   const navigation = useNavigation();
@@ -39,12 +46,21 @@ const JoinChallengesScreen = () => {
     <View style={styles.container}>
       <Text style={styles.header}>Join Challenges</Text>
 
-      <LinearGradient colors={["#A0006D", "#552082"]} style={styles.selectedMonthButton}>
+      <LinearGradient
+        colors={["#A0006D", "#552082"]}
+        style={styles.selectedMonthButton}
+      >
         <Text style={styles.selectedMonthText}>March Challenges</Text>
       </LinearGradient>
+
       <Text style={styles.sectionTitle}>Choose Fitness Challenge</Text>
-      {/* Category Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryContainer}>
+
+      {/* Category Buttons */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoryContainer}
+      >
         {categories.map((category) => (
           <TouchableOpacity
             key={category}
@@ -54,7 +70,11 @@ const JoinChallengesScreen = () => {
               selectedCategory === category && styles.selectedCategory,
             ]}
           >
-            <Text style={{ color: selectedCategory === category ? "#fff" : "#bbb" }}>
+            <Text
+              style={{
+                color: selectedCategory === category ? "#fff" : "#bbb",
+              }}
+            >
               {category}
             </Text>
           </TouchableOpacity>
@@ -69,10 +89,16 @@ const JoinChallengesScreen = () => {
           <TouchableOpacity
             style={styles.challengeItem}
             onPress={() => {
-              if (item.id === "run_10mile_24hr") {
+              if (item.category === "Run") {
+                // Go to location/map-based challenge details first
                 navigation.navigate("ChallengeDetails", { challenge: item });
               } else {
-                navigation.navigate("ConfirmChallengeScreen", { challenge: item });
+                const screen = categoryToConfirmScreen[item.category];
+                if (screen) {
+                  navigation.navigate(screen, { challenge: item });
+                } else {
+                  console.warn("Unknown category:", item.category);
+                }
               }
             }}
           >
@@ -112,26 +138,30 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
   },
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "bold",
+    marginTop: 35,
+    marginBottom: 10,
+  },
   categoryContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    //alignItems: "center",
-    marginBottom: 10, 
-    paddingVertical: 10,
-     
+    paddingVertical: 6,
+    marginBottom: 10,
   },
   category: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
-    marginHorizontal: 2,
+    marginHorizontal: 3,
     backgroundColor: "#222",
     fontSize: 13,
     fontWeight: "600",
   },
   selectedCategory: {
     backgroundColor: "#A0006D",
-    color: "#fff",
   },
   challengeItem: {
     backgroundColor: "#222",
@@ -145,14 +175,6 @@ const styles = StyleSheet.create({
   challengeText: {
     color: "#fff",
     fontSize: 16,
-  },
-  sectionTitle: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "bold",
-    //marginBottom: 6,
-    marginTop: 60,
-    textAlign: "left",
   },
 });
 

@@ -129,6 +129,15 @@ function Navigation() {
             <Stack.Screen name="MyChallengeInfoScreen" component={ChallengeScreens.MyChallengeInfoScreen} />
             <Stack.Screen name="ConfirmSoloChallengeScreen" component={ChallengeScreens.ConfirmSoloChallengeScreen} />
             <Stack.Screen name="RunChallengeProgressScreen" component={ChallengeScreens.RunChallengeProgressScreen}/>
+            <Stack.Screen name="WalkConfirmSoloChallenge" component={ChallengeScreens.WalkConfirmSoloChallengeScreen} />
+            <Stack.Screen name="YogaConfirmSoloChallenge" component={ChallengeScreens.YogaConfirmSoloChallengeScreen} />
+            <Stack.Screen name="LiftingConfirmSoloChallenge" component={ChallengeScreens.LiftingConfirmSoloChallengeScreen} />
+            <Stack.Screen name="CyclingConfirmSoloChallenge" component={ChallengeScreens.CyclingConfirmSoloChallengeScreen} />
+            <Stack.Screen name="WalkChallengeProgressScreen" component={ChallengeScreens.WalkChallengeProgressScreen} />
+            <Stack.Screen name="YogaChallengeProgressScreen" component={ChallengeScreens.YogaChallengeProgressScreen} />
+            <Stack.Screen name="LiftingChallengeProgressScreen" component={ChallengeScreens.LiftingChallengeProgressScreen} />
+            <Stack.Screen name="CyclingChallengeProgressScreen" component={ChallengeScreens.CyclingChallengeProgressScreen} />
+             
 
             {/* Settings Screens */}
             <Stack.Screen name="Settings" component={SettingsScreen} />

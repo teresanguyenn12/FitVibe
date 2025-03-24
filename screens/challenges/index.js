@@ -6,5 +6,13 @@ export { default as CompletedChallengeDetails } from "./CompletedChallengeDetail
 export { default as ConfirmChallengeScreen } from "./ConfirmChallengeScreen";
 export { default as MyChallengesScreen } from "./MyChallengesScreen";
 export { default as MyChallengeInfoScreen } from "./MyChallengeInfoScreen";
-export {default as ConfirmSoloChallengeScreen} from "./ConfirmSoloChallengeScreen"; 
-export {default as RunChallengeProgressScreen} from "./RunChallengeProgressScreen";
+export { default as ConfirmSoloChallengeScreen} from "./ConfirmSoloChallengeScreen"; 
+export { default as RunChallengeProgressScreen} from "./RunChallengeProgressScreen";
+export { default as WalkConfirmSoloChallengeScreen } from "./WalkConfirmSoloChallengeScreen";
+export { default as YogaConfirmSoloChallengeScreen } from "./YogaConfirmSoloChallengeScreen";
+export { default as LiftingConfirmSoloChallengeScreen } from "./LiftingConfirmSoloChallengeScreen";
+export { default as CyclingConfirmSoloChallengeScreen } from "./CyclingConfirmSoloChallengeScreen";
+export { default as WalkChallengeProgressScreen} from "./RunChallengeProgressScreen";
+export { default as LiftingChallengeProgressScreen} from "./RunChallengeProgressScreen";
+export { default as CyclingChallengeProgressScreen} from "./RunChallengeProgressScreen";
+export { default as YogaChallengeProgressScreen} from "./RunChallengeProgressScreen";
