@@ -1,88 +1,127 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { auth, db } from "../firebase";
+import { getFitCoins, updateFitCoins } from "../api/fitCoinsApi";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const RewardsScreen = () => {
   const navigation = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
+  const [fitCoins, setFitCoins] = useState(0);
+  const [selectedReward, setSelectedReward] = useState(null);
+  const user = auth.currentUser;
+
+  // Tracks FitCoin balance in real time
+  useEffect(() => {
+    if (user) {
+      const userRef = doc(db, "users", user.uid);
+      const unsubscribe = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          setFitCoins(docSnap.data().fitCoins || 0);
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [user]);
+
+  // Opens popup upon pressing on reward
+  const openRewardModal = (cost) => {
+    setSelectedReward(cost); 
+    setModalVisible(true);
+  };
+
+  // Purchase arguments for rewards
+  const handlePurchase = async (cost) => {
+    if (!user) return Alert.alert("Error", "You must be logged in to make a purchase");
+
+    if (fitCoins >= cost) {
+      const newBalance = await updateFitCoins(user.uid, -cost);
+      if (newBalance !== null) {
+        Alert.alert("Success", "Purchase successful");
+      } else {
+        Alert.alert("Error", "Something went wrong, try again");
+      }
+    } else {
+      Alert.alert("Insufficient FitCoins", "You don't have enough FitCoins for this reward");
+    }
+  };
 
   return (
     <View style = {styles.container}>
       {/* Header */}
       <View style = {styles.header}>
         <TouchableOpacity onPress = {() => navigation.goBack()}>
-          <Ionicons name = "close" size = {28} color = "white"/>
+          <Ionicons name = "close" size={28} color = "white"/>
         </TouchableOpacity>
         <Text style = {styles.headerTitle}>Rewards</Text>
-        <View style = {styles.coinContainer}/>
+        <View style = {styles.coinContainer}>
+          <Text style = {styles.coinText}>{fitCoins}</Text>
+          <View style = {styles.coinBadge}>
+            <Text style = {styles.coinBadgeText}>Fv</Text>
+          </View>
+        </View>
       </View>
 
       <ScrollView>
         {/* FitCoin Shop Section */}
         <Text style = {styles.sectionTitle}>FitCoin Shop</Text>
-        <View style = {styles.coinRow}>
-          <Text style = {styles.coinText}>1000 FitCoins</Text>
-          <View style = {styles.coinBadge}>
-            <Text style = {styles.coinBadgeText}>Fv</Text>
-          </View>
-        </View>
         <View style = {styles.grid}>
-          <RewardItem image = {require("../assets/FVLOGO.png")} onPress = {() => setModalVisible(true)}/>
-          <RewardItem image = {require("../assets/FVLOGO.png")} onPress = {() => setModalVisible(true)}/>
-          <RewardItem image = {require("../assets/FVLOGO.png")} onPress = {() => setModalVisible(true)}/>
-          <RewardItem image = {require("../assets/FVLOGO.png")} onPress = {() => setModalVisible(true)}/>
-          <RewardItem image = {require("../assets/FVLOGO.png")} onPress = {() => setModalVisible(true)}/>
-          <RewardItem image = {require("../assets/FVLOGO.png")} onPress = {() => setModalVisible(true)}/>
-
-          <TouchableOpacity style = {styles.viewMore}>
-            <Text style = {styles.viewMoreText}>View More</Text>
-          </TouchableOpacity>
+          <RewardItem image = {require("../assets/FVLOGO.png")} cost = {100} onPress = {openRewardModal}/>
+          <RewardItem image = {require("../assets/FVLOGO.png")} cost = {200} onPress = {openRewardModal}/>
+          <RewardItem image = {require("../assets/FVLOGO.png")} cost = {300} onPress = {openRewardModal}/>
+          <RewardItem image = {require("../assets/FVLOGO.png")} cost = {400} onPress = {openRewardModal}/>
+          <RewardItem image = {require("../assets/FVLOGO.png")} cost = {500} onPress = {openRewardModal}/>
+          <RewardItem image = {require("../assets/FVLOGO.png")} cost = {600} onPress = {openRewardModal}/>
         </View>
 
         {/* Featured Brands */}
         <Text style = {styles.sectionTitle}>Featured Brands</Text>
         <View style = {styles.grid}>
-          <RewardItem image={require("../assets/FVLOGO.png")} onPress = {() => setModalVisible(true)}/>
-          <RewardItem image={require("../assets/FVLOGO.png")} onPress = {() => setModalVisible(true)}/>
-          <RewardItem image={require("../assets/FVLOGO.png")} onPress = {() => setModalVisible(true)} wide/>
+          <RewardItem image={require("../assets/FVLOGO.png")} cost = {1000} onPress = {openRewardModal}/>
+          <RewardItem image={require("../assets/FVLOGO.png")} cost = {1500} onPress = {openRewardModal}/>
+          <RewardItem image={require("../assets/FVLOGO.png")} cost = {1750} onPress = {openRewardModal}/>
+          <RewardItem image={require("../assets/FVLOGO.png")} cost = {2000} onPress = {openRewardModal}/>
         </View>
       </ScrollView>
 
       {/* Reward Popup */}
-      <RewardPopup visible = {modalVisible} onClose = {() => setModalVisible(false)}/>
+      <RewardPopup
+        visible = {modalVisible}
+        onClose = {() => setModalVisible(false)}
+        onPurchase = {handlePurchase}
+        selectedReward = {selectedReward}/>
     </View>
   );
 };
 
 // Reward Items
-const RewardItem = ({ image, onPress, wide }) => (
-  <TouchableOpacity style = {[styles.rewardItem, wide && styles.wideItem]} onPress = {onPress}>
-    <Image source = {image} style = {styles.rewardImage} resizeMode="contain"/>
+const RewardItem = ({ image, cost, onPress }) => (
+  <TouchableOpacity style = {styles.rewardItem} onPress = {() => onPress(cost)}>
+    <Image source = {image} style = {styles.rewardImage} resizeMode = "contain"/>
   </TouchableOpacity>
 );
 
-// Reward Popups
-const RewardPopup = ({ visible, onClose }) => (
-  <Modal transparent visible = {visible} animationType="slide">
+// Reward popup with purchase button
+const RewardPopup = ({ visible, onClose, onPurchase, selectedReward }) => (
+  <Modal transparent visible = {visible} animationType = "slide">
     <View style = {styles.modalOverlay}>
-    <LinearGradient colors={["#A0004D", "#000000"]} style = {styles.modalContainer}>
-      <TouchableOpacity onPress = {onClose} style = {styles.closeButton}>
+      <LinearGradient colors = {["#A0004D", "#000000"]} style = {styles.modalContainer}>
+        <TouchableOpacity onPress = {onClose} style = {styles.closeButton}>
           <Ionicons name = "close" size = {28} color = "white"/>
         </TouchableOpacity>
         <Image source = {require("../assets/FVLOGO.png")} style = {styles.modalImage}/>
         <Text style = {styles.modalTitle}>2-Day XP Booster</Text>
-        <View style = {styles.modalCoinRow}>
-          <Text style = {styles.modalCoinText}>100</Text>
-          <View style = {styles.modalCoinBadge}>
-            <Text style = {styles.modalCoinBadgeText}>Fv</Text>
-            </View>
+        <View style = {styles.coinContainer}>
+          <Text style = {styles.modalCoinText}>{selectedReward}</Text>
+          <View style = {styles.coinBadge}>
+            <Text style = {styles.coinBadgeText}>Fv</Text>
           </View>
-        <Text style = {styles.modalText}>
-        Supercharge your progress with this 2-day XP Booster! Earn double XP for the next 48 hours on challenges, leveling up faster and unlocking rewards in no time. Don't miss this chance to maximize your gains—activate now and make every action count! 🚀🔥
-        </Text>
-        <TouchableOpacity style = {styles.purchaseButton} onPress = {onClose}>
+        </View>
+        <Text style = {styles.modalText}>Supercharge your progress with this 2-day XP Booster! Earn double XP for the next 48 hours on challenges, leveling up faster and unlocking rewards in no time. Don't miss this chance to maximize your gains—activate now and make every action count! 🚀🔥</Text>
+        <TouchableOpacity style = {styles.purchaseButton} onPress = {() => onPurchase(selectedReward)}>
           <Text style = {styles.purchaseButtonText}>Purchase</Text>
         </TouchableOpacity>
       </LinearGradient>
@@ -101,17 +140,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingRight: 29, 
     marginBottom: 20,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#fff",
+    position: "absolute",
+    right: "36%",
   },
   coinContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
   },
   coinText: {
@@ -124,17 +163,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    alignSelf: "flex-end",
-    marginBottom: 10,
   },
   coinBadgeText: {
     color: "#fff",
     fontWeight: "bold",
-  },
-  coinRow: {
-    flexDirection: "row",
-    alignSelf: "flex-end",
-    justifyContent: "space-between",
   },
   sectionTitle: {
     fontSize: 18,
@@ -149,7 +181,7 @@ const styles = StyleSheet.create({
   },
   rewardItem: {
     width: "48%",
-    height: 96,
+    height: 120,
     backgroundColor: "#1c1c1e",
     borderRadius: 12,
     justifyContent: "center",
@@ -158,64 +190,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#87005c",
   },
-  wideItem: {
-    width: "100%",
-    height: 120,
-  },
   rewardImage: {
     width: "80%",
-    height: "80%",
+    height: "60%",
   },
-  viewMore: {
-    width: "40%",
-    height: 40,
-    backgroundColor: "#292929",
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "center",
-    marginTop: 10,
-  },
-  viewMoreText: {
+  costText: {
     color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
+    fontSize: 16,
+    marginTop: 5,
   },
-
-  // popup modal
   modalOverlay: {
     flex: 1,
     justifyContent: "flex-end",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
-  modalCoinText: {
-    color: "#fff",
-    fontSize: 16,
-    marginRight: 5,
-  },
-  modalCoinBadge: {
-    backgroundColor: "red",
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    alignSelf: "flex-end",
-    marginBottom: 10,
-  },
-  modalCoinBadgeText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  modalCoinRow: {
-    flexDirection: "row",
-    alignSelf: "center",
-    justifyContent: "space-between",
-  },
   modalContainer: {
-    padding: 80,
+    padding: 40,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     alignItems: "center",
-    paddingBottom: 40,
   },
   modalImage: {
     width: 120,
@@ -228,18 +221,23 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginBottom: 10,
   },
+  modalCoinText: {
+    color: "#fff",
+    fontSize: 16,
+    marginRight: 4,
+  },
   modalText: {
     color: "#ccc",
     fontSize: 14,
     textAlign: "center",
-    marginBottom: 30,
+    marginTop: 10,
+    marginBottom: 20,
   },
   purchaseButton: {
-    backgroundColor: "",
+    backgroundColor: "#87005c",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    marginBottom: 20,
   },
   purchaseButtonText: {
     color: "white",
@@ -248,8 +246,8 @@ const styles = StyleSheet.create({
   closeButton: {
     position: "absolute",
     top: 10,
-    left: 10,
-    padding: 16
+    right: 10,
+    padding: 16,
   },
 });
 
