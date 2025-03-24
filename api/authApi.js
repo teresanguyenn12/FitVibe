@@ -26,6 +26,7 @@
           completedWorkouts: 0,
           showcasedGoals: [],
           posts: [],
+          fitCoins: 0, 
           createdAt: Timestamp.now(),
         };
       
