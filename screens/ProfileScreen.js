@@ -39,26 +39,27 @@ const ProfileScreen = () => {
             };
 
             const fetchFeaturedGoals = async () => {
-                try {
-                    const goalsRef = collection(db, "goals");
-                    const q = query(goalsRef, where("displayFeatured", "==", true));
-                    const querySnapshot = await getDocs(q);
-
-                    const goals = querySnapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data(),
-                    }));
-
-                    setFeaturedGoals(goals);
-                } catch (err) {
-                    console.error("Failed to fetch featured goals:", err);
-                }
-            };
-
-            fetchUserData();
-            fetchFeaturedGoals();
-        }, [])
-    );
+              try {
+                  const goalsRef = collection(db, "goals");
+                  const q = query(
+                      goalsRef, 
+                      where("displayFeatured", "==", true),
+                      where("userId", "==", currentUser.uid)
+                  );
+                  const querySnapshot = await getDocs(q);
+                  const goals = querySnapshot.docs.map(doc => ({
+                      id: doc.id,
+                      ...doc.data(),
+                  }));
+                  setFeaturedGoals(goals);
+              } catch (err) {
+                  console.error("Failed to fetch featured goals:", err);
+              }
+          };
+          fetchUserData();
+          fetchFeaturedGoals();
+          }, [])
+        );
 
     if (loading || !userData) {
         return (
