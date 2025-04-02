@@ -1,107 +1,112 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import React, { useEffect, useState, useRef } from "react";
+import { View, Text, StyleSheet, Button, Alert } from "react-native";
+import MapView, { Polyline, Marker } from "react-native-maps";
+import * as Location from "expo-location";
+import haversine from "haversine-distance";
 
+const targetDistanceMiles = 10;
 
-const RunChallengeProgressScreen = ({ route }) => {
-  const { challenge } = route.params;
-  const navigation = useNavigation();
+export default function RunChallengeProgressScreen() {
+  const [location, setLocation] = useState(null);
+  const [routeCoordinates, setRouteCoordinates] = useState([]);
+  const [distance, setDistance] = useState(0);
+  const [isTracking, setIsTracking] = useState(true);
+  const watchId = useRef(null);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Denied", "Location permission is required.");
+        return;
+      }
+
+      startTracking();
+    })();
+
+    return () => {
+      if (watchId.current) Location.stopLocationUpdatesAsync(watchId.current);
+    };
+  }, []);
+
+  const startTracking = async () => {
+    watchId.current = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.Highest,
+        timeInterval: 1000,
+        distanceInterval: 1,
+      },
+      (newLocation) => {
+        const { latitude, longitude } = newLocation.coords;
+        const newCoord = { latitude, longitude };
+      
+        if (routeCoordinates.length > 0) {
+          const lastCoord = routeCoordinates[routeCoordinates.length - 1];
+          const dist = haversine(lastCoord, newCoord) / 1609.34; // convert meters to miles
+      
+          const updatedDistance = distance + dist;
+      
+          if (updatedDistance >= targetDistanceMiles) {
+            Alert.alert("🎉 Challenge Complete!", `You ran ${targetDistanceMiles} miles!`);
+            setDistance(updatedDistance);
+            setIsTracking(false);
+            return;
+          }
+      
+          setDistance(updatedDistance);
+        }
+      
+        setRouteCoordinates((prev) => [...prev, newCoord]);
+        setLocation(newCoord);
+      }      
+    );
+  };
+
+  const toggleTracking = () => {
+    setIsTracking((prev) => !prev);
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>{challenge.name}</Text>
-
-      {/* Circular Progress Placeholder */}
-      <View style={styles.circle}>
-        <Text style={styles.percent}>0%</Text>
-      </View>
-
-      {/* Time and Miles Info */}
+      {location && (
+        <MapView
+          style={styles.map}
+          initialRegion={{
+            ...location,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }}
+          region={{
+            ...location,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }}
+        >
+          <Polyline coordinates={routeCoordinates} strokeWidth={5} strokeColor="#00f" />
+          <Marker coordinate={location} title="You" />
+        </MapView>
+      )}
       <View style={styles.infoContainer}>
-        <Text style={styles.label}>Time Left</Text>
-        <Text style={styles.value}>00 : 23 : 59 : 59</Text>
-
-        <View style={styles.milesRow}>
-          <View style={styles.mileBox}>
-            <Text style={styles.smallLabel}>Miles Left</Text>
-            <Text style={styles.smallValue}>{challenge.distance || "10.0"} </Text>
-          </View>
-          <View style={styles.mileBox}>
-            <Text style={styles.smallLabel}>Completed</Text>
-            <Text style={styles.smallValue}>0.0 miles</Text>
-          </View>
-        </View>
+        <Text style={styles.infoText}>Distance: {distance.toFixed(2)} miles</Text>
+        <Button title={isTracking ? "Pause" : "Resume"} onPress={toggleTracking} />
       </View>
     </View>
   );
-};
-
-export default RunChallengeProgressScreen;
+}
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-    paddingTop: 60,
-    alignItems: "center",
-  },
-  header: {
-    fontSize: 30,
-    color: "white",
-    fontWeight: "bold",
-    marginBottom: 30,
-    marginTop: 50,
-  },
-  circle: {
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    borderWidth: 30,
-    borderColor: "#ccc",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  percent: {
-    fontSize: 32,
-    color: "white",
-    fontWeight: "bold",
-  },
+  container: { flex: 1 },
+  map: { flex: 1 },
   infoContainer: {
-    marginTop: 30,
-    alignItems: "center",
-  },
-  label: {
-    color: "#bbb",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  value: {
-    color: "white",
-    fontSize: 30,
-    fontWeight: "bold",
-    marginVertical: 10,
-  },
-  milesRow: {
-    flexDirection: "row",
-    marginTop: 20,
-    gap: 20,
-  },
-  mileBox: {
+    padding: 16,
     backgroundColor: "#1E1E1E",
-    padding: 15,
-    borderRadius: 15,
     alignItems: "center",
-    width: 150,
   },
-  smallLabel: {
-    color: "#aaa",
+  infoText: {
+    color: "#fff",
     fontSize: 18,
-    fontWeight: "bold",
-  },
-  smallValue: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginTop: 5,
+    marginBottom: 10,
   },
 });
+
+

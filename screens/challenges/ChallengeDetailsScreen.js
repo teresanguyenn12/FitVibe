@@ -1,31 +1,51 @@
 // View info about one challenge
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
-import { joinChallenge } from "../../services/joinChallenge";
-import { auth } from "../../firebase";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 
 const ChallengeDetailsScreen = ({ route }) => {
   const { challenge } = route.params;
   const [location, setLocation] = useState(null);
-  const [errorMsg, setErrorMsg] = useState(null);
+  const [city, setCity] = useState("Loading...");
   const navigation = useNavigation();
 
-
-
   useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
+    let locationSubscription = null;
+
+    const startLocationTracking = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        setErrorMsg("Permission to access location was denied");
+        console.log("Permission to access location was denied");
         return;
       }
 
-      let userLocation = await Location.getCurrentPositionAsync({});
-      setLocation(userLocation.coords);
-    })();
+      locationSubscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 5000,
+          distanceInterval: 10,
+        },
+        async (newLocation) => {
+          setLocation(newLocation.coords);
+
+          const geoData = await Location.reverseGeocodeAsync(newLocation.coords);
+          if (geoData.length > 0) {
+            const place = geoData[0];
+            setCity(place.city || place.region || place.name);
+          }
+        }
+      );
+    };
+
+    startLocationTracking();
+
+    return () => {
+      if (locationSubscription) {
+        locationSubscription.remove();
+      }
+    };
   }, []);
 
   return (
@@ -33,20 +53,22 @@ const ChallengeDetailsScreen = ({ route }) => {
       <MapView
         style={styles.map}
         initialRegion={{
-          latitude: location ? location.latitude : 33.7838,  // Default to Cal State Long Beach
-          longitude: location ? location.longitude : -118.1141,
+          latitude: location?.latitude || 33.7838,
+          longitude: location?.longitude || -118.1141,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         }}
-        showsUserLocation={true} 
+        region={
+          location && {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }
+        }
       >
-        {/* Show Marker Only If Location Exists */}
         {location && (
-          <Marker
-            coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-            title="Your Location"
-            pinColor="blue"
-          />
+          <Marker coordinate={location} title="You" pinColor="blue" />
         )}
       </MapView>
 
@@ -54,7 +76,7 @@ const ChallengeDetailsScreen = ({ route }) => {
       <View style={styles.detailsContainer}>
         <Text style={styles.challengeTitle}>{challenge.name}</Text>
         <Text style={styles.detailText}>
-          <Text style={{ fontWeight: "bold" }}>Location:</Text> California State University, Long Beach
+          <Text style={{ fontWeight: "bold" }}>Location:</Text> {city}
         </Text>
         <Text style={styles.detailText}>
           <Text style={{ fontWeight: "bold" }}>Distance:</Text> {challenge.distance || "10 miles"}
@@ -66,7 +88,6 @@ const ChallengeDetailsScreen = ({ route }) => {
           <Text style={{ fontWeight: "bold" }}>Reward:</Text> {challenge.reward || "+500 XP"}
         </Text>
 
-        {/* Buttons */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.button}
@@ -83,7 +104,6 @@ const ChallengeDetailsScreen = ({ route }) => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -106,11 +126,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#fff",
     marginBottom: 8,
-  },
-  location: {
-    fontSize: 14,
-    color: "#bbb",
-    marginBottom: 10,
   },
   detailText: {
     fontSize: 14,
