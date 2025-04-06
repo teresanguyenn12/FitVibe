@@ -88,10 +88,20 @@ export default function RunChallengeProgressScreen({ route, navigation }) {
           const metDuration = (updated?.duration ?? 0) >= (challenge.durationGoal ?? Infinity);
 
           if (metDistance || metDuration) {
-            Alert.alert("Challenge Complete!");
             await updateDoc(userRef, {
               activeChallenges: arrayRemove(challenge.id),
               completedChallenges: arrayUnion(challenge.id),
+              xp: increment(challenge.xp || 100), // Optional XP reward
+            });
+
+            navigation.navigate("ChallengeCompletedScreen", {
+              challenge: {
+                name: challenge.name,
+                reward: `${challenge.xp || 100} XP`,
+                duration: formatMinutes((Date.now() - startTime) / 60000),
+                distance: (updated?.distance ?? 0).toFixed(2) + " miles",
+                status: "Completed",
+              },
             });
           }
         }
@@ -158,6 +168,34 @@ export default function RunChallengeProgressScreen({ route, navigation }) {
           </Text>
           <Button title="Quit Challenge" color="red" onPress={handleQuitChallenge} />
         </View>
+
+        {/* Dev: Manually test completion screen */}
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate("ChallengeCompletedScreen", {
+              challenge: {
+                name: "Test Running Challenge",
+                reward: "100 XP",
+                duration: "00:45:00",
+                distance: "5.0 miles",
+                status: "Completed",
+              },
+            })
+          }
+          style={{
+            backgroundColor: "#5A1A9B",
+            padding: 14,
+            borderRadius: 10,
+            marginTop: 20,
+            alignItems: "center",
+            width: "60%",
+            alignSelf: "center",
+          }}
+        >
+          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold" }}>
+            Test Completion Screen
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );

@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { doc, increment, updateDoc } from "firebase/firestore";
+import { doc, increment, updateDoc, getDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
+import { getBadgeByXP } from "../../utils/badgeUtils"; 
 
 export default function ChallengeCompletedScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { challenge } = route.params;
   const user = auth.currentUser;
+
   const [xpAmount, setXpAmount] = useState(0);
+  const [userXP, setUserXP] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (challenge?.reward) {
@@ -20,33 +24,49 @@ export default function ChallengeCompletedScreen() {
         setXpAmount(parseInt(match[1], 10));
       }
     }
+
+    const fetchUserXP = async () => {
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const userSnap = await getDoc(userRef);
+        const xp = userSnap.data()?.xp || 0;
+        setUserXP(xp);
+      }
+    };
+
+    fetchUserXP();
   }, [challenge]);
 
   const handleClaim = async () => {
     if (user && xpAmount) {
+      setLoading(true);
       const userRef = doc(db, "users", user.uid);
       try {
         await updateDoc(userRef, {
           xp: increment(xpAmount),
         });
-        navigation.navigate("RewardsScreen");
+        navigation.navigate("Rewards");
       } catch (err) {
         console.error("Error updating XP:", err);
+      } finally {
+        setLoading(false);
       }
     }
   };
+
+  const badgeImage = getBadgeByXP(userXP);
 
   return (
     <View style={styles.container}>
       <Ionicons name="checkmark-circle" size={80} color="limegreen" style={styles.icon} />
       <Text style={styles.title}>Challenge Completed!</Text>
-      <Text style={styles.subtitle}>Warrior Lvl 68</Text>
+      <Text style={styles.subtitle}>XP Level</Text>
 
-      {/* Progress Ring */}
+      {/* Progress Ring with Badge */}
       <View style={styles.progressContainer}>
         <View style={styles.outerRing}>
           <View style={styles.innerRing}>
-            <Image source={require("../../assets/competitor.png")} style={styles.iconImage} />
+            <Image source={badgeImage} style={styles.iconImage} />
           </View>
         </View>
         <Text style={styles.xpText}>+{xpAmount} XP</Text>
@@ -58,9 +78,13 @@ export default function ChallengeCompletedScreen() {
       <Text style={styles.challengeInfo}>Duration: {challenge?.duration}</Text>
       <Text style={styles.challengeInfo}>Status: {challenge?.status}</Text>
 
-      <TouchableOpacity onPress={handleClaim}>
+      <TouchableOpacity onPress={handleClaim} disabled={loading}>
         <LinearGradient colors={["#fff", "#eee"]} style={styles.claimButton}>
-          <Text style={styles.claimText}>Claim</Text>
+          {loading ? (
+            <ActivityIndicator color="#000" />
+          ) : (
+            <Text style={styles.claimText}>Claim</Text>
+          )}
         </LinearGradient>
       </TouchableOpacity>
     </View>
@@ -114,8 +138,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   iconImage: {
-    width: 60,
-    height: 60,
+    width: 80,
+    height: 80,
     resizeMode: "contain",
   },
   xpText: {
