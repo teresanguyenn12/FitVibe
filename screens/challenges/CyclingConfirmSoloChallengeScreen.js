@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { joinChallenge } from "../../services/joinChallenge";
 import { auth } from "../../firebase";
+import { Ionicons } from "@expo/vector-icons";
+
 
 const CyclingConfirmSoloChallengeScreen = () => {
   const navigation = useNavigation();
@@ -19,6 +21,10 @@ const CyclingConfirmSoloChallengeScreen = () => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={30} color="#fff" />
+      </TouchableOpacity>
+
       <Image
         source={require("../../assets/CyclingConfirm.png")}
         style={styles.image}
@@ -107,6 +113,14 @@ const styles = StyleSheet.create({
     color: "#000",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 999,
+    backgroundColor: "#00000088",
+    padding: 6,
   },
 });
 

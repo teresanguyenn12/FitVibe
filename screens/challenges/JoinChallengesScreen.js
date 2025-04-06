@@ -1,15 +1,16 @@
 // List all available challenges
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, StyleSheet,TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
-import { Entypo } from "@expo/vector-icons";
+import { Entypo, Ionicons } from "@expo/vector-icons";
 import { db } from "../../firebase";
 import { collection, getDocs } from "firebase/firestore";
 
 const categories = ["Run", "Walk", "Yoga", "Lifting", "Cycling"];
 
 const categoryToConfirmScreen = {
+  Run: "RunConfirmSoloChallenge",
   Walk: "WalkConfirmSoloChallenge",
   Yoga: "YogaConfirmSoloChallenge",
   Lifting: "LiftingConfirmSoloChallenge",
@@ -20,6 +21,7 @@ const JoinChallengesScreen = () => {
   const navigation = useNavigation();
   const [selectedCategory, setSelectedCategory] = useState("Run");
   const [allChallenges, setAllChallenges] = useState([]);
+  const [currentMonthName, setCurrentMonthName] = useState("");
 
   useEffect(() => {
     const fetchChallenges = async () => {
@@ -35,6 +37,12 @@ const JoinChallengesScreen = () => {
       }
     };
 
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    const now = new Date();
+    setCurrentMonthName(monthNames[now.getMonth()]);
     fetchChallenges();
   }, []);
 
@@ -44,13 +52,14 @@ const JoinChallengesScreen = () => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={30} color="#fff" />
+      </TouchableOpacity>
+
       <Text style={styles.header}>Join Challenges</Text>
 
-      <LinearGradient
-        colors={["#A0006D", "#552082"]}
-        style={styles.selectedMonthButton}
-      >
-        <Text style={styles.selectedMonthText}>March Challenges</Text>
+      <LinearGradient colors={["#A0006D", "#552082"]} style={styles.selectedMonthButton}>
+        <Text style={styles.selectedMonthText}>{currentMonthName} Challenges</Text>
       </LinearGradient>
 
       <Text style={styles.sectionTitle}>Choose Fitness Challenge</Text>
@@ -70,11 +79,7 @@ const JoinChallengesScreen = () => {
               selectedCategory === category && styles.selectedCategory,
             ]}
           >
-            <Text
-              style={{
-                color: selectedCategory === category ? "#fff" : "#bbb",
-              }}
-            >
+            <Text style={{ color: selectedCategory === category ? "#fff" : "#bbb" }}>
               {category}
             </Text>
           </TouchableOpacity>
@@ -89,16 +94,11 @@ const JoinChallengesScreen = () => {
           <TouchableOpacity
             style={styles.challengeItem}
             onPress={() => {
-              if (item.category === "Run") {
-                // Go to location/map-based challenge details first
-                navigation.navigate("ChallengeDetails", { challenge: item });
+              const screen = categoryToConfirmScreen[item.category];
+              if (screen) {
+                navigation.navigate(screen, { challenge: item });
               } else {
-                const screen = categoryToConfirmScreen[item.category];
-                if (screen) {
-                  navigation.navigate(screen, { challenge: item });
-                } else {
-                  console.warn("Unknown category:", item.category);
-                }
+                console.warn("Unknown category:", item.category);
               }
             }}
           >
@@ -175,6 +175,13 @@ const styles = StyleSheet.create({
   challengeText: {
     color: "#fff",
     fontSize: 16,
+  },
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 999,
+    backgroundColor: "#00000088",
   },
 });
 

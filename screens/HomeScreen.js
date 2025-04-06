@@ -11,9 +11,9 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { getAuth } from "firebase/auth";
-import { getFirestore, doc, onSnapshot, getDocs, collection } from "firebase/firestore";
+import { getFirestore, doc, onSnapshot } from "firebase/firestore";
 import { app } from "../firebase";
-//import { seedChallenges } from "./challenges/seedChallenges";
+
 
 const { width, height } = Dimensions.get("window");
 
@@ -24,22 +24,6 @@ const HomeScreen = () => {
     profilePicture: null,
   });
   const [updateKey, setUpdateKey] = useState(0);
-
-  //useEffect(() => {
-    // Seed challenges once if not already present
-    //const maybeSeedChallenges = async () => {
-      //const db = getFirestore(app);
-      //const snapshot = await getDocs(collection(db, "challenges"));
-      //if (snapshot.empty) {
-        //await seedChallenges();
-        //console.log(" Challenges seeded.");
-      //} else {
-        //console.log(" Challenges already exist. Skipping seeding.");
-      //}
-    //};
-
-    //maybeSeedChallenges();
-  //}, []);
 
   useEffect(() => {
     const auth = getAuth();
@@ -106,7 +90,12 @@ const HomeScreen = () => {
 };
 
 const Card = ({ title, icon, onPress }) => (
-  <LinearGradient colors={["#5A1A9B", "#1A4A80", "#8A1E50"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardBorder}>
+  <LinearGradient
+    colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+    style={styles.cardBorder}
+  >
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <Ionicons name={icon} size={40} color="#fff" />
       <Text style={styles.cardText}>{title}</Text>
@@ -188,6 +177,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 10,
     fontFamily: "TiltWarp-Regular",
+  },
+  devButton: {
+    marginVertical: 10,
+    padding: 10,
+    backgroundColor: "#222",
+    borderRadius: 10,
+  },
+  devText: {
+    color: "#0f0",
+    fontSize: 16,
   },
 });
 

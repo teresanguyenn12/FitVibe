@@ -1,18 +1,17 @@
 export { default as ChallengeScreen } from "./ChallengeScreen";
 export { default as ChallengeDetailsScreen } from "./ChallengeDetailsScreen";
-export { default as ChallengeProgressScreen } from "./ChallengeProgressScreen";
 export { default as JoinChallengesScreen } from "./JoinChallengesScreen";
-export { default as CompletedChallengeDetails } from "./CompletedChallengeDetails";
-export { default as ConfirmChallengeScreen } from "./ConfirmChallengeScreen";
 export { default as MyChallengesScreen } from "./MyChallengesScreen";
 export { default as MyChallengeInfoScreen } from "./MyChallengeInfoScreen";
-export { default as ConfirmSoloChallengeScreen} from "./ConfirmSoloChallengeScreen"; 
+export { default as RunConfirmSoloChallenge} from "./RunConfirmSoloChallenge"; 
 export { default as RunChallengeProgressScreen} from "./RunChallengeProgressScreen";
 export { default as WalkConfirmSoloChallengeScreen } from "./WalkConfirmSoloChallengeScreen";
 export { default as YogaConfirmSoloChallengeScreen } from "./YogaConfirmSoloChallengeScreen";
 export { default as LiftingConfirmSoloChallengeScreen } from "./LiftingConfirmSoloChallengeScreen";
 export { default as CyclingConfirmSoloChallengeScreen } from "./CyclingConfirmSoloChallengeScreen";
-export { default as WalkChallengeProgressScreen} from "./RunChallengeProgressScreen";
-export { default as LiftingChallengeProgressScreen} from "./RunChallengeProgressScreen";
-export { default as CyclingChallengeProgressScreen} from "./RunChallengeProgressScreen";
-export { default as YogaChallengeProgressScreen} from "./RunChallengeProgressScreen";
+export { default as WalkChallengeProgressScreen} from "./WalkChallengeProgressScreen";
+export { default as LiftingChallengeProgressScreen} from "./LiftingChallengeProgressScreen";
+export { default as CyclingChallengeProgressScreen} from "./CyclingChallengeProgressScreen";
+export { default as YogaChallengeProgressScreen} from "./YogaChallengeProgressScreen";
+export {default as ChallengeCompletedScreen} from "./ChallengeCompletedScreen";
+

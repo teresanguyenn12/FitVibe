@@ -1,15 +1,19 @@
 // View info about one challenge
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import { auth, db } from "../../firebase";
+import { doc, updateDoc, setDoc, serverTimestamp, arrayUnion } from "firebase/firestore";
 
 const ChallengeDetailsScreen = ({ route }) => {
   const { challenge } = route.params;
   const [location, setLocation] = useState(null);
   const [city, setCity] = useState("Loading...");
   const navigation = useNavigation();
+  const user = auth.currentUser;
 
   useEffect(() => {
     let locationSubscription = null;
@@ -48,8 +52,42 @@ const ChallengeDetailsScreen = ({ route }) => {
     };
   }, []);
 
+  const handleJoinSolo = async () => {
+    try {
+      if (!user) {
+        Alert.alert("Error", "You must be logged in to join a challenge.");
+        return;
+      }
+
+      const userRef = doc(db, "users", user.uid);
+
+      await setDoc(
+        userRef,
+        {
+          activeChallenges: arrayUnion(challenge.id),
+          [`challengeProgress.${challenge.id}`]: {
+            distance: 0,
+            duration: 0,
+            startedAt: serverTimestamp(),
+            lastUpdated: serverTimestamp(),
+          },
+        },
+        { merge: true }
+      );
+
+      navigation.navigate("ConfirmSoloChallengeScreen", { challenge });
+    } catch (err) {
+      console.error("Error joining challenge:", err);
+      Alert.alert("Error", "Could not join challenge.");
+    }
+  };
+
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={30} color="#fff" />
+      </TouchableOpacity>
+
       <MapView
         style={styles.map}
         initialRegion={{
@@ -67,32 +105,18 @@ const ChallengeDetailsScreen = ({ route }) => {
           }
         }
       >
-        {location && (
-          <Marker coordinate={location} title="You" pinColor="blue" />
-        )}
+        {location && <Marker coordinate={location} title="You" pinColor="blue" />}
       </MapView>
 
-      {/* Challenge Details */}
       <View style={styles.detailsContainer}>
         <Text style={styles.challengeTitle}>{challenge.name}</Text>
-        <Text style={styles.detailText}>
-          <Text style={{ fontWeight: "bold" }}>Location:</Text> {city}
-        </Text>
-        <Text style={styles.detailText}>
-          <Text style={{ fontWeight: "bold" }}>Distance:</Text> {challenge.distance || "10 miles"}
-        </Text>
-        <Text style={styles.detailText}>
-          <Text style={{ fontWeight: "bold" }}>Duration:</Text> {challenge.duration || "24 hours"}
-        </Text>
-        <Text style={styles.detailText}>
-          <Text style={{ fontWeight: "bold" }}>Reward:</Text> {challenge.reward || "+500 XP"}
-        </Text>
+        <Text style={styles.detailText}><Text style={{ fontWeight: "bold" }}>Location:</Text> {city}</Text>
+        <Text style={styles.detailText}><Text style={{ fontWeight: "bold" }}>Distance:</Text> {challenge.distance || "10 miles"}</Text>
+        <Text style={styles.detailText}><Text style={{ fontWeight: "bold" }}>Duration:</Text> {challenge.duration || "24 hours"}</Text>
+        <Text style={styles.detailText}><Text style={{ fontWeight: "bold" }}>Reward:</Text> {challenge.reward || "+500 XP"}</Text>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.navigate("ConfirmSoloChallengeScreen", { challenge })}
-          >
+          <TouchableOpacity style={styles.button} onPress={handleJoinSolo}>
             <Text style={styles.buttonText}>Join Solo</Text>
           </TouchableOpacity>
 
@@ -106,14 +130,8 @@ const ChallengeDetailsScreen = ({ route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-  },
-  map: {
-    width: "100%",
-    height: "45%",
-  },
+  container: { flex: 1, backgroundColor: "#121212" },
+  map: { width: "100%", height: "45%" },
   detailsContainer: {
     backgroundColor: "#1A1A1A",
     padding: 20,
@@ -163,6 +181,14 @@ const styles = StyleSheet.create({
     color: "#A0006D",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 999,
+    backgroundColor: "#00000088",
+    padding: 6,
   },
 });
 

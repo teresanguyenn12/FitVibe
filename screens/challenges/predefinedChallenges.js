@@ -8,6 +8,8 @@ export const predefinedChallenges = [
     reward: "200 XP",
     status: "Active",
     category: "Run",
+    distanceGoal: 0.062,
+    durationGoal: 10,
   },
   {
     id: "run_10mile_24hr",
@@ -17,6 +19,8 @@ export const predefinedChallenges = [
     reward: "500 XP",
     status: "Active",
     category: "Run",
+    distanceGoal: 10,
+    durationGoal: 1440,
   },
   {
     id: "run_5k_daily",
@@ -26,6 +30,8 @@ export const predefinedChallenges = [
     reward: "1000 XP",
     status: "Active",
     category: "Run",
+    distanceGoal: 3.1,
+    durationGoal: 10080,
   },
   {
     id: "run_hill_sprint",
@@ -35,6 +41,8 @@ export const predefinedChallenges = [
     reward: "600 XP",
     status: "Active",
     category: "Run",
+    distanceGoal: 12,
+    durationGoal: 30,
   },
   {
     id: "run_treadmill_marathon",
@@ -44,9 +52,11 @@ export const predefinedChallenges = [
     reward: "750 XP",
     status: "Active",
     category: "Run",
+    distanceGoal: 26.2,
+    durationGoal: 180,
   },
 
-  //  Walk
+  // Walk
   {
     id: "walk_5k",
     name: "5K Walk Challenge",
@@ -55,6 +65,8 @@ export const predefinedChallenges = [
     reward: "250 XP",
     status: "Active",
     category: "Walk",
+    distanceGoal: 3.1,
+    durationGoal: 60,
   },
   {
     id: "walk_1mile_daily",
@@ -64,6 +76,8 @@ export const predefinedChallenges = [
     reward: "300 XP",
     status: "Active",
     category: "Walk",
+    distanceGoal: 1,
+    durationGoal: 10080,
   },
   {
     id: "walk_weekend_loop",
@@ -73,6 +87,8 @@ export const predefinedChallenges = [
     reward: "400 XP",
     status: "Active",
     category: "Walk",
+    distanceGoal: 6.2,
+    durationGoal: 2880,
   },
   {
     id: "walk_evening_stroll",
@@ -82,6 +98,8 @@ export const predefinedChallenges = [
     reward: "350 XP",
     status: "Active",
     category: "Walk",
+    distanceGoal: 1.24,
+    durationGoal: 7200,
   },
   {
     id: "walk_marathon_week",
@@ -91,9 +109,11 @@ export const predefinedChallenges = [
     reward: "700 XP",
     status: "Active",
     category: "Walk",
+    distanceGoal: 26.2,
+    durationGoal: 10080,
   },
 
-  //  Yoga
+  // Yoga
   {
     id: "yoga_morning_flow",
     name: "Morning Yoga Flow",
@@ -102,6 +122,8 @@ export const predefinedChallenges = [
     reward: "300 XP",
     status: "Active",
     category: "Yoga",
+    distanceGoal: null,
+    durationGoal: 30,
   },
   {
     id: "yoga_sunset_stretch",
@@ -111,6 +133,8 @@ export const predefinedChallenges = [
     reward: "350 XP",
     status: "Active",
     category: "Yoga",
+    distanceGoal: null,
+    durationGoal: 45,
   },
   {
     id: "yoga_7_day_challenge",
@@ -120,6 +144,8 @@ export const predefinedChallenges = [
     reward: "600 XP",
     status: "Active",
     category: "Yoga",
+    distanceGoal: null,
+    durationGoal: 10080,
   },
   {
     id: "yoga_core_strength",
@@ -129,6 +155,8 @@ export const predefinedChallenges = [
     reward: "400 XP",
     status: "Active",
     category: "Yoga",
+    distanceGoal: null,
+    durationGoal: 40,
   },
   {
     id: "yoga_flexibility_focus",
@@ -138,6 +166,8 @@ export const predefinedChallenges = [
     reward: "500 XP",
     status: "Active",
     category: "Yoga",
+    distanceGoal: null,
+    durationGoal: 7200,
   },
 
   // Lifting
@@ -149,6 +179,8 @@ export const predefinedChallenges = [
     reward: "800 XP",
     status: "Active",
     category: "Lifting",
+    distanceGoal: null,
+    durationGoal: 10080,
   },
   {
     id: "lift_push_pull_legs",
@@ -158,6 +190,8 @@ export const predefinedChallenges = [
     reward: "700 XP",
     status: "Active",
     category: "Lifting",
+    distanceGoal: null,
+    durationGoal: 10080,
   },
   {
     id: "lift_squat_challenge",
@@ -167,6 +201,8 @@ export const predefinedChallenges = [
     reward: "650 XP",
     status: "Active",
     category: "Lifting",
+    distanceGoal: null,
+    durationGoal: 7200,
   },
   {
     id: "lift_upperbody_focus",
@@ -176,6 +212,8 @@ export const predefinedChallenges = [
     reward: "500 XP",
     status: "Active",
     category: "Lifting",
+    distanceGoal: null,
+    durationGoal: 4320,
   },
   {
     id: "lift_100_pushups",
@@ -185,9 +223,11 @@ export const predefinedChallenges = [
     reward: "550 XP",
     status: "Active",
     category: "Lifting",
+    distanceGoal: null,
+    durationGoal: 7200,
   },
 
-  //  Cycling
+  // Cycling
   {
     id: "cycle_20mile_sprint",
     name: "20 Mile Cycling Sprint",
@@ -196,6 +236,8 @@ export const predefinedChallenges = [
     reward: "500 XP",
     status: "Active",
     category: "Cycling",
+    distanceGoal: 20,
+    durationGoal: 1440,
   },
   {
     id: "cycle_100mile",
@@ -205,6 +247,8 @@ export const predefinedChallenges = [
     reward: "1000 XP",
     status: "Active",
     category: "Cycling",
+    distanceGoal: 100,
+    durationGoal: 4320,
   },
   {
     id: "cycle_30min_daily",
@@ -214,6 +258,8 @@ export const predefinedChallenges = [
     reward: "600 XP",
     status: "Active",
     category: "Cycling",
+    distanceGoal: null,
+    durationGoal: 10080,
   },
   {
     id: "cycle_city_loop",
@@ -223,6 +269,8 @@ export const predefinedChallenges = [
     reward: "450 XP",
     status: "Active",
     category: "Cycling",
+    distanceGoal: 15,
+    durationGoal: 45,
   },
   {
     id: "cycle_climb_challenge",
@@ -232,5 +280,7 @@ export const predefinedChallenges = [
     reward: "700 XP",
     status: "Active",
     category: "Cycling",
+    distanceGoal: 30,
+    durationGoal: 2880,
   },
 ];

@@ -123,13 +123,10 @@ function Navigation() {
             {/*  Challenges Screens */}
             <Stack.Screen name="Challenges" component={ChallengeScreens.ChallengeScreen} />
             <Stack.Screen name="ChallengeDetails" component={ChallengeScreens.ChallengeDetailsScreen} />
-            <Stack.Screen name="ChallengeProgress" component={ChallengeScreens.ChallengeProgressScreen} />
             <Stack.Screen name="JoinChallenges" component={ChallengeScreens.JoinChallengesScreen} />
-            <Stack.Screen name="CompletedChallengeDetails" component={ChallengeScreens.CompletedChallengeDetails} />
-            <Stack.Screen name="ConfirmChallengeScreen" component={ChallengeScreens.ConfirmChallengeScreen} />
             <Stack.Screen name="MyChallengesScreen" component={ChallengeScreens.MyChallengesScreen} />
             <Stack.Screen name="MyChallengeInfoScreen" component={ChallengeScreens.MyChallengeInfoScreen} />
-            <Stack.Screen name="ConfirmSoloChallengeScreen" component={ChallengeScreens.ConfirmSoloChallengeScreen} />
+            <Stack.Screen name="RunConfirmSoloChallenge" component={ChallengeScreens.RunConfirmSoloChallenge} />
             <Stack.Screen name="RunChallengeProgressScreen" component={ChallengeScreens.RunChallengeProgressScreen}/>
             <Stack.Screen name="WalkConfirmSoloChallenge" component={ChallengeScreens.WalkConfirmSoloChallengeScreen} />
             <Stack.Screen name="YogaConfirmSoloChallenge" component={ChallengeScreens.YogaConfirmSoloChallengeScreen} />
@@ -139,6 +136,7 @@ function Navigation() {
             <Stack.Screen name="YogaChallengeProgressScreen" component={ChallengeScreens.YogaChallengeProgressScreen} />
             <Stack.Screen name="LiftingChallengeProgressScreen" component={ChallengeScreens.LiftingChallengeProgressScreen} />
             <Stack.Screen name="CyclingChallengeProgressScreen" component={ChallengeScreens.CyclingChallengeProgressScreen} />
+            <Stack.Screen name="ChallengeCompletedScreen" component={ChallengeScreens.ChallengeCompletedScreen}/>
              
 
             {/* Settings Screens */}

@@ -1,0 +1,12 @@
+specVersion: "v1"
+serviceId: "fitvibe"
+location: "asia-east1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "fdcdb"
+      cloudSql:
+        instanceId: "fitvibe-fdc"
+      # schemaValidation: "COMPATIBLE"
+connectorDirs: ["./connector"]
