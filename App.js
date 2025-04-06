@@ -44,6 +44,8 @@ import AddPostsScreen from "./screens/AddPostsScreen";
 import MessagesScreen from "./screens/MessagesScreen";
 import NewMessageScreen from "./screens/NewMessageScreen";
 import ChatScreen from "./screens/ChatScreen";
+import CommentsScreen from './screens/CommentsScreen';
+
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -248,6 +250,8 @@ function Navigation() {
                 name="ChatScreen"
                 component={ChatScreen}
             />
+            <Stack.Screen name="CommentsScreen" component={CommentsScreen} options={{ title: 'Comments' }} />
+
           </>
         )}
       </Stack.Navigator>
