@@ -25,6 +25,7 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    
     "extra": {
       "firebaseApiKey": "AIzaSyCsQIG9D3RayftfIIV-rtP_RUZOFlX6Ev4",
       "firebaseAuthDomain": "fitvibe-46710.firebaseapp.com",

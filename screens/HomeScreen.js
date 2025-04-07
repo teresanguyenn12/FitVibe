@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  ScrollView,
+  Animated,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,23 +16,17 @@ import { getAuth } from "firebase/auth";
 import { getFirestore, doc, onSnapshot } from "firebase/firestore";
 import { app } from "../firebase";
 
-
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 
 const HomeScreen = () => {
   const navigation = useNavigation();
-  const [user, setUser] = useState({
-    firstName: "Loading...",
-    profilePicture: null,
-  });
-  const [updateKey, setUpdateKey] = useState(0);
+  const [user, setUser] = useState({ firstName: "", profilePicture: null });
+  const fadeAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
     const auth = getAuth();
-    if (!auth.currentUser) return;
-
     const db = getFirestore(app);
-    const userDocRef = doc(db, "users", auth.currentUser.uid);
+    const userDocRef = doc(db, "users", auth.currentUser?.uid);
 
     const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -39,29 +35,32 @@ const HomeScreen = () => {
           firstName: data.fullName?.split(" ")[0] || "User",
           profilePicture: data.profilePicture || null,
         });
-        setUpdateKey((prevKey) => prevKey + 1);
-      } else {
-        console.log("No user document found!");
       }
     });
 
-    return () => unsubscribe(); // Cleanup
+    // Trigger fade-in animation
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+
+    return unsubscribe;
   }, []);
 
   return (
-    <View style={styles.container}>
+    <Animated.ScrollView
+      style={[styles.container, { opacity: fadeAnim }]}
+      contentContainerStyle={{ paddingBottom: 40 }}
+    >
       {/* Header */}
-      <View style={styles.header}>
+      <View style={styles.headerRow}>
         <View>
-          <Text style={styles.greeting}>
-            Hi <Text style={styles.bold}>{user.firstName}</Text>,
-          </Text>
-          <Text style={styles.subtext}>Let's get active!</Text>
+          <Text style={styles.greeting}>Hey {user.firstName} 👋</Text>
+          <Text style={styles.subtext}>Let’s get moving today!</Text>
         </View>
-
         <TouchableOpacity onPress={() => navigation.navigate("ProfileScreen")}>
           <Image
-            key={updateKey}
             source={
               user.profilePicture
                 ? { uri: user.profilePicture }
@@ -72,121 +71,122 @@ const HomeScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Cards */}
-      <View style={styles.cardBackground}>
-        <View style={styles.cardContainer}>
-          <View style={styles.row}>
-            <Card title="Start Workout" icon="time" onPress={() => navigation.navigate("StartWorkout")} />
-            <Card title="My Workouts" icon="calendar" onPress={() => navigation.navigate("MyWorkouts")} />
-          </View>
-          <View style={styles.row}>
-            <Card title="Rewards" icon="trophy" onPress={() => navigation.navigate("Rewards")} />
-            <Card title="Progression" icon="stats-chart" onPress={() => navigation.navigate("Progression")} />
-          </View>
-        </View>
+      {/* Quick Action Cards */}
+      <View style={styles.cardContainer}>
+        <ActionCard
+          title="Start Workout"
+          subtitle="Begin a new session"
+          icon="play"
+          onPress={() => navigation.navigate("StartWorkout")}
+        />
+        <ActionCard
+          title="My Workouts"
+          subtitle="View history & plans"
+          icon="calendar"
+          onPress={() => navigation.navigate("MyWorkouts")}
+        />
+        <ActionCard
+          title="Rewards"
+          subtitle="See what you've earned"
+          icon="trophy"
+          onPress={() => navigation.navigate("Rewards")}
+        />
+        <ActionCard
+          title="Progress"
+          subtitle="Track milestones"
+          icon="stats-chart"
+          onPress={() => navigation.navigate("Progression")}
+        />
       </View>
-    </View>
+    </Animated.ScrollView>
   );
 };
 
-const Card = ({ title, icon, onPress }) => (
-  <LinearGradient
-    colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-    start={{ x: 0, y: 0 }}
-    end={{ x: 1, y: 1 }}
-    style={styles.cardBorder}
-  >
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-      <Ionicons name={icon} size={40} color="#fff" />
-      <Text style={styles.cardText}>{title}</Text>
-    </TouchableOpacity>
-  </LinearGradient>
+const ActionCard = ({ title, subtitle, icon, onPress }) => (
+  <TouchableOpacity style={styles.actionCardWrapper} onPress={onPress}>
+    <LinearGradient
+      colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
+      start={{ x: 1, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={styles.gradientCard}
+    >
+      <View style={styles.iconCircle}>
+        <Ionicons name={icon} size={26} color="#fff" />
+      </View>
+      <View>
+        <Text style={styles.cardTitle}>{title}</Text>
+        <Text style={styles.cardSubtitle}>{subtitle}</Text>
+      </View>
+    </LinearGradient>
+  </TouchableOpacity>
 );
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
-    paddingTop: 60,
+    backgroundColor: "#131417",
+    paddingTop: 100,
+    paddingHorizontal: 20,
   },
-  header: {
+  headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    marginBottom: 65,
-    marginTop: 40,
+    marginBottom: 30,
   },
   greeting: {
-    fontSize: 40,
+    fontSize: 35,
+    fontWeight: "bold",
     color: "#fff",
     fontFamily: "TiltWarp-Regular",
-  },
-  bold: {
-    fontWeight: "bold",
+    marginLeft:5,
   },
   subtext: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#bbb",
+    marginLeft: 40,
   },
   profileImage: {
-    width: 75,
-    height: 75,
-    borderRadius: 37.5,
-    borderWidth: 2,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 1,
     borderColor: "#fff",
-    marginRight: 20,
-  },
-  cardBackground: {
-    flex: 1,
-    width: "105%",
-    backgroundColor: "#1E1E1E",
-    borderTopLeftRadius: 60,
-    borderTopRightRadius: 60,
-    paddingVertical: 30,
-    alignItems: "center",
-    marginLeft: -10,
+    marginRight:15,
   },
   cardContainer: {
-    width: "90%",
-    maxWidth: 350,
-    alignSelf: "center",
-    marginTop: 40,
+    marginTop: 20,
+    gap: 16,
   },
-  row: {
+  actionCardWrapper: {
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom: 10,
+  },
+  gradientCard: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 25,
-  },
-  cardBorder: {
-    width: "48%",
-    height: 155,
-    borderRadius: 20,
-    padding: 3,
-  },
-  card: {
-    flex: 1,
-    backgroundColor: "#000",
-    borderRadius: 20,
-    justifyContent: "center",
     alignItems: "center",
+    padding: 20,
+    borderRadius: 20,
   },
-  cardText: {
+  iconCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  cardTitle: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
-    marginTop: 10,
-    fontFamily: "TiltWarp-Regular",
   },
-  devButton: {
-    marginVertical: 10,
-    padding: 10,
-    backgroundColor: "#222",
-    borderRadius: 10,
-  },
-  devText: {
-    color: "#0f0",
-    fontSize: 16,
+  cardSubtitle: {
+    color: "#ddd",
+    fontSize: 13,
+    marginTop: 2,
   },
 });
 
