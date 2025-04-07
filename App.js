@@ -137,6 +137,9 @@ function Navigation() {
             <Stack.Screen name="LiftingChallengeProgressScreen" component={ChallengeScreens.LiftingChallengeProgressScreen} />
             <Stack.Screen name="CyclingChallengeProgressScreen" component={ChallengeScreens.CyclingChallengeProgressScreen} />
             <Stack.Screen name="ChallengeCompletedScreen" component={ChallengeScreens.ChallengeCompletedScreen}/>
+            <Stack.Screen name="InviteFriendsQueueScreen" component={ChallengeScreens.InviteFriendsQueueScreen}/>
+            <Stack.Screen name="ChallengeChatScreen" component={ChallengeScreens.ChallengeChatScreen}/>
+            <Stack.Screen name="ChallengeCard" component={ChallengeScreens.ChallengeCard}/>
              
 
             {/* Settings Screens */}

@@ -9,14 +9,6 @@ import { collection, getDocs } from "firebase/firestore";
 
 const categories = ["Run", "Walk", "Yoga", "Lifting", "Cycling"];
 
-const categoryToConfirmScreen = {
-  Run: "RunConfirmSoloChallenge",
-  Walk: "WalkConfirmSoloChallenge",
-  Yoga: "YogaConfirmSoloChallenge",
-  Lifting: "LiftingConfirmSoloChallenge",
-  Cycling: "CyclingConfirmSoloChallenge",
-};
-
 const JoinChallengesScreen = () => {
   const navigation = useNavigation();
   const [selectedCategory, setSelectedCategory] = useState("Run");
@@ -93,14 +85,7 @@ const JoinChallengesScreen = () => {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.challengeItem}
-            onPress={() => {
-              const screen = categoryToConfirmScreen[item.category];
-              if (screen) {
-                navigation.navigate(screen, { challenge: item });
-              } else {
-                console.warn("Unknown category:", item.category);
-              }
-            }}
+            onPress={() => navigation.navigate("ChallengeDetails", { challenge: item })}
           >
             <Text style={styles.challengeText}>{item.name}</Text>
             <Entypo name="chevron-right" size={18} color="#bbb" />

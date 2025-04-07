@@ -14,4 +14,6 @@ export { default as LiftingChallengeProgressScreen} from "./LiftingChallengeProg
 export { default as CyclingChallengeProgressScreen} from "./CyclingChallengeProgressScreen";
 export { default as YogaChallengeProgressScreen} from "./YogaChallengeProgressScreen";
 export {default as ChallengeCompletedScreen} from "./ChallengeCompletedScreen";
-
+export {default as InviteFriendsQueueScreen} from "./InviteFriendsQueue";
+export {default as ChallengeChatScreen} from "./ChallengeChatScreen";
+export {default as ChallengeCard} from "./ChallengeCard";

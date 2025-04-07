@@ -68,9 +68,11 @@ export default function MyChallengeDetailsScreen() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Text style={styles.backText}>← Back</Text>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={30} color="#fff" />
       </TouchableOpacity>
+
+
 
       <Text style={styles.title}>{challenge.name}</Text>
 
@@ -117,4 +119,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#fff",
   },
+  backButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 999,
+    backgroundColor: "#00000088",
+    padding: 6,
+  },
+  
 });

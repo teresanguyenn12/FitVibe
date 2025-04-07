@@ -6,7 +6,7 @@ import * as Location from "expo-location";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { auth, db } from "../../firebase";
-import { doc, updateDoc, setDoc, serverTimestamp, arrayUnion } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, arrayUnion } from "firebase/firestore";
 
 const ChallengeDetailsScreen = ({ route }) => {
   const { challenge } = route.params;
@@ -33,7 +33,6 @@ const ChallengeDetailsScreen = ({ route }) => {
         },
         async (newLocation) => {
           setLocation(newLocation.coords);
-
           const geoData = await Location.reverseGeocodeAsync(newLocation.coords);
           if (geoData.length > 0) {
             const place = geoData[0];
@@ -75,11 +74,33 @@ const ChallengeDetailsScreen = ({ route }) => {
         { merge: true }
       );
 
-      navigation.navigate("ConfirmSoloChallengeScreen", { challenge });
+      const categoryToConfirmScreen = {
+        Run: "RunConfirmSoloChallenge",
+        Walk: "WalkConfirmSoloChallenge",
+        Yoga: "YogaConfirmSoloChallenge",
+        Lifting: "LiftingConfirmSoloChallenge",
+        Cycling: "CyclingConfirmSoloChallenge",
+      };
+
+      const confirmScreen = categoryToConfirmScreen[challenge.category];
+      if (confirmScreen) {
+        navigation.navigate(confirmScreen, { challenge });
+      } else {
+        Alert.alert("Error", "Unknown challenge category.");
+      }
     } catch (err) {
       console.error("Error joining challenge:", err);
       Alert.alert("Error", "Could not join challenge.");
     }
+  };
+
+  const handleInviteFriend = () => {
+    if (!user) {
+      Alert.alert("Error", "You must be logged in to invite friends.");
+      return;
+    }
+
+    navigation.navigate("InviteFriendsQueueScreen", { challenge });
   };
 
   return (
@@ -120,7 +141,7 @@ const ChallengeDetailsScreen = ({ route }) => {
             <Text style={styles.buttonText}>Join Solo</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.buttonOutline}>
+          <TouchableOpacity style={styles.buttonOutline} onPress={handleInviteFriend}>
             <Text style={styles.buttonTextOutline}>Invite a Friend</Text>
           </TouchableOpacity>
         </View>

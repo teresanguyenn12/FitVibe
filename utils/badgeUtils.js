@@ -13,11 +13,12 @@ export const getBadgeByXP = (xp) => {
       return require("../assets/rookie.png"); // Prestige 0
     }
   };
-export const getTitleByXP = (xp) => {
-    if (xp >= 2500) return "Master";
-    else if (xp >= 2000) return "Titan";
-    else if (xp >= 1500) return "Elite";
-    else if (xp >= 1000) return "Warrior";
-    else if (xp >= 500) return "Competitor";
-    else return "Rookie";
-};
+  export const getLevelAndFitcoinByXP = (xp) => {
+    if (xp >= 2500) return { level: "Master", fitcoin: 60 };
+    if (xp >= 2000) return { level: "Titan", fitcoin: 50 };
+    if (xp >= 1500) return { level: "Elite", fitcoin: 40 };
+    if (xp >= 1000) return { level: "Warrior", fitcoin: 30 };
+    if (xp >= 500) return { level: "Competitor", fitcoin: 20 };
+    return { level: "Rookie", fitcoin: 10 };
+  };
+  

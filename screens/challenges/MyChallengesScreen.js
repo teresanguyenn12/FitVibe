@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, FlatList } from "react-native
 import { useNavigation } from "@react-navigation/native"; 
 import { db, auth } from "../../firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function MyChallengesScreen() {
   const navigation = useNavigation(); 
@@ -30,6 +31,10 @@ export default function MyChallengesScreen() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.closeButton} onPress={() => navigation.navigate("Challenges")}>
+        <Ionicons name="close" size={30} color="white" />
+      </TouchableOpacity>
+
       <Text style={styles.title}>My Challenges</Text>
       
       {challenges.length === 0 ? ( // Check if there are no challenges
@@ -59,10 +64,17 @@ export default function MyChallengesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#121212" },
-  title: { fontSize: 24, fontWeight: "bold", color: "white", textAlign: "center", marginTop: 30, marginBottom: 20 },
+  title: { fontSize: 24, fontWeight: "bold", color: "white", textAlign: "center", marginTop: 50, marginBottom: 20 },
   challengeItem: { backgroundColor: "#1E1E1E", padding: 15, borderRadius: 10, marginBottom: 10 },
   challengeText: { color: "white", fontSize: 16 },
   progressText: { color: "#bbb", fontSize: 14, marginTop: 5 },
-  noChallengesText: { color: "#bbb", fontSize: 16, textAlign: "center", marginTop: 20 }
+  noChallengesText: { color: "#bbb", fontSize: 16, textAlign: "center", marginTop: 20 },
+  closeButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 100,
+  },
+  
 
 });

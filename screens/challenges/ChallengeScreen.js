@@ -58,8 +58,12 @@ const ChallengesScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Challenges</Text>
-
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => navigation.navigate("HomeTabs", { screen: "Home" })}
+      >
+        <Ionicons name="close" size={30} color="white" />
+      </TouchableOpacity>
       {/* "My Challenges" Button */}
       <TouchableOpacity onPress={() => navigation.navigate("MyChallengesScreen")}>
         <LinearGradient colors={["#A0006D", "#552082"]} style={styles.myChallengesButton}>
@@ -178,6 +182,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  closeButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 100,
+  },
+  
 });
 
 export default ChallengesScreen;

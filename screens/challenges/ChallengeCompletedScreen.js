@@ -1,72 +1,79 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { doc, increment, updateDoc, getDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
-import { getBadgeByXP } from "../../utils/badgeUtils"; 
+import { getBadgeByXP, getLevelAndFitcoinByXP } from "../../utils/badgeUtils";
 
 export default function ChallengeCompletedScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { challenge } = route.params;
   const user = auth.currentUser;
-
   const [xpAmount, setXpAmount] = useState(0);
-  const [userXP, setUserXP] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [badgeImage, setBadgeImage] = useState(null);
+  const [level, setLevel] = useState(null);
+  const [fitcoinReward, setFitcoinReward] = useState(0);
 
   useEffect(() => {
     if (challenge?.reward) {
       const match = challenge.reward.match(/(\d+)/);
       if (match) {
-        setXpAmount(parseInt(match[1], 10));
+        const xp = parseInt(match[1], 10);
+        setXpAmount(xp);
       }
     }
+  }, [challenge]);
 
-    const fetchUserXP = async () => {
-      if (user) {
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-        const xp = userSnap.data()?.xp || 0;
-        setUserXP(xp);
-      }
+  useEffect(() => {
+    const fetchAndSetBadge = async () => {
+      if (!user) return;
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      const currentXP = userSnap.data()?.xp || 0;
+      const newTotalXP = currentXP + xpAmount;
+      const { level, fitcoinReward } = getLevelAndFitcoinByXP(newTotalXP);
+
+      setBadgeImage(getBadgeByXP(newTotalXP));
+      setLevel(level);
+      setFitcoinReward(fitcoinReward);
     };
 
-    fetchUserXP();
-  }, [challenge]);
+    fetchAndSetBadge();
+  }, [xpAmount]);
 
   const handleClaim = async () => {
     if (user && xpAmount) {
-      setLoading(true);
       const userRef = doc(db, "users", user.uid);
       try {
         await updateDoc(userRef, {
           xp: increment(xpAmount),
+          fitcoin: increment(fitcoinReward),
         });
         navigation.navigate("Rewards");
       } catch (err) {
-        console.error("Error updating XP:", err);
-      } finally {
-        setLoading(false);
+        console.error("Error updating XP and FitCoin:", err);
       }
     }
   };
 
-  const badgeImage = getBadgeByXP(userXP);
-
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.closeButton} onPress={() => navigation.navigate("Challenges")}>
+        <Ionicons name="close" size={30} color="white" />
+      </TouchableOpacity>
+
       <Ionicons name="checkmark-circle" size={80} color="limegreen" style={styles.icon} />
       <Text style={styles.title}>Challenge Completed!</Text>
-      <Text style={styles.subtitle}>XP Level</Text>
+      <Text style={styles.subtitle}>XP Level {level ?? "..."}</Text>
 
-      {/* Progress Ring with Badge */}
+      {/* Progress Ring */}
       <View style={styles.progressContainer}>
         <View style={styles.outerRing}>
           <View style={styles.innerRing}>
-            <Image source={badgeImage} style={styles.iconImage} />
+            {badgeImage && <Image source={badgeImage} style={styles.iconImage} />}
           </View>
         </View>
         <Text style={styles.xpText}>+{xpAmount} XP</Text>
@@ -78,13 +85,9 @@ export default function ChallengeCompletedScreen() {
       <Text style={styles.challengeInfo}>Duration: {challenge?.duration}</Text>
       <Text style={styles.challengeInfo}>Status: {challenge?.status}</Text>
 
-      <TouchableOpacity onPress={handleClaim} disabled={loading}>
+      <TouchableOpacity onPress={handleClaim}>
         <LinearGradient colors={["#fff", "#eee"]} style={styles.claimButton}>
-          {loading ? (
-            <ActivityIndicator color="#000" />
-          ) : (
-            <Text style={styles.claimText}>Claim</Text>
-          )}
+          <Text style={styles.claimText}>Claim</Text>
         </LinearGradient>
       </TouchableOpacity>
     </View>
@@ -136,11 +139,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#222",
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
   iconImage: {
-    width: 80,
-    height: 80,
+    width: "100%",
+    height: "100%",
     resizeMode: "contain",
+  borderRadius: INNER_SIZE / 2,
   },
   xpText: {
     color: "#bbb",
@@ -164,4 +169,10 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#000",
   },
+  closeButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    zIndex: 100,
+  },  
 });
