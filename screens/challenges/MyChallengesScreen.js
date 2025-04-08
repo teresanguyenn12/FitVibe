@@ -31,13 +31,16 @@ export default function MyChallengesScreen() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.closeButton} onPress={() => navigation.navigate("Challenges")}>
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => navigation.navigate("HomeTabs", { screen: "Challenges" })}
+      >
         <Ionicons name="close" size={30} color="white" />
       </TouchableOpacity>
 
       <Text style={styles.title}>My Challenges</Text>
       
-      {challenges.length === 0 ? ( // Check if there are no challenges
+      {challenges.length === 0 ? (
         <Text style={styles.noChallengesText}>
           You haven't joined any challenges yet.
         </Text>
@@ -75,6 +78,4 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 100,
   },
-  
-
 });
