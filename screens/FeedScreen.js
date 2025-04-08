@@ -189,7 +189,18 @@ const FeedScreen = () => {
           </View>
         )}
 
-        {item.image && <Image source={{ uri: item.image }} style={styles.postImage} />}
+        {/* Post Image - Using imageUrl from Firebase Storage */}
+        {item.imageUrl && (
+            <View style={styles.postImageContainer}>
+                <Image
+                    source={{ uri: item.imageUrl }}
+                    style={styles.postImage}
+                    resizeMode="cover"
+                    defaultSource={require('../assets/FVLOGO.png')} // Replace with your placeholder image
+                    onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
+                />
+            </View>
+        )}
 
         <View style={styles.actionsRow}>
           <TouchableOpacity style={styles.actionButton} onPress={() => handleLike(item)}>

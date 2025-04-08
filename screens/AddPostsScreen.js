@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  Keyboard,
-  TouchableWithoutFeedback,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
+    View,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    Image,
+    StyleSheet,
+    Keyboard,
+    TouchableWithoutFeedback,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -19,74 +20,175 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, addDoc, doc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { storage } from '../firebase'; // Make sure this path matches your project structure
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 const workoutTypes = [
-  { type: 'Strength Training', icon: 'weight-lifter' },
-  { type: 'Cardio', icon: 'heart-pulse' },
-  { type: 'Yoga', icon: 'yoga' },
-  { type: 'Cycling', icon: 'bike' },
-  { type: 'Swimming', icon: 'swim' },
-  { type: 'Hiking', icon: 'hiking' },
-  { type: 'Other', icon: 'dots-horizontal' },
+    { type: 'Strength Training', icon: 'weight-lifter' },
+    { type: 'Cardio', icon: 'heart-pulse' },
+    { type: 'Yoga', icon: 'yoga' },
+    { type: 'Cycling', icon: 'bike' },
+    { type: 'Swimming', icon: 'swim' },
+    { type: 'Hiking', icon: 'hiking' },
+    { type: 'Other', icon: 'dots-horizontal' },
 ];
 
 const AddPostScreen = () => {
-  const navigation = useNavigation();
-  const [description, setDescription] = useState('');
-  const [selectedWorkout, setSelectedWorkout] = useState(null);
-  const [customWorkout, setCustomWorkout] = useState('');
-  const [image, setImage] = useState(null);
+    const navigation = useNavigation();
+    const [description, setDescription] = useState('');
+    const [selectedWorkout, setSelectedWorkout] = useState(null);
+    const [customWorkout, setCustomWorkout] = useState('');
+    const [image, setImage] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
-  const auth = getAuth();
-  const db = getFirestore();
+    const auth = getAuth();
+    const db = getFirestore();
 
-  const handleChoosePhoto = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      alert('Permission to access gallery is required!');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 1 });
-    if (!result.canceled) {
-      setImage(result.assets[0].uri);
-    }
-  };
+    const handleChoosePhoto = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permissionResult.granted) {
+            Alert.alert('Permission Required', 'Permission to access gallery is required!');
+            return;
+        }
 
-  const handlePost = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 0.7,
+            allowsEditing: true,
+            aspect: [4, 3]
+        });
 
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    const userData = userDoc.exists() ? userDoc.data() : {};
-
-    const postData = {
-      userId: user.uid,
-      fullName: userData.fullName || 'Anonymous',
-      username: userData.username || 'anonymous',
-      profilePicture: userData.profilePicture || '',
-      description: description.trim(),
-      workoutType: selectedWorkout === 'Other' ? 'Other' : selectedWorkout,
-      workoutLabel: selectedWorkout === 'Other' ? customWorkout : selectedWorkout,
-      image: image || '',
-      timestamp: serverTimestamp(),
-      likes: [],
-      comments: [],
+        if (!result.canceled) {
+            setImage(result.assets[0].uri);
+        }
     };
 
-    try {
-      await addDoc(collection(db, 'posts'), postData);
-      Alert.alert('Success', 'Your post has been shared!');
-      setDescription('');
-      setSelectedWorkout(null);
-      setCustomWorkout('');
-      setImage(null);
-      Keyboard.dismiss();
-      navigation.goBack();
-    } catch (error) {
-      console.error('Error posting:', error);
-      Alert.alert('Error', 'Something went wrong while posting.');
-    }
-  };
+    const uploadImageToFirebase = async (uri) => {
+        if (!uri) return null;
+
+        // Convert URI to Blob
+        const response = await fetch(uri);
+        const blob = await response.blob();
+
+        const user = auth.currentUser;
+        // Create a unique filename
+        const filename = `post_${user.uid}_${new Date().getTime()}`;
+        const storageRef = ref(storage, `post_images/${filename}`);
+
+        // Create upload task
+        const uploadTask = uploadBytesResumable(storageRef, blob);
+
+        // Return a promise that resolves with the download URL
+        return new Promise((resolve, reject) => {
+            uploadTask.on(
+                "state_changed",
+                (snapshot) => {
+                    // Track upload progress
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    setUploadProgress(progress);
+                },
+                (error) => {
+                    // Handle unsuccessful uploads
+                    console.error("Upload failed:", error);
+                    reject(error);
+                },
+                async () => {
+                    // Upload completed successfully, get download URL
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    resolve(downloadURL);
+                }
+            );
+        });
+    };
+
+    const handlePost = async () => {
+        if (!description.trim()) {
+            Alert.alert('Missing Content', 'Please add a description for your post.');
+            return;
+        }
+
+        if (!selectedWorkout) {
+            Alert.alert('Missing Workout Type', 'Please select a workout type.');
+            return;
+        }
+
+        if (selectedWorkout === 'Other' && !customWorkout.trim()) {
+            Alert.alert('Missing Workout Name', 'Please enter a name for your custom workout.');
+            return;
+        }
+
+        setUploading(true);
+
+        try {
+            const user = auth.currentUser;
+            if (!user) {
+                Alert.alert('Error', 'You must be logged in to post.');
+                setUploading(false);
+                return;
+            }
+
+            // Get user data
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            const userData = userDoc.exists() ? userDoc.data() : {};
+
+            // Upload image if one is selected
+            let imageUrl = '';
+            if (image) {
+                try {
+                    imageUrl = await uploadImageToFirebase(image);
+                } catch (error) {
+                    console.error('Error uploading image:', error);
+                    Alert.alert('Upload Error', 'Failed to upload image. Please try again.');
+                    setUploading(false);
+                    return;
+                }
+            }
+
+            // Prepare post data
+            const postData = {
+                userId: user.uid,
+                fullName: userData.fullName || 'Anonymous',
+                username: userData.username || 'anonymous',
+                profilePicture: userData.profilePicture || '',
+                description: description.trim(),
+                workoutType: selectedWorkout === 'Other' ? 'Other' : selectedWorkout,
+                workoutLabel: selectedWorkout === 'Other' ? customWorkout.trim() : selectedWorkout,
+                imageUrl: imageUrl, // Store the Firebase Storage URL
+                timestamp: serverTimestamp(),
+                likes: [],
+                comments: [],
+            };
+
+            // Add the post to Firestore
+            await addDoc(collection(db, 'posts'), postData);
+
+            // Show success message
+            Alert.alert('Success', 'Your post has been shared!');
+
+            // Reset form and navigate back
+            setDescription('');
+            setSelectedWorkout(null);
+            setCustomWorkout('');
+            setImage(null);
+            setUploadProgress(0);
+            Keyboard.dismiss();
+            navigation.goBack();
+        } catch (error) {
+            console.error('Error posting:', error);
+            Alert.alert('Error', 'Something went wrong while posting. Please try again.');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const isPostingDisabled = () => {
+        if (uploading) return true;
+        if (!description.trim()) return true;
+        if (!selectedWorkout) return true;
+        if (selectedWorkout === 'Other' && !customWorkout.trim()) return true;
+        return false;
+    };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>

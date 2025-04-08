@@ -1,104 +1,168 @@
 import React, { useState, useEffect } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
+    View,
+    Text,
+    TextInput,
+    StyleSheet,
+    TouchableOpacity,
+    Image,
+    Alert,
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
 import { getAuth, updateProfile } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
+import { storage } from "../../firebase"; // Import the storage from firebase.js
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 const ProfileSettings = () => {
-  const navigation = useNavigation();
-  const auth = getAuth();
-  const db = getFirestore();
-  const user = auth.currentUser;
+    const navigation = useNavigation();
+    const auth = getAuth();
+    const db = getFirestore();
+    const user = auth.currentUser;
 
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [profileImage, setProfileImage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+    const [fullName, setFullName] = useState("");
+    const [email, setEmail] = useState("");
+    const [profileImage, setProfileImage] = useState("");
+    const [localImageUri, setLocalImageUri] = useState(""); // For displaying local image preview
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
-  useEffect(() => {
-    if (user) {
-      setEmail(user.email);
-      fetchUserData();
+    useEffect(() => {
+        if (user) {
+            setEmail(user.email);
+            fetchUserData();
+        }
+    }, [user]);
+
+    const fetchUserData = async () => {
+        try {
+            const userDocRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                setFullName(data.fullName || "");
+
+                if (data.profilePicture) {
+                    setProfileImage(data.profilePicture);
+                    setLocalImageUri(data.profilePicture);
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching user data:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const pickImage = async () => {
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permissionResult.granted) {
+            Alert.alert("Permission Required", "You need to allow access to your gallery.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.7,
+        });
+
+        if (!result.canceled && result.assets[0]) {
+            setLocalImageUri(result.assets[0].uri);
+            // We'll upload the image during the save process
+        }
+    };
+
+    const uploadImageToFirebase = async (uri) => {
+        if (!uri) return null;
+
+        // Convert URI to Blob
+        const response = await fetch(uri);
+        const blob = await response.blob();
+
+        // Create a unique filename
+        const filename = `profile_${user.uid}_${new Date().getTime()}`;
+        const storageRef = ref(storage, `profile_images/${filename}`);
+
+        // Create upload task
+        const uploadTask = uploadBytesResumable(storageRef, blob);
+
+        // Return a promise that resolves with the download URL
+        return new Promise((resolve, reject) => {
+            uploadTask.on(
+                "state_changed",
+                (snapshot) => {
+                    // Track upload progress
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    setUploadProgress(progress);
+                },
+                (error) => {
+                    // Handle unsuccessful uploads
+                    console.error("Upload failed:", error);
+                    reject(error);
+                },
+                async () => {
+                    // Upload completed successfully, get download URL
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    resolve(downloadURL);
+                }
+            );
+        });
+    };
+
+    const saveChanges = async () => {
+        setSaving(true);
+        setUploadProgress(0);
+
+        try {
+            let imageUrl = profileImage;
+
+            // If user selected a new image, upload it
+            if (localImageUri && localImageUri !== profileImage) {
+                imageUrl = await uploadImageToFirebase(localImageUri);
+            }
+
+            // Update user profile in Firebase Authentication
+            await updateProfile(user, {
+                displayName: fullName,
+                photoURL: imageUrl
+            });
+
+            // Update user document in Firestore
+            const userDocRef = doc(db, "users", user.uid);
+            await updateDoc(userDocRef, {
+                fullName,
+                profilePicture: imageUrl,
+                updatedAt: new Date()
+            });
+
+            // Update state with the saved URL
+            setProfileImage(imageUrl);
+
+            Alert.alert("Success", "Profile updated successfully!");
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            Alert.alert("Error", "Could not update profile. Please try again.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#4682B4" />
+            </View>
+        );
     }
-  }, [user]);
-
-  const fetchUserData = async () => {
-    try {
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        setFullName(data.fullName || "");
-        setProfileImage(data.profilePicture || "");
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const pickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert("Permission Required", "You need to allow access to your gallery.");
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-
-    if (!result.canceled) {
-      setProfileImage(result.assets[0].uri);
-    }
-  };
-
-  const saveChanges = async () => {
-    setSaving(true);
-    try {
-      await updateProfile(user, { displayName: fullName });
-
-      const userDocRef = doc(db, "users", user.uid);
-      await updateDoc(userDocRef, {
-        fullName,
-        profilePicture: profileImage,
-      });
-
-      Alert.alert("Success", "Profile updated successfully!");
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      Alert.alert("Error", "Could not update profile.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8e24aa" />
-      </View>
-    );
-  }
 
   return (
     <KeyboardAvoidingView
