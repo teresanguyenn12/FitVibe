@@ -102,7 +102,7 @@ const ChallengesScreen = () => {
         style={styles.headerGradient}
       >
         <View style={styles.headerContent}>
-          <Text style={styles.headerText}>Challanges</Text>
+          <Text style={styles.headerText}>Challenges</Text>
           <Text style={styles.levelText}>Level 3 • 720 XP / 1000 XP</Text>
           <View style={styles.xpTrack}>
             <View style={[styles.xpFill, { width: "72%" }]} />
