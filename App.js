@@ -30,6 +30,7 @@ import YogaScreen from "./screens/YogaScreen";
 import MyWorkoutScreen from "./screens/MyWorkoutScreen";
 import RewardsScreen from "./screens/RewardsScreen";
 import ProgressionScreen from "./screens/ProgressionScreen";
+import CurrentProgressionScreen from "./screens/CurrentProgressionScreen.js";
 import SignupScreen from "./screens/SignupScreen";
 import GoalsScreen from "./screens/GoalsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
@@ -204,7 +205,8 @@ function Navigation() {
             <Stack.Screen name="Yoga" component={YogaScreen} />
             <Stack.Screen name="MyWorkouts" component={MyWorkoutScreen} />
             <Stack.Screen name="Rewards" component={RewardsScreen} />
-            <Stack.Screen name="Progression" component={ProgressionScreen} />
+            <Stack.Screen name="Progression" component={CurrentProgressionScreen} />
+            <Stack.Screen name="ProgressionInfo" component={ProgressionScreen} />
             <Stack.Screen name="Goals" component={GoalsScreen} />
             <Stack.Screen name="Challenges" component={ChallengeScreens.ChallengeScreen} />
             <Stack.Screen name="ChallengeDetails" component={ChallengeScreens.ChallengeDetailsScreen} />

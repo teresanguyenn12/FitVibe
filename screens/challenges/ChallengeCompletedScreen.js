@@ -52,7 +52,7 @@ export default function ChallengeCompletedScreen() {
           xp: increment(xpAmount),
           fitcoin: increment(fitcoinReward),
         });
-        navigation.navigate("Rewards");
+        navigation.navigate("Progression");
       } catch (err) {
         console.error("Error updating XP and FitCoin:", err);
       }

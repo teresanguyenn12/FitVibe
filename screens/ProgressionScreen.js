@@ -4,6 +4,14 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
+const rankImages = {
+  "Rookie": require("../assets/rookie.png"),
+  "Competitor": require("../assets/competitor.png"),
+  "Warrior": require("../assets/warrior.png"),
+  "Elite": require("../assets/elite.png"),
+  "Titan": require("../assets/titan.png"),
+  "Master": require("../assets/master.png")
+};
 
 const levels = [
   { title: "Prestige 0", rank: "Rookie", perks: ["50 FitCoins", "'Rookie Mindset' Badge", "Unlocks Friend Leaderboards", "Bonus: 3-Day Streak Booster"], locked: false },
@@ -19,15 +27,15 @@ const ProgressionScreen = () => {
 
   return (
     <View style = {styles.container}>
-      <TouchableOpacity style = {styles.backButton} onPress = {() => navigation.goBack()}>
-        <Ionicons name = "close" size = {25} color = "#fff"/>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="close" size={28} color="#fff" />
       </TouchableOpacity>
       <Text style = {styles.header}>Progression Info</Text>
       <ScrollView style = {styles.scrollContainer}>
         {levels.map((level, index) => (
           <LinearGradient colors={["#A0004D", "#000000"]}key = {index} style = {[styles.levelContainer, level.locked && styles.locked]}>
             <Text style = {styles.levelTitle}>{level.title}</Text>
-            <Image source = {require("../assets/FVLOGO.png")} style = {styles.icon}/>
+            <Image source={rankImages[level.rank]}  style = {styles.icon}/>
             <Text style = {styles.rank}>{level.rank}</Text>
             <Text style = {styles.perksTitle}>Perks:</Text>
             {level.perks.map((perk, idx) => (
@@ -53,6 +61,9 @@ const styles = StyleSheet.create({
     left: 20,
     padding: 10,
     borderRadius: 10,
+    zIndex: 1, 
+    alignItems: "center",
+    justifyContent: "center",
   },
   header: {
     color: "#fff",
@@ -82,7 +93,7 @@ const styles = StyleSheet.create({
   },
   icon: {
     width: 60,
-    height: 50,
+    height: 60,
     alignSelf: "center",
     marginVertical: 10,
   },
