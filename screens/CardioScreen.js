@@ -6,6 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Modal } from "react-native";
+import haversine from "haversine-distance";
 import { auth, db } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
@@ -115,53 +116,84 @@ const CardioScreen = () => {
 
     const toggleTimer = async () => {
         if (isRunning) {
+            // Stop timer and location tracking
             clearInterval(timerRef.current);
+            timerRef.current = null;
+    
             if (locationSubscription.current) {
                 locationSubscription.current.remove();
                 locationSubscription.current = null;
             }
         } else {
+            // Start timer
             timerRef.current = setInterval(() => {
                 setTime((prevTime) => prevTime + 1);
             }, 1000);
-
+    
+            // Request location permission
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== "granted") {
                 Alert.alert("Permission to access location was denied.");
                 return;
             }
-
-            const initialLoc = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.High
-            });
-            setInitialLocation(initialLoc);
-            setPrevLocation(initialLoc);
-
+    
+            // ✅ Sanity check: Fetch current location directly
+            try {
+                const loc = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.Highest,
+                });
+                console.log("Manual fetch of current location:", loc.coords);
+            } catch (error) {
+                console.log("Error fetching current location:", error);
+            }
+    
+            // Start watching location
             locationSubscription.current = await Location.watchPositionAsync(
                 {
-                    accuracy: Location.Accuracy.High,
+                    accuracy: Location.Accuracy.Highest,
                     timeInterval: 1000,
                     distanceInterval: 1,
                 },
                 (newLocation) => {
+                    const { latitude, longitude } = newLocation.coords;
+                    const newCoord = { latitude, longitude };
+                    console.log("📍 New GPS coords received:", newCoord);
+    
+                    // If initial location hasn't been set, use this as the starting point
+                    if (!initialLocation) {
+                        setInitialLocation(newCoord);
+                        setPrevLocation(newCoord);
+                        console.log("✅ Initial location set:", newCoord);
+                        return;
+                    }
+    
                     if (prevLocation) {
-                        const dist = getDistanceFromLatLonInMiles(
-                            prevLocation.coords.latitude,
-                            prevLocation.coords.longitude,
-                            newLocation.coords.latitude,
-                            newLocation.coords.longitude
-                        );
-                        if (dist > 0.0001) {
-                            setDistance((prev) => prev + dist);
-                            setPrevLocation(newLocation);
+                        const dist = haversine(prevLocation, newCoord) / 1609.34; // meters to miles
+                        console.log("📏 Distance between points:", dist.toFixed(6), "miles");
+    
+                        if (dist > 0.00001) {
+                            setDistance((prev) => {
+                                const updatedDistance = prev + dist;
+    
+                                // Check if a new mile has been completed
+                                const completedMile = Math.floor(updatedDistance);
+                                if (completedMile > mileMarkers.length) {
+                                    console.log(`🏁 Mile ${completedMile} completed at time: ${time}s`);
+                                    setMileMarkers((prevMarkers) => [...prevMarkers, time]);
+                                }
+    
+                                return updatedDistance;
+                            });
+    
+                            setPrevLocation(newCoord);
                         }
                     }
                 }
             );
         }
-
+    
         setIsRunning(!isRunning);
-    };
+    };        
 
     const resetTimer = () => {
         clearInterval(timerRef.current);
