@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, TextInput, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { fetchAllUsers, followUser, unfollowUser } from "../api/addFriendsApi";
 
 const AddFriendsScreen = () => {
@@ -12,18 +12,23 @@ const AddFriendsScreen = () => {
   const [search, setSearch] = useState('');
   const [following, setFollowing] = useState({});
 
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        const { userList, followingMap } = await fetchAllUsers();
-        setUsers(userList);
-        setFollowing(followingMap);
-      } catch (error) {
-        console.error("Error loading users:", error);
-      }
-    };
-    loadUsers();
-  }, []);
+    useFocusEffect(
+        useCallback(() => {
+            const loadUsers = async () => {
+                try {
+                    const { userList, followingMap } = await fetchAllUsers();
+                    setUsers(userList);
+                    setFollowing(followingMap);
+                } catch (error) {
+                    console.error("Error loading users:", error);
+                }
+            };
+
+            loadUsers();
+
+            
+        }, []) 
+    );
 
   const handleFollow = async (userId) => {
     try {
@@ -49,6 +54,7 @@ const AddFriendsScreen = () => {
     (user.fullName?.toLowerCase() || "").includes(search.toLowerCase()) ||
     (user.username?.toLowerCase() || "").includes(search.toLowerCase())
   );
+
 
   return (
     <SafeAreaView style={styles.container}>
