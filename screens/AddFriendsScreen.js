@@ -79,14 +79,19 @@ const AddFriendsScreen = () => {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.userItem}>
-            <Image
-              source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }}
-              style={styles.avatar}
-            />
-            <View style={styles.userInfo}>
-              <Text style={styles.name}>{item.fullName}</Text>
-              <Text style={styles.handle}>@{item.username || item.email?.split('@')[0]}</Text>
-            </View>
+                <TouchableOpacity
+                    style={styles.profileButton}
+                    onPress={() => navigation.navigate('OtherProfile', { userId: item.id })}
+                >
+                    <Image
+                        source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }}
+                        style={styles.avatar}
+                    />
+                    <View style={styles.userInfo}>
+                        <Text style={styles.name}>{item.fullName}</Text>
+                        <Text style={styles.handle}>@{item.username || item.email?.split('@')[0]}</Text>
+                    </View>
+                </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.followButton,
@@ -168,7 +173,11 @@ const styles = StyleSheet.create({
     marginTop: 40,
     fontStyle: 'italic',
     fontSize: 16,
-  },
+    },
+    profileButton: {
+        flexDirection: 'row',
+        flex: 1
+    }
 });
 
 export default AddFriendsScreen;
