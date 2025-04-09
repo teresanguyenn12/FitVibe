@@ -129,7 +129,7 @@ const OtherFriendsListScreen = () => {
                         if (isCurrentUser) {
                             navigation.navigate('Profile');
                         } else {
-                            navigation.navigate('OtherProfileScreen', { userId: item.id });
+                            navigation.navigate('OtherProfile', { userId: item.id });
                         }
                     }}
                 >
