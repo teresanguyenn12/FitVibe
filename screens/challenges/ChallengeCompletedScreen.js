@@ -61,7 +61,10 @@ export default function ChallengeCompletedScreen() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.closeButton} onPress={() => navigation.navigate("Challenges")}>
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => navigation.navigate("HomeTabs", { screen: "Challenges" })}
+      >
         <Ionicons name="close" size={30} color="white" />
       </TouchableOpacity>
 
@@ -145,7 +148,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     resizeMode: "contain",
-  borderRadius: INNER_SIZE / 2,
+    borderRadius: INNER_SIZE / 2,
   },
   xpText: {
     color: "#bbb",
@@ -174,5 +177,5 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     zIndex: 100,
-  },  
+  },
 });
