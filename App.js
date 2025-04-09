@@ -44,6 +44,9 @@ import MessagesScreen from "./screens/MessagesScreen";
 import NewMessageScreen from "./screens/NewMessageScreen";
 import ChatScreen from "./screens/ChatScreen";
 import CommentsScreen from './screens/CommentsScreen';
+import OtherProfileScreen from "./screens/OtherProfileScreen";
+import OtherFriendsListScreen from "./screens/OtherFriendsListScreen";
+
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -251,6 +254,8 @@ function Navigation() {
             <Stack.Screen name="NewMessageScreen" component={NewMessageScreen} />
             <Stack.Screen name="ChatScreen" component={ChatScreen} />
             <Stack.Screen name="CommentsScreen" component={CommentsScreen} options={{ title: 'Comments' }} />
+            <Stack.Screen name="OtherProfile" component={OtherProfileScreen} />
+            <Stack.Screen name="OtherFriendsList" component={OtherFriendsListScreen} />
           </>
         )}
       </Stack.Navigator>

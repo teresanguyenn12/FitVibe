@@ -155,23 +155,38 @@ const FeedScreen = () => {
     const timeAgo = getTimeAgo(item.timestamp);
 
     return (
-      <View style={styles.postContainer}>
-        <View style={styles.postHeader}>
-          <Image
-            source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }}
-            style={styles.avatar}
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.name}>@{item.username}</Text>
-            <Text style={styles.rank}>🏅 Rookie</Text>
-            <Text style={styles.timeAgo}>{timeAgo}</Text>
-          </View>
-          {isOwner && (
-            <TouchableOpacity onPress={() => handleDelete(item.id)}>
-              <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
-            </TouchableOpacity>
-          )}
-        </View>
+        <View style={styles.postContainer}>
+            <View style={styles.postHeader}>
+                <TouchableOpacity
+                    style={styles.profileButton}
+                    onPress={() => {
+                        // Check if the post is from the current user
+                        if (item.userId === user.uid) {
+                            // Navigate to own profile screen
+                            navigation.navigate('ProfileScreen');
+                        } else {
+                            // Navigate to other user's profile screen
+                            navigation.navigate('OtherProfile', { userId: item.userId });
+                        }
+                    }}
+                >
+                    <Image
+                        source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }}
+                        style={styles.avatar}
+                    />
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.name}>@{item.username}</Text>
+                        <Text style={styles.rank}>🏅 Rookie</Text>
+                        <Text style={styles.timeAgo}>{timeAgo}</Text>
+                    </View>
+                </TouchableOpacity>
+
+                {isOwner && (
+                    <TouchableOpacity onPress={() => handleDelete(item.id)}>
+                        <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
+                    </TouchableOpacity>
+                )}
+            </View>
 
         {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
 
@@ -337,7 +352,11 @@ const styles = StyleSheet.create({
   actionText: {
     color: '#aaa',
     marginLeft: 5,
-  },
+    },
+    profileButton: {
+        flexDirection: 'row',
+        flex: 1
+    }
 });
 
 export default FeedScreen;
