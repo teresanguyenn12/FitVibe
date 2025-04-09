@@ -4,6 +4,8 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { auth, db } from "../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -61,31 +63,69 @@ const PilatesScreen = () => {
         }
     };
 
-    const handleSavePress = () => {
-        Alert.alert(
-            "Do you want your workout to be recorded?",
-            "",
-            [
-                { text: "Cancel", style: "cancel" },
-                { text: "Save", onPress: () => console.log("Pilates workout saved!") }
-            ]
-        );
+    const handleSavePress = async () => {
+        const user = auth.currentUser;
+    
+        if (!user) {
+            Alert.alert("Not signed in", "You must be signed in to save workouts.");
+            return;
+        }
+    
+        if (loggedRoutines.length === 0) {
+            Alert.alert("Empty Workout", "Please log at least one Pilates routine before saving.");
+            return;
+        }
+    
+        try {
+            await addDoc(collection(db, "workouts"), {
+                userId: user.uid,
+                type: "pilates",
+                date: selectedDate.toISOString().split("T")[0],
+                duration: time, // in seconds
+                routines: loggedRoutines,
+                notes: notes.trim(),
+                timestamp: serverTimestamp(),
+            });
+    
+            Alert.alert("Saved!", "Your Pilates workout has been recorded.");
+            navigation.goBack();
+        } catch (error) {
+            console.error("Error saving workout:", error);
+            let errorMessage = "Could not save workout. Please try again.";
+            if (error.code === 'permission-denied') {
+                errorMessage = "You don't have permission to save workouts.";
+            } else if (error.code === 'unavailable') {
+                errorMessage = "Network error. Please check your connection.";
+            }
+            Alert.alert("Error", errorMessage);
+        }
     };
+    
 
     const handleRoutineSave = () => {
+        const repsNum = Number(reps);
+    
         if (routineName.trim() === "" || reps.trim() === "") {
             Alert.alert("Error", "Please fill in all fields.");
             return;
         }
+    
+        if (isNaN(repsNum) || repsNum <= 0) {
+            Alert.alert("Invalid Reps", "Reps must be a valid number.");
+            return;
+        }
+    
         const newRoutine = {
             routineName: `Routine ${loggedRoutines.length + 1}: ${routineName}`,
-            reps,
+            reps: repsNum,
         };
+    
         setLoggedRoutines([...loggedRoutines, newRoutine]);
         setModalVisible(false);
         setRoutineName("");
         setReps("");
     };
+    
 
     const deleteRoutine = (index) => {
         const updatedRoutines = loggedRoutines.filter((_, i) => i !== index);

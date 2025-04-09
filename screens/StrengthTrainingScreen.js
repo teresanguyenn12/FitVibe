@@ -4,6 +4,8 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { auth, db } from "../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const StrengthTrainingScreen = () => {
     const navigation = useNavigation();
@@ -13,9 +15,10 @@ const StrengthTrainingScreen = () => {
     const [notes, setNotes] = useState("");
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [exercise, setExercise] = useState("");
-    const [setsCount, setSetsCount] = useState(""); // New state for sets
-    const [reps, setReps] = useState(""); // Reps state
-    const [weight, setWeight] = useState(""); // Weight state
+    const [setsCount, setSetsCount] = useState("");
+    const [reps, setReps] = useState("");
+    const [weight, setWeight] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
     const timerRef = useRef(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -28,7 +31,7 @@ const StrengthTrainingScreen = () => {
         if (isRunning) {
             clearInterval(timerRef.current);
         } else {
-            if (time === 0) return; // Don't start if time is 0
+            if (time === 0) return;
             timerRef.current = setInterval(() => {
                 setTime((prev) => {
                     if (prev === 0) {
@@ -74,15 +77,25 @@ const StrengthTrainingScreen = () => {
     };
 
     const saveSet = () => {
-        if (exercise.trim() === "" || setsCount.trim() === "" || reps.trim() === "" || weight.trim() === "") {
+        const setsNum = Number(setsCount);
+        const repsNum = Number(reps);
+        const weightNum = Number(weight);
+
+        if (exercise.trim() === "" || isNaN(setsNum) || isNaN(repsNum) || isNaN(weightNum)) {
             Alert.alert("Error", "Please fill in all fields.");
             return;
         }
+
+        if (setsNum <= 0 || repsNum <= 0 || weightNum < 0) {
+            Alert.alert("Error", "Sets, reps, and weight must be valid numbers.");
+            return;
+        }
+
         const newSet = {
-            exercise: `Exercise ${sets.length + 1}: ${exercise}`,
-            sets: setsCount, // Save sets separately
-            reps, // Save reps separately
-            weight,
+            exercise: exercise.trim(),
+            sets: setsNum,
+            reps: repsNum,
+            weight: weightNum
         };
         setSets([...sets, newSet]);
         closeModal();
@@ -90,12 +103,7 @@ const StrengthTrainingScreen = () => {
 
     const deleteSet = (index) => {
         const updatedSets = sets.filter((_, i) => i !== index);
-        // Update exercise numbers after deletion
-        const renumberedSets = updatedSets.map((set, i) => ({
-            ...set,
-            exercise: `Exercise ${i + 1}: ${set.exercise.split(": ")[1]}`,
-        }));
-        setSets(renumberedSets);
+        setSets(updatedSets);
     };
 
     const formatTime = (seconds) => {
@@ -105,15 +113,47 @@ const StrengthTrainingScreen = () => {
         return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     };
 
-    const handleSavePress = () => {
-        Alert.alert(
-            "Do you want to save your workout?",
-            "",
-            [
-                { text: "Cancel", style: "cancel" },
-                { text: "Save", onPress: () => console.log("Strength training workout saved!") }
-            ]
-        );
+    const handleSavePress = async () => {
+        if (isSaving) return;
+        
+        const user = auth.currentUser;
+    
+        if (!user) {
+            Alert.alert("Not signed in", "You must be signed in to save workouts.");
+            return;
+        }
+
+        if (sets.length === 0) {
+            Alert.alert("Empty Workout", "Please log at least one exercise before saving.");
+            return;
+        }
+    
+        setIsSaving(true);
+        try {
+            await addDoc(collection(db, "workouts"), {
+                userId: user.uid,
+                type: "strength",
+                date: selectedDate.toISOString().split("T")[0],
+                duration: time,
+                exercises: sets,
+                notes: notes.trim(),
+                timestamp: serverTimestamp(),
+            });
+    
+            Alert.alert("Saved!", "Your strength training workout has been recorded.");
+            navigation.goBack();
+        } catch (error) {
+            console.error("Error saving workout:", error);
+            let errorMessage = "Could not save workout. Please try again.";
+            if (error.code === 'permission-denied') {
+                errorMessage = "You don't have permission to save workouts.";
+            } else if (error.code === 'unavailable') {
+                errorMessage = "Network error. Please check your connection.";
+            }
+            Alert.alert("Error", errorMessage);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleDateChange = (event, date) => {
@@ -130,15 +170,13 @@ const StrengthTrainingScreen = () => {
             <Text style={styles.title}>Strength Training</Text>
             <View style={styles.titleUnderline} />
 
-            {/* ScrollView with only vertical scrolling */}
             <ScrollView
                 contentContainerStyle={styles.scrollContainer}
-                horizontal={false} // Disable horizontal scrolling
-                showsHorizontalScrollIndicator={false} // Hide horizontal scroll indicator
-                showsVerticalScrollIndicator={true} // Show vertical scroll indicator
+                horizontal={false}
+                showsHorizontalScrollIndicator={false}
+                showsVerticalScrollIndicator={true}
             >
                 <View style={styles.centeredContent}>
-                    {/* Date Picker */}
                     <View style={styles.datePickerContainer}>
                         <Text style={styles.datePickerLabel}>Select Date:</Text>
                         <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
@@ -171,11 +209,10 @@ const StrengthTrainingScreen = () => {
                             </View>
                         </Modal>
                     </View>
-                    {/* Timer Container */}
+                    
                     <View style={styles.timerContainer}>
                         <Text style={styles.timer}>{formatTime(time)}</Text>
 
-                        {/* -30 and +30 Buttons */}
                         <View style={styles.timeAdjustButtons}>
                             <TouchableOpacity onPress={subtractTime} style={styles.timeAdjustButton} disabled={isRunning}>
                                 <Text style={styles.timeAdjustButtonText}>-30</Text>
@@ -185,12 +222,10 @@ const StrengthTrainingScreen = () => {
                             </TouchableOpacity>
                         </View>
 
-                        {/* Start/Stop Button */}
                         <TouchableOpacity onPress={toggleTimer} style={[styles.button, isRunning && styles.stopButton]}>
                             <Text style={styles.buttonText}>{isRunning ? "Stop" : "Start Rest Timer"}</Text>
                         </TouchableOpacity>
 
-                        {/* Reset Button */}
                         {!isRunning && time > 0 && (
                             <TouchableOpacity onPress={resetTimer} style={styles.button}>
                                 <Text style={styles.buttonText}>Reset</Text>
@@ -198,17 +233,15 @@ const StrengthTrainingScreen = () => {
                         )}
                     </View>
 
-                    {/* Log Routine Heading and + Button */}
                     <View style={styles.logRoutineHeader}>
                         <Text style={styles.logRoutineText}>Log Routine</Text>
-                        <TouchableOpacity onPress={() => setIsModalVisible(true)} style={styles.plusButton}>
+                        <TouchableOpacity onPress={openModal} style={styles.plusButton}>
                             <View style={styles.plusButtonBorder}>
                                 <Ionicons name="add" size={28} color="white" />
                             </View>
                         </TouchableOpacity>
                     </View>
 
-                    {/* Logged Sets */}
                     {sets.map((set, index) => (
                         <View key={index} style={styles.loggedSet}>
                             <TouchableOpacity
@@ -217,7 +250,7 @@ const StrengthTrainingScreen = () => {
                             >
                                 <Ionicons name="trash" size={20} color="#FF7F7F" />
                             </TouchableOpacity>
-                            <Text style={styles.exerciseHeader}>{set.exercise}</Text>
+                            <Text style={styles.exerciseHeader}>Exercise {index + 1}: {set.exercise}</Text>
                             <View style={styles.separatorLine} />
                             <Text style={styles.loggedSetText}>
                                 <Text style={styles.boldText}>Sets: </Text>
@@ -236,7 +269,6 @@ const StrengthTrainingScreen = () => {
                         <Text style={styles.notesHeading}>Notes</Text>
                         <TextInput
                             style={styles.notesBox}
-                            
                             placeholder="Enter notes here"
                             placeholderTextColor="#999"
                             multiline
@@ -246,21 +278,25 @@ const StrengthTrainingScreen = () => {
                         />
                     </View>
 
-                    {/* Save Button */}
-                    <TouchableOpacity style={styles.saveButton} onPress={handleSavePress}>
+                    <TouchableOpacity 
+                        style={styles.saveButton} 
+                        onPress={handleSavePress}
+                        disabled={isSaving}
+                    >
                         <LinearGradient
                             colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.gradientButton}
                         >
-                            <Text style={styles.saveButtonText}>Save</Text>
+                            <Text style={styles.saveButtonText}>
+                                {isSaving ? "Saving..." : "Save"}
+                            </Text>
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
 
-            {/* Modal for Logging Sets */}
             <Modal visible={isModalVisible} animationType="slide" transparent={true}>
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
@@ -397,12 +433,11 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        width: "100%", // Ensure it does not exceed screen width
+        width: "100%",
         marginTop: 20,
         marginBottom: 20,
-        //marginLeft: 40,
-        paddingleft: 20,
-        paddingRight: 10,
+        paddingLeft: 1,
+        paddingRight: 1,
     },
     logRoutineText: {
         fontSize: 20,
@@ -423,7 +458,7 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
     loggedSet: {
-        width: 320, // Ensure it does not exceed screen width
+        width: 320,
         backgroundColor: "#1e1e1e",
         padding: 15,
         borderRadius: 10,
@@ -475,8 +510,6 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         textAlignVertical: "top",
         marginTop: 10,
-        //borderWidth: 0.5,
-        //borderColor: "#A9A9A9",
     },
     saveButton: {
         marginTop: 20,

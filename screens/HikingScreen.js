@@ -5,8 +5,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from 'expo-location';
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Modal, Platform } from "react-native";
-
+import { Modal } from "react-native";
+import { auth, db } from "../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -28,14 +29,18 @@ const HikingScreen = () => {
     const navigation = useNavigation();
     const [time, setTime] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
+    const [laps, setLaps] = useState([]);
     const [notes, setNotes] = useState("");
     const [distance, setDistance] = useState(0);
     const [pace, setPace] = useState("0:00");
     const [prevLocation, setPrevLocation] = useState(null);
-    const timerRef = useRef(null);
-    const locationSubscription = useRef(null);
+    const [initialLocation, setInitialLocation] = useState(null);
+    const [mileMarkers, setMileMarkers] = useState([]);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
+
+    const timerRef = useRef(null);
+    const locationSubscription = useRef(null);
 
     useEffect(() => {
         return () => {
@@ -47,7 +52,19 @@ const HikingScreen = () => {
     }, []);
 
     useEffect(() => {
-        if (distance > 0 && time > 0) {
+        const currentMile = Math.floor(distance);
+        if (currentMile > 0 && currentMile > mileMarkers.length) {
+            setMileMarkers(prev => [...prev, time]);
+        }
+
+        if (mileMarkers.length > 0) {
+            const totalMiles = mileMarkers.length;
+            const lastMileTime = mileMarkers[mileMarkers.length - 1];
+            const averagePacePerMile = lastMileTime / totalMiles;
+            const minutes = Math.floor(averagePacePerMile / 60);
+            const seconds = Math.floor(averagePacePerMile % 60);
+            setPace(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+        } else if (distance > 0 && time > 0) {
             const paceInSeconds = time / distance;
             const minutes = Math.floor(paceInSeconds / 60);
             const seconds = Math.floor(paceInSeconds % 60);
@@ -55,48 +72,53 @@ const HikingScreen = () => {
         } else {
             setPace("0:00");
         }
-    }, [time, distance]);
+    }, [time, distance, mileMarkers]);
 
-    const toggleTimer = () => {
+    const toggleTimer = async () => {
         if (isRunning) {
             clearInterval(timerRef.current);
             if (locationSubscription.current) {
                 locationSubscription.current.remove();
+                locationSubscription.current = null;
             }
         } else {
             timerRef.current = setInterval(() => {
                 setTime((prev) => prev + 1);
             }, 1000);
 
-            const startTracking = async () => {
-                let { status } = await Location.requestForegroundPermissionsAsync();
-                if (status !== 'granted') {
-                    Alert.alert("Permission to access location was denied");
-                    return;
-                }
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert("Permission to access location was denied");
+                return;
+            }
 
-                locationSubscription.current = await Location.watchPositionAsync(
-                    {
-                        accuracy: Location.Accuracy.High,
-                        timeInterval: 1000,
-                        distanceInterval: 1,
-                    },
-                    (location) => {
-                        if (prevLocation) {
-                            const dist = getDistanceFromLatLonInMiles(
-                                prevLocation.coords.latitude,
-                                prevLocation.coords.longitude,
-                                location.coords.latitude,
-                                location.coords.longitude
-                            );
-                            setDistance((prev) => prev + dist);
+            const initialLoc = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.High
+            });
+            setInitialLocation(initialLoc);
+            setPrevLocation(initialLoc);
+
+            locationSubscription.current = await Location.watchPositionAsync(
+                {
+                    accuracy: Location.Accuracy.High,
+                    timeInterval: 1000,
+                    distanceInterval: 1,
+                },
+                (newLocation) => {
+                    if (prevLocation) {
+                        const dist = getDistanceFromLatLonInMiles(
+                            prevLocation.coords.latitude,
+                            prevLocation.coords.longitude,
+                            newLocation.coords.latitude,
+                            newLocation.coords.longitude
+                        );
+                        if (dist > 0.0001) {
+                            setDistance(prev => prev + dist);
+                            setPrevLocation(newLocation);
                         }
-                        setPrevLocation(location);
                     }
-                );
-            };
-
-            startTracking();
+                }
+            );
         }
         setIsRunning(!isRunning);
     };
@@ -105,13 +127,25 @@ const HikingScreen = () => {
         clearInterval(timerRef.current);
         if (locationSubscription.current) {
             locationSubscription.current.remove();
+            locationSubscription.current = null;
         }
         setIsRunning(false);
         setTime(0);
+        setLaps([]);
         setDistance(0);
         setPace("0:00");
         setPrevLocation(null);
+        setInitialLocation(null);
+        setMileMarkers([]);
     };
+
+    const recordLap = () => {
+        if (time === 0) {
+            Alert.alert("Start Workout", "You need to start the timer before recording a lap.");
+            return;
+        }
+        setLaps([...laps, { time, distance }]);
+    };    
 
     const formatTime = (seconds) => {
         const hrs = Math.floor(seconds / 3600);
@@ -120,16 +154,39 @@ const HikingScreen = () => {
         return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     };
 
-    const handleSavePress = () => {
-        Alert.alert(
-            "Do you want your workout to be recorded?",
-            "",
-            [
-                { text: "Cancel", style: "cancel" },
-                { text: "Save", onPress: () => console.log("Hiking workout saved!") }
-            ]
-        );
-    };
+    const handleSavePress = async () => {
+        const user = auth.currentUser;
+    
+        if (!user) {
+            Alert.alert("Not signed in", "You must be signed in to save workouts.");
+            return;
+        }
+    
+        if (time === 0 && laps.length === 0) {
+            Alert.alert("Workout Not Started", "Please start the workout before saving.");
+            return;
+        }
+    
+        try {
+            await addDoc(collection(db, "workouts"), {
+                userId: user.uid,
+                type: "hiking",
+                date: selectedDate.toISOString().split("T")[0],
+                time,
+                distance: parseFloat(distance.toFixed(2)),
+                pace,
+                notes,
+                laps,
+                timestamp: serverTimestamp(),
+            });
+    
+            Alert.alert("Saved!", "Your hiking workout has been recorded.");
+            navigation.goBack();
+        } catch (error) {
+            console.error("Error saving workout:", error);
+            Alert.alert("Error", "Could not save workout. Please try again.");
+        }
+    };    
 
     const handleDateChange = (event, date) => {
         if (date) {
@@ -183,7 +240,11 @@ const HikingScreen = () => {
                     
                     {/* Timer Section */}
                     <View style={styles.timerContainer}>
+                        <Text style={styles.timerHeading}>Duration</Text>
                         <Text style={styles.timer}>{formatTime(time)}</Text>
+                        <TouchableOpacity onPress={recordLap} style={styles.lapButton}>
+                            <Text style={styles.lapButtonText}>Lap</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity onPress={toggleTimer} style={[styles.button, isRunning && styles.stopButton]}>
                             <Text style={styles.buttonText}>{isRunning ? "Stop" : "Start"}</Text>
                         </TouchableOpacity>
@@ -195,16 +256,30 @@ const HikingScreen = () => {
                     </View>
 
                     {/* Distance and Pace Section */}
-                    <View style={styles.metricsContainer}>
+                    <View style={styles.metricsRow}>
                         <View style={styles.metricBox}>
-                            <Text style={styles.metricHeading}>Distance Traveled</Text>
-                            <Text style={styles.metricValue}>{distance.toFixed(2)} miles</Text>
+                            <Text style={styles.metricValue}>{distance.toFixed(2)}</Text>
+                            <Text style={styles.metricHeading}>Distance (miles)</Text>
                         </View>
                         <View style={styles.metricBox}>
+                            <Text style={styles.metricValue}>{pace}</Text>
                             <Text style={styles.metricHeading}>Pace/Mile</Text>
-                            <Text style={styles.metricValue}>{pace} /mi</Text>
                         </View>
                     </View>
+
+                    {laps.length > 0 && (
+                        <View style={styles.lapsContainer}>
+                            {laps.map((lap, index) => (
+                                <View key={index} style={styles.lapRow}>
+                                    <Text style={styles.lapNumber}>Lap {index + 1}</Text>
+                                    <View>
+                                        <Text style={styles.lapTime}>{formatTime(lap.time)}</Text>
+                                        <Text style={styles.lapDistance}>{lap.distance.toFixed(2)} miles</Text>
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
+                    )}
 
                     <View style={styles.notesContainer}>
                         <Text style={styles.notesHeading}>Notes</Text>
@@ -258,23 +333,27 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: "#aaa",
         width: "90%",
-    },    
+    },
     centeredContent: {
         width: "100%",
         alignItems: "center",
         justifyContent: "center",
     },
     scrollContainer: {
-        width: "100%",
-        alignItems: "center",
-        justifyContent: "center",
+        paddingBottom: 50,
+    },
+    timerHeading: {
+        color: "#B0B0B0",
+        fontSize: 17,
+        marginBottom: 5,
     },
     timerContainer: {
         backgroundColor: "#1e1e1e",
-        padding: 45,
+        padding: 30,
         borderRadius: 10,
         alignItems: "center",
-        width: screenWidth * 0.8, // 90% of screen width
+        width: "90%",
+        marginBottom: 20,
     },
     timer: {
         fontSize: 50,
@@ -282,26 +361,84 @@ const styles = StyleSheet.create({
         color: "#fff",
         marginBottom: 20,
     },
+    metricsRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        width: "90%",
+        marginBottom: 20,
+    },
+    metricBox: {
+        backgroundColor: "#1e1e1e",
+        padding: 20,
+        borderRadius: 10,
+        alignItems: "center",
+        width: "48%",
+    },
+    metricHeading: {
+        color: "#B0B0B0",
+        fontSize: 14,
+        marginTop: 5,
+        textAlign: "center",
+    },
+    metricValue: {
+        color: "#fff",
+        fontSize: 37,
+        fontWeight: "bold",
+    },
     button: {
         backgroundColor: "#fff",
         padding: 12,
-        borderRadius: 10,
-        width: 160,
+        borderRadius: 30,
+        width: "60%",
         alignItems: "center",
-        alignSelf: "center",
         marginVertical: 8,
-        marginHorizontal: 80,
-        flexGrow: 1,
-        maxWidth: "90%",
     },
     stopButton: {
         backgroundColor: "#FF7F7F",
-        width: 160,
     },
     buttonText: {
         fontSize: 18,
         fontWeight: "bold",
         color: "#121212",
+    },
+    lapsContainer: {
+        marginTop: 10,
+        width: "90%",
+    },
+    lapRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingVertical: 10,
+        borderBottomWidth: 0.5,
+        borderBottomColor: "#A9A9A9",
+    },
+    lapNumber: {
+        color: "#fff",
+        fontSize: 18,
+    },
+    lapTime: {
+        color: "#fff",
+        fontSize: 18,
+        textAlign: "right",
+    },
+    lapDistance: {
+        color: "#B0B0B0",
+        fontSize: 14,
+        textAlign: "right",
+    },
+    lapButton: {
+        backgroundColor: "#333",
+        padding: 12,
+        borderRadius: 30,
+        width: "60%",
+        alignItems: "center",
+        marginVertical: 8,
+    },
+    lapButtonText: {
+        fontSize: 18,
+        fontWeight: "bold",
+        color: "#B0B0B0",
     },
     notesContainer: {
         width: "100%",
@@ -311,8 +448,8 @@ const styles = StyleSheet.create({
         color: "#fff",
         fontSize: 20,
         fontWeight: "bold",
-        alignSelf: "flex-start", // Align to the left
-        marginLeft: 5, // Match the padding of the notesBox
+        alignSelf: "flex-start",
+        marginLeft: 20,
         marginTop: 30,
     },
     notesBox: {
@@ -329,43 +466,19 @@ const styles = StyleSheet.create({
     saveButton: {
         marginTop: 20,
         alignItems: "center",
-        width: 140,
-        borderRadius: 10,
+        width: "40%",
+        borderRadius: 30,
         padding: 8,
     },
     gradientButton: {
         padding: 15,
-        borderRadius: 10,
+        borderRadius: 30,
         alignItems: "center",
         width: "100%",
     },
     saveButtonText: {
         color: "#fff",
         fontSize: 18,
-        fontWeight: "bold",
-    },
-    metricsContainer: {
-        flexDirection: "row",
-        justifyContent: "space-around",
-        width: "90%",
-        marginTop: 20,
-    },
-    metricBox: {
-        backgroundColor: "#1e1e1e",
-        padding: 20,
-        borderRadius: 10,
-        alignItems: "center",
-        width: "45%",
-    },
-    metricHeading: {
-        color: "#B0B0B0",
-        fontSize: 16,
-        fontWeight: "bold",
-        marginBottom: 5,
-    },
-    metricValue: {
-        color: "#fff",
-        fontSize: 20,
         fontWeight: "bold",
     },
     datePickerContainer: {
@@ -412,7 +525,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#5A1A9B",
         paddingVertical: 10,
         paddingHorizontal: 30,
-        borderRadius: 10,
+        borderRadius: 30,
     },
     doneButtonText: {
         color: "#fff",

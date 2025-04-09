@@ -5,6 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Modal, Platform } from "react-native";
+import { auth, db } from "../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -51,16 +53,48 @@ const SwimmingScreen = () => {
         return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     };
 
-    const handleSavePress = () => {
-        Alert.alert(
-            "Do you want your workout to be recorded?",
-            "",
-            [
-                { text: "Cancel", style: "cancel" },
-                { text: "Save", onPress: () => console.log("Swimming workout saved!") }
-            ]
-        );
+    const handleSavePress = async () => {
+        const user = auth.currentUser;
+    
+        if (!user) {
+            Alert.alert("Not signed in", "You must be signed in to save workouts.");
+            return;
+        }
+    
+        if (time === 0) {
+            Alert.alert("Workout Not Started", "Please start the timer before saving your workout.");
+            return;
+        }
+    
+        const workoutData = {
+            userId: user.uid,
+            type: "swimming",
+            date: selectedDate.toISOString().split("T")[0],
+            duration: time,
+            notes: notes.trim(),
+            timestamp: serverTimestamp(),
+        };
+    
+        if (laps.length > 0) {
+            workoutData.laps = laps;
+        }
+    
+        try {
+            await addDoc(collection(db, "workouts"), workoutData);
+            Alert.alert("Saved!", "Your swimming workout has been recorded.");
+            navigation.goBack();
+        } catch (error) {
+            console.error("Error saving workout:", error);
+            let errorMessage = "Could not save workout. Please try again.";
+            if (error.code === 'permission-denied') {
+                errorMessage = "You don't have permission to save workouts.";
+            } else if (error.code === 'unavailable') {
+                errorMessage = "Network error. Please check your connection.";
+            }
+            Alert.alert("Error", errorMessage);
+        }
     };
+    
 
     const handleDateChange = (event, date) => {
         if (date) {

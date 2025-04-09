@@ -1,16 +1,17 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Dimensions } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Dimensions, Modal } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from 'expo-location';
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Modal, Platform } from "react-native";
+import { auth, db } from "../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const screenWidth = Dimensions.get("window").width;
 
 const getDistanceFromLatLonInMiles = (lat1, lon1, lat2, lon2) => {
-    const R = 3958.8; // Radius of the earth in miles
+    const R = 3958.8;
     const dLat = deg2rad(lat2 - lat1);
     const dLon = deg2rad(lon2 - lon1);
     const a =
@@ -18,7 +19,7 @@ const getDistanceFromLatLonInMiles = (lat1, lon1, lat2, lon2) => {
         Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Distance in miles
+    return R * c;
 };
 
 const deg2rad = (deg) => deg * (Math.PI / 180);
@@ -32,6 +33,9 @@ const CyclingScreen = () => {
     const [distance, setDistance] = useState(0);
     const [pace, setPace] = useState("0:00");
     const [prevLocation, setPrevLocation] = useState(null);
+    const [initialLocation, setInitialLocation] = useState(null);
+    const [mileMarkers, setMileMarkers] = useState([]);
+    const [isSaving, setIsSaving] = useState(false);
     const timerRef = useRef(null);
     const locationSubscription = useRef(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
@@ -47,7 +51,19 @@ const CyclingScreen = () => {
     }, []);
 
     useEffect(() => {
-        if (distance > 0 && time > 0) {
+        const currentMile = Math.floor(distance);
+        if (currentMile > 0 && currentMile > mileMarkers.length) {
+            setMileMarkers(prev => [...prev, time]);
+        }
+
+        if (mileMarkers.length > 0) {
+            const totalMiles = mileMarkers.length;
+            const lastMileTime = mileMarkers[mileMarkers.length - 1];
+            const averagePacePerMile = lastMileTime / totalMiles;
+            const minutes = Math.floor(averagePacePerMile / 60);
+            const seconds = Math.floor(averagePacePerMile % 60);
+            setPace(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+        } else if (distance > 0 && time > 0) {
             const paceInSeconds = time / distance;
             const minutes = Math.floor(paceInSeconds / 60);
             const seconds = Math.floor(paceInSeconds % 60);
@@ -55,48 +71,53 @@ const CyclingScreen = () => {
         } else {
             setPace("0:00");
         }
-    }, [time, distance]);
+    }, [time, distance, mileMarkers]);
 
-    const toggleTimer = () => {
+    const toggleTimer = async () => {
         if (isRunning) {
             clearInterval(timerRef.current);
             if (locationSubscription.current) {
                 locationSubscription.current.remove();
+                locationSubscription.current = null;
             }
         } else {
             timerRef.current = setInterval(() => {
                 setTime((prev) => prev + 1);
             }, 1000);
 
-            const startTracking = async () => {
-                let { status } = await Location.requestForegroundPermissionsAsync();
-                if (status !== 'granted') {
-                    Alert.alert("Permission to access location was denied");
-                    return;
-                }
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert("Permission to access location was denied");
+                return;
+            }
 
-                locationSubscription.current = await Location.watchPositionAsync(
-                    {
-                        accuracy: Location.Accuracy.High,
-                        timeInterval: 1000,
-                        distanceInterval: 1,
-                    },
-                    (location) => {
-                        if (prevLocation) {
-                            const dist = getDistanceFromLatLonInMiles(
-                                prevLocation.coords.latitude,
-                                prevLocation.coords.longitude,
-                                location.coords.latitude,
-                                location.coords.longitude
-                            );
-                            setDistance((prev) => prev + dist);
+            const initialLoc = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.High
+            });
+            setInitialLocation(initialLoc);
+            setPrevLocation(initialLoc);
+
+            locationSubscription.current = await Location.watchPositionAsync(
+                {
+                    accuracy: Location.Accuracy.High,
+                    timeInterval: 1000,
+                    distanceInterval: 1,
+                },
+                (newLocation) => {
+                    if (prevLocation) {
+                        const dist = getDistanceFromLatLonInMiles(
+                            prevLocation.coords.latitude,
+                            prevLocation.coords.longitude,
+                            newLocation.coords.latitude,
+                            newLocation.coords.longitude
+                        );
+                        if (dist > 0.0001) {
+                            setDistance(prev => prev + dist);
+                            setPrevLocation(newLocation);
                         }
-                        setPrevLocation(location);
                     }
-                );
-            };
-
-            startTracking();
+                }
+            );
         }
         setIsRunning(!isRunning);
     };
@@ -105,6 +126,7 @@ const CyclingScreen = () => {
         clearInterval(timerRef.current);
         if (locationSubscription.current) {
             locationSubscription.current.remove();
+            locationSubscription.current = null;
         }
         setIsRunning(false);
         setTime(0);
@@ -112,10 +134,12 @@ const CyclingScreen = () => {
         setDistance(0);
         setPace("0:00");
         setPrevLocation(null);
+        setInitialLocation(null);
+        setMileMarkers([]);
     };
 
     const recordLap = () => {
-        setLaps([...laps, time]);
+        setLaps([...laps, { time, distance }]);
     };
 
     const formatTime = (seconds) => {
@@ -125,15 +149,49 @@ const CyclingScreen = () => {
         return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
     };
 
-    const handleSavePress = () => {
-        Alert.alert(
-            "Do you want your workout to be recorded?",
-            "",
-            [
-                { text: "Cancel", style: "cancel" },
-                { text: "Save", onPress: () => console.log("Cycling workout saved!") }
-            ]
-        );
+    const handleSavePress = async () => {
+        if (isSaving) return;
+        
+        const user = auth.currentUser;
+    
+        if (!user) {
+            Alert.alert("Not signed in", "You must be signed in to save workouts.");
+            return;
+        }
+
+        if (time === 0 || distance === 0) {
+            Alert.alert("Empty Workout", "Please complete a workout before saving.");
+            return;
+        }
+    
+        setIsSaving(true);
+        try {
+            await addDoc(collection(db, "workouts"), {
+                userId: user.uid,
+                type: "cycling",
+                date: selectedDate.toISOString().split("T")[0],
+                time,
+                distance: parseFloat(distance.toFixed(2)),
+                pace,
+                notes: notes.trim(),
+                laps,
+                timestamp: serverTimestamp(),
+            });
+    
+            Alert.alert("Saved!", "Your cycling workout has been recorded.");
+            navigation.goBack();
+        } catch (error) {
+            console.error("Error saving workout:", error);
+            let errorMessage = "Could not save workout. Please try again.";
+            if (error.code === 'permission-denied') {
+                errorMessage = "You don't have permission to save workouts.";
+            } else if (error.code === 'unavailable') {
+                errorMessage = "Network error. Please check your connection.";
+            }
+            Alert.alert("Error", errorMessage);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleDateChange = (event, date) => {
@@ -152,7 +210,6 @@ const CyclingScreen = () => {
 
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.centeredContent}>
-                    {/* Date Picker */}
                     <View style={styles.datePickerContainer}>
                         <Text style={styles.datePickerLabel}>Select Date:</Text>
                         <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
@@ -185,7 +242,9 @@ const CyclingScreen = () => {
                             </View>
                         </Modal>
                     </View>
+                    
                     <View style={styles.timerContainer}>
+                        <Text style={styles.timerHeading}>Duration</Text>
                         <Text style={styles.timer}>{formatTime(time)}</Text>
                         <TouchableOpacity onPress={recordLap} style={styles.lapButton}>
                             <Text style={styles.lapButtonText}>Lap</Text>
@@ -200,15 +259,14 @@ const CyclingScreen = () => {
                         )}
                     </View>
 
-                    {/* Distance and Pace Section */}
-                    <View style={styles.metricsContainer}>
+                    <View style={styles.metricsRow}>
                         <View style={styles.metricBox}>
-                            <Text style={styles.metricHeading}>Distance Traveled</Text>
-                            <Text style={styles.metricValue}>{distance.toFixed(2)} miles</Text>
+                            <Text style={styles.metricValue}>{distance.toFixed(2)}</Text>
+                            <Text style={styles.metricHeading}>Distance (miles)</Text>
                         </View>
                         <View style={styles.metricBox}>
+                            <Text style={styles.metricValue}>{pace}</Text>
                             <Text style={styles.metricHeading}>Pace/Mile</Text>
-                            <Text style={styles.metricValue}>{pace} /mi</Text>
                         </View>
                     </View>
 
@@ -217,7 +275,10 @@ const CyclingScreen = () => {
                             {laps.map((lap, index) => (
                                 <View key={index} style={styles.lapRow}>
                                     <Text style={styles.lapNumber}>{`Lap ${index + 1}`}</Text>
-                                    <Text style={styles.lapTime}>{formatTime(lap)}</Text>
+                                    <View>
+                                        <Text style={styles.lapTime}>{formatTime(lap.time)}</Text>
+                                        <Text style={styles.lapDistance}>{lap.distance.toFixed(2)} miles</Text>
+                                    </View>
                                 </View>
                             ))}
                         </View>
@@ -236,14 +297,20 @@ const CyclingScreen = () => {
                         />
                     </View>
 
-                    <TouchableOpacity style={styles.saveButton} onPress={handleSavePress}>
+                    <TouchableOpacity 
+                        style={styles.saveButton} 
+                        onPress={handleSavePress}
+                        disabled={isSaving}
+                    >
                         <LinearGradient
                             colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.gradientButton}
                         >
-                            <Text style={styles.saveButtonText}>Save</Text>
+                            <Text style={styles.saveButtonText}>
+                                {isSaving ? "Saving..." : "Save"}
+                            </Text>
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
@@ -284,12 +351,18 @@ const styles = StyleSheet.create({
     scrollContainer: {
         paddingBottom: 50,
     },
+    timerHeading: {
+        color: "#B0B0B0",
+        fontSize: 17,
+        marginBottom: 5,
+    },   
     timerContainer: {
         backgroundColor: "#1e1e1e",
         padding: 30,
         borderRadius: 10,
         alignItems: "center",
         width: "90%",
+        marginBottom: 20,
     },
     timer: {
         fontSize: 50,
@@ -297,10 +370,34 @@ const styles = StyleSheet.create({
         color: "#fff",
         marginBottom: 20,
     },
+    metricsRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        width: "90%",
+        marginBottom: 20,
+    },
+    metricBox: {
+        backgroundColor: "#1e1e1e",
+        padding: 20,
+        borderRadius: 10,
+        alignItems: "center",
+        width: "48%",
+    },
+    metricHeading: {
+        color: "#B0B0B0",
+        fontSize: 14,
+        marginTop: 5,
+        textAlign: "center",
+    },
+    metricValue: {
+        color: "#fff",
+        fontSize: 37,
+        fontWeight: "bold",
+    },
     button: {
         backgroundColor: "#fff",
         padding: 12,
-        borderRadius: 10,
+        borderRadius: 30,
         width: "60%",
         alignItems: "center",
         marginVertical: 8,
@@ -334,10 +431,15 @@ const styles = StyleSheet.create({
         fontSize: 18,
         textAlign: "right",
     },
+    lapDistance: {
+        color: "#B0B0B0",
+        fontSize: 14,
+        textAlign: "right",
+    },
     lapButton: {
         backgroundColor: "#333",
         padding: 12,
-        borderRadius: 10,
+        borderRadius: 30,
         width: "60%",
         alignItems: "center",
         marginVertical: 8,
@@ -374,42 +476,18 @@ const styles = StyleSheet.create({
         marginTop: 20,
         alignItems: "center",
         width: "40%",
-        borderRadius: 10,
+        borderRadius: 30,
         padding: 8,
     },
     gradientButton: {
         padding: 15,
-        borderRadius: 10,
+        borderRadius: 30,
         alignItems: "center",
         width: "100%",
     },
     saveButtonText: {
         color: "#fff",
         fontSize: 18,
-        fontWeight: "bold",
-    },
-    metricsContainer: {
-        flexDirection: "row",
-        justifyContent: "space-around",
-        width: "90%",
-        marginTop: 20,
-    },
-    metricBox: {
-        backgroundColor: "#1e1e1e",
-        padding: 20,
-        borderRadius: 10,
-        alignItems: "center",
-        width: "45%",
-    },
-    metricHeading: {
-        color: "#B0B0B0",
-        fontSize: 16,
-        fontWeight: "bold",
-        marginBottom: 5,
-    },
-    metricValue: {
-        color: "#fff",
-        fontSize: 20,
         fontWeight: "bold",
     },
     datePickerContainer: {
@@ -456,7 +534,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#5A1A9B",
         paddingVertical: 10,
         paddingHorizontal: 30,
-        borderRadius: 10,
+        borderRadius: 30,
     },
     doneButtonText: {
         color: "#fff",

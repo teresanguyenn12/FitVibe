@@ -4,6 +4,8 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { auth, db } from "../firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -16,6 +18,7 @@ const YogaScreen = () => {
     const [routineName, setRoutineName] = useState("");
     const [routineTime, setRoutineTime] = useState("");
     const [loggedRoutines, setLoggedRoutines] = useState([]);
+    const [isSaving, setIsSaving] = useState(false);
     const timerRef = useRef(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -57,13 +60,6 @@ const YogaScreen = () => {
         if (!isRunning) setTime((prev) => (prev <= 30 ? 0 : prev - 30));
     };
 
-    const handleSavePress = () => {
-        Alert.alert("Do you want your workout to be recorded?", "", [
-            { text: "Cancel", style: "cancel" },
-            { text: "Save", onPress: () => console.log("Yoga workout saved!") },
-        ]);
-    };
-
     const handleDateChange = (event, date) => {
         if (date) {
             setSelectedDate(date);
@@ -71,13 +67,21 @@ const YogaScreen = () => {
     };
 
     const handleRoutineSave = () => {
-        if (routineName.trim() === "" || routineTime.trim() === "") {
+        const timeNum = Number(routineTime);
+        
+        if (routineName.trim() === "" || isNaN(timeNum)) {
             Alert.alert("Error", "Please fill in all fields.");
             return;
         }
+
+        if (timeNum <= 0) {
+            Alert.alert("Error", "Routine time must be a valid number.");
+            return;
+        }
+
         const newRoutine = {
-            routineName: `Routine ${loggedRoutines.length + 1}: ${routineName}`,
-            routineTime,
+            name: routineName.trim(),
+            time: timeNum
         };
         setLoggedRoutines([...loggedRoutines, newRoutine]);
         setModalVisible(false);
@@ -87,20 +91,57 @@ const YogaScreen = () => {
 
     const deleteRoutine = (index) => {
         const updatedRoutines = loggedRoutines.filter((_, i) => i !== index);
-        const renumbered = updatedRoutines.map((r, i) => ({
-            ...r,
-            routineName: `Routine ${i + 1}: ${r.routineName.split(": ")[1]}`,
-        }));
-        setLoggedRoutines(renumbered);
+        setLoggedRoutines(updatedRoutines);
     };
 
     const formatTime = (seconds) => {
         const hrs = Math.floor(seconds / 3600);
         const mins = Math.floor((seconds % 3600) / 60);
         const secs = seconds % 60;
-        return `${hrs.toString().padStart(2, "0")}:${mins
-            .toString()
-            .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+        return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    };
+
+    const handleSavePress = async () => {
+        if (isSaving) return;
+        
+        const user = auth.currentUser;
+    
+        if (!user) {
+            Alert.alert("Not signed in", "You must be signed in to save workouts.");
+            return;
+        }
+
+        if (loggedRoutines.length === 0) {
+            Alert.alert("Empty Workout", "Please log at least one routine before saving.");
+            return;
+        }
+
+        setIsSaving(true);
+        try {
+            await addDoc(collection(db, "workouts"), {
+                userId: user.uid,
+                type: "yoga",
+                date: selectedDate.toISOString().split("T")[0],
+                duration: time,
+                routines: loggedRoutines,
+                notes: notes.trim(),
+                timestamp: serverTimestamp(),
+            });
+
+            Alert.alert("Saved!", "Your yoga workout has been recorded.");
+            navigation.goBack();
+        } catch (error) {
+            console.error("Error saving workout:", error);
+            let errorMessage = "Could not save workout. Please try again.";
+            if (error.code === 'permission-denied') {
+                errorMessage = "You don't have permission to save workouts.";
+            } else if (error.code === 'unavailable') {
+                errorMessage = "Network error. Please check your connection.";
+            }
+            Alert.alert("Error", errorMessage);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -150,6 +191,7 @@ const YogaScreen = () => {
                             </View>
                         </Modal>
                     </View>
+                    
                     {/* Timer Container */}
                     <View style={styles.timerContainer}>
                         <Text style={styles.timer}>{formatTime(time)}</Text>
@@ -196,11 +238,11 @@ const YogaScreen = () => {
                             >
                                 <Ionicons name="trash" size={20} color="#FF7F7F" />
                             </TouchableOpacity>
-                            <Text style={styles.routineHeader}>{routine.routineName}</Text>
+                            <Text style={styles.routineHeader}>Routine {index + 1}: {routine.name}</Text>
                             <View style={styles.separatorLine} />
                             <Text style={styles.loggedRoutineText}>
-                                <Text style={styles.boldText}>Routine Time (secs): </Text>
-                                <Text>{routine.routineTime}</Text>
+                                <Text style={styles.boldText}>Time (secs): </Text>
+                                <Text>{routine.time}</Text>
                             </Text>
                         </View>
                     ))}
@@ -220,14 +262,20 @@ const YogaScreen = () => {
                     </View>
 
                     {/* Save Button */}
-                    <TouchableOpacity style={styles.saveButton} onPress={handleSavePress}>
+                    <TouchableOpacity 
+                        style={styles.saveButton} 
+                        onPress={handleSavePress}
+                        disabled={isSaving}
+                    >
                         <LinearGradient
                             colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.gradientButton}
                         >
-                            <Text style={styles.saveButtonText}>Save</Text>
+                            <Text style={styles.saveButtonText}>
+                                {isSaving ? "Saving..." : "Save"}
+                            </Text>
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
