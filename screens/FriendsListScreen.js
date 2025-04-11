@@ -127,22 +127,14 @@ const FriendsListScreen = () => {
         <SafeAreaView style={styles.container}>
             {/* Top Bar */}
             <View style={styles.headerRow}>
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    style={styles.backButton}
-                >
-                    <Ionicons name="arrow-back" size={24} color="#fff" />
-                </TouchableOpacity>
+  <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+    <Ionicons name="arrow-back" size={24} color="#fff" />
+  </TouchableOpacity>
 
-                <Text style={styles.headerText}>Friends</Text>
-
-                <TouchableOpacity
-                    onPress={() => navigation.navigate('AddFriends')}
-                    style={styles.addButton}
-                >
-                    <Ionicons name="person-add-outline" size={24} color="#fff" />
-                </TouchableOpacity>
-            </View>
+  <View style={styles.headerTitleWrapper}>
+    <Text style={styles.headerText}>Friends</Text>
+  </View>
+</View>
 
             {/* Tabs */}
             <View style={styles.tabContainer}>
@@ -196,10 +188,17 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     paddingHorizontal: 15,
     paddingTop: 10,
     paddingBottom: 5,
+    position: 'relative',
+  },
+  headerTitleWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   backButton: {
     padding: 5,

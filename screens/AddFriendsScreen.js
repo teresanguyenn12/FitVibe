@@ -1,189 +1,340 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from "react";
 import {
-  View, Text, TextInput, FlatList, TouchableOpacity, Image, StyleSheet, SafeAreaView, Alert
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  SafeAreaView,
+  Alert,
+  Animated,
+  Keyboard,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import { fetchAllUsers, followUser, unfollowUser } from "../api/addFriendsApi";
+import { getAuth } from "firebase/auth";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 const AddFriendsScreen = () => {
   const navigation = useNavigation();
   const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [following, setFollowing] = useState({});
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const currentUser = getAuth().currentUser;
+  const db = getFirestore();
 
-    useFocusEffect(
-        useCallback(() => {
-            const loadUsers = async () => {
-                try {
-                    const { userList, followingMap } = await fetchAllUsers();
-                    setUsers(userList);
-                    setFollowing(followingMap);
-                } catch (error) {
-                    console.error("Error loading users:", error);
-                }
-            };
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const { userList, followingMap } = await fetchAllUsers();
 
-            loadUsers();
+        const currentUserDoc = await getDoc(doc(db, "users", currentUser.uid));
+        const currentUserData = currentUserDoc.exists()
+          ? currentUserDoc.data()
+          : {};
+        const currentFollowing = currentUserData.following || [];
 
-            
-        }, []) 
+        const usersWithMutuals = userList.map((user) => {
+          const userFollowers = user.followers || [];
+          const mutuals = userFollowers.filter((follower) =>
+            currentFollowing.includes(follower)
+          );
+          return {
+            ...user,
+            mutualFriends: mutuals.length,
+          };
+        });
+
+        setUsers(usersWithMutuals);
+        setFollowing(followingMap);
+      } catch (error) {
+        console.error("Error loading users:", error);
+      }
+    };
+
+    loadUsers();
+  }, []);
+
+  useEffect(() => {
+    if (search.trim().length === 0) {
+      setFilteredUsers([]);
+      return;
+    }
+
+    const searchLower = search.toLowerCase();
+    const filtered = users.filter(
+      (user) =>
+        (user.fullName?.toLowerCase() || "").includes(searchLower) ||
+        (user.username?.toLowerCase() || "").includes(searchLower)
     );
 
+    setFilteredUsers(filtered);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [search, users]);
+
+  const reloadUsers = async () => {
+    const { userList, followingMap } = await fetchAllUsers();
+    const currentUserDoc = await getDoc(doc(db, "users", currentUser.uid));
+    const currentUserData = currentUserDoc.exists()
+      ? currentUserDoc.data()
+      : {};
+    const currentFollowing = currentUserData.following || [];
+
+    const usersWithMutuals = userList.map((user) => {
+      const userFollowers = user.followers || [];
+      const mutuals = userFollowers.filter((f) => currentFollowing.includes(f));
+      return { ...user, mutualFriends: mutuals.length };
+    });
+
+    setUsers(usersWithMutuals);
+    setFollowing(followingMap);
+  };
+
   const handleFollow = async (userId) => {
+    setFollowing((prev) => ({ ...prev, [userId]: true }));
     try {
       await followUser(userId);
-      setFollowing((prev) => ({ ...prev, [userId]: true }));
+      reloadUsers();
     } catch (error) {
-      Alert.alert('Error', 'Failed to follow user');
-      console.error('Follow error:', error);
+      setFollowing((prev) => ({ ...prev, [userId]: false }));
+      Alert.alert("Error", "Failed to follow user");
     }
   };
 
   const handleUnfollow = async (userId) => {
+    setFollowing((prev) => ({ ...prev, [userId]: false }));
     try {
       await unfollowUser(userId);
-      setFollowing((prev) => ({ ...prev, [userId]: false }));
+      reloadUsers();
     } catch (error) {
-      Alert.alert('Error', 'Failed to unfollow user');
-      console.error('Unfollow error:', error);
+      setFollowing((prev) => ({ ...prev, [userId]: true }));
+      Alert.alert("Error", "Failed to unfollow user");
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    (user.fullName?.toLowerCase() || "").includes(search.toLowerCase()) ||
-    (user.username?.toLowerCase() || "").includes(search.toLowerCase())
-  );
-
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconLeft}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Add Friends</Text>
-        <View style={styles.iconRightPlaceholder} />
-      </View>
-
-      {/* Search Input */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={18} color="#aaa" style={styles.searchIcon} />
-        <TextInput
-          placeholder="Search users"
-          placeholderTextColor="#aaa"
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-        />
-      </View>
-
-      {/* User List */}
-      <FlatList
-        data={filteredUsers}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.userItem}>
-                <TouchableOpacity
-                    style={styles.profileButton}
-                    onPress={() => navigation.navigate('OtherProfile', { userId: item.id })}
-                >
-                    <Image
-                        source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }}
-                        style={styles.avatar}
-                    />
-                    <View style={styles.userInfo}>
-                        <Text style={styles.name}>{item.fullName}</Text>
-                        <Text style={styles.handle}>@{item.username || item.email?.split('@')[0]}</Text>
-                    </View>
-                </TouchableOpacity>
+      <TouchableOpacity
+        activeOpacity={1}
+        style={{ flex: 1 }}
+        onPress={() => {
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => Keyboard.dismiss());
+        }}
+      >
+        <View style={styles.searchContainer}>
+          <Ionicons
+            name="search"
+            size={20}
+            color="#ccc"
+            style={styles.searchIcon}
+          />
+          <TextInput
+            placeholder="Search by name or @username"
+            placeholderTextColor="#ccc"
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search.length > 0 && (
             <TouchableOpacity
-              style={[
-                styles.followButton,
-                following[item.id] ? styles.followingButton : styles.notFollowingButton
-              ]}
-              onPress={() =>
-                following[item.id] ? handleUnfollow(item.id) : handleFollow(item.id)
-              }
+              onPress={() => setSearch("")}
+              style={styles.clearButton}
             >
-              <Text style={styles.followText}>
-                {following[item.id] ? 'Following' : 'Follow'}
-              </Text>
+              <Ionicons name="close-circle" size={20} color="#aaa" />
             </TouchableOpacity>
+          )}
+        </View>
+
+        {search.trim().length === 0 ? (
+          <View style={styles.placeholderContainer}>
+            <Ionicons
+              name="search-circle-outline"
+              size={90}
+              color="#444"
+              style={{ marginBottom: 16 }}
+            />
+            <Text style={styles.placeholderText}>
+              Start typing to search for friends
+            </Text>
           </View>
+        ) : (
+          <Animated.FlatList
+            $1style={{ flex: 1, opacity: fadeAnim }}
+            contentContainerStyle={{ paddingBottom: 100 }}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            data={filteredUsers}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.userItem}>
+                <TouchableOpacity
+                  style={styles.profileButton}
+                  onPress={() =>
+                    navigation.navigate("OtherProfile", { userId: item.id })
+                  }
+                >
+                  <Image
+                    source={{
+                      uri:
+                        item.profilePicture || "https://via.placeholder.com/50",
+                    }}
+                    style={styles.avatar}
+                  />
+                  <View style={styles.userInfo}>
+                    <Text style={styles.name}>{item.fullName}</Text>
+                    <Text style={styles.handle}>
+                      @{item.username || item.email?.split("@")[0]}
+                    </Text>
+                    {item.mutualFriends > 0 && (
+                      <Text style={styles.mutual}>
+                        {item.mutualFriends} mutual friend
+                        {item.mutualFriends > 1 ? "s" : ""}
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.followButton,
+                    following[item.id]
+                      ? styles.followingButton
+                      : styles.notFollowingButton,
+                  ]}
+                  onPress={() =>
+                    following[item.id]
+                      ? handleUnfollow(item.id)
+                      : handleFollow(item.id)
+                  }
+                >
+                  <Text style={styles.followText}>
+                    {following[item.id] ? "Following" : "Follow"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No users found.</Text>
+            }
+          />
         )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No users found.</Text>
-        }
-      />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    marginBottom: 10,
+  container: {
+    flex: 1,
+    backgroundColor: "#131417",
   },
-  title: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  iconLeft: { padding: 5 },
-  iconRightPlaceholder: { width: 24 }, 
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1e1e1e',
-    marginHorizontal: 15,
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1A1B1E",
+    marginHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#2D2F33",
   },
   searchIcon: {
     marginRight: 10,
+    opacity: 0.6,
   },
   searchInput: {
     flex: 1,
-    color: '#fff',
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "500",
+    paddingVertical: 6,
+  },
+  clearButton: {
+    paddingLeft: 8,
+  },
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+  },
+  placeholderText: {
+    color: "#bbb",
     fontSize: 16,
+    fontStyle: "italic",
+    textAlign: "center",
+    marginTop: 12,
   },
   userItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    borderBottomColor: '#333',
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomColor: "#2c2c2c",
     borderBottomWidth: 1,
+    backgroundColor: "#1A1B1E",
+    borderRadius: 10,
+    marginHorizontal: 16,
+    marginBottom: 10,
   },
-  avatar: { width: 50, height: 50, borderRadius: 25, marginRight: 15 },
+  profileButton: {
+    flexDirection: "row",
+    flex: 1,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    marginRight: 15,
+    borderColor: "#444",
+    borderWidth: 1,
+  },
   userInfo: { flex: 1 },
-  name: { color: '#fff', fontSize: 16 },
-  handle: { color: '#888', fontSize: 14 },
+  name: { color: "#fff", fontSize: 16, fontWeight: "500" },
+  handle: { color: "#aaa", fontSize: 13, marginTop: 2 },
+  mutual: { color: "#888", fontSize: 12, marginTop: 4 },
   followButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    alignSelf: "center",
+    minWidth: 80,
+    alignItems: "center",
   },
-  followingButton: { backgroundColor: 'purple' },
-  notFollowingButton: { backgroundColor: 'gray' },
-  followText: { color: '#fff', fontWeight: 'bold' },
+  followingButton: {
+    backgroundColor: "#1e1e1e",
+    borderColor: "#888",
+    borderWidth: 1,
+  },
+  notFollowingButton: {
+    backgroundColor: "#6C38CC",
+  },
+  followText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
   emptyText: {
-    color: '#888',
-    textAlign: 'center',
+    color: "#888",
+    textAlign: "center",
     marginTop: 40,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     fontSize: 16,
-    },
-    profileButton: {
-        flexDirection: 'row',
-        flex: 1
-    }
+  },
 });
 
 export default AddFriendsScreen;
