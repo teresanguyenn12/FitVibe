@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: "#fff",
     fontWeight: "bold",
-    marginRight: 30, // balance the back button
+    marginRight: 30, 
   },
   settingsContainer: {
     marginTop: 10,

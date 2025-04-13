@@ -61,6 +61,7 @@ import ChatScreen from "./screens/ChatScreen";
 import CommentsScreen from "./screens/CommentsScreen";
 import OtherProfileScreen from "./screens/OtherProfileScreen";
 import OtherFriendsListScreen from "./screens/OtherFriendsListScreen";
+import PostDetailScreen from "./screens/PostDetailScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -124,13 +125,15 @@ function BottomTabs() {
         },
 
         tabBarLabel: ({ focused, color }) => (
-          <Text style={{
-            fontSize: 12,
-            fontWeight: "600",
-            color: focused ? "#fff" : color,
-            textAlign: "center",
-            minWidth: 60
-          }}>
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "600",
+              color: focused ? "#fff" : color,
+              textAlign: "center",
+              minWidth: 60,
+            }}
+          >
             {route.name}
           </Text>
         ),
@@ -169,13 +172,13 @@ function BottomTabs() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Search" component={AddFriendsScreen} />
       <Tab.Screen name="Feed" component={FeedScreen} />
-      <Tab.Screen name="Challenges" component={ChallengeScreens.ChallengeScreen} />
+      <Tab.Screen
+        name="Challenges"
+        component={ChallengeScreens.ChallengeScreen}
+      />
     </Tab.Navigator>
   );
 }
-
-
-
 
 function Navigation() {
   const { user, isLoading } = useAuth();
@@ -404,6 +407,11 @@ function Navigation() {
             <Stack.Screen
               name="OtherFriendsList"
               component={OtherFriendsListScreen}
+            />
+            <Stack.Screen
+              name="PostDetailScreen"
+              component={PostDetailScreen}
+              options={{ headerShown: false }} // or true if you want a header
             />
           </>
         )}
