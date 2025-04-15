@@ -7,11 +7,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Share,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
-import { getFirestore, doc, updateDoc } from "firebase/firestore";
+import { getFirestore, doc, updateDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 import { useAuth } from "../authProvider";
 
 const workoutIcons = {
@@ -33,8 +35,7 @@ const getTimeAgo = (timestamp) => {
   const diffInSeconds = Math.floor((now - postDate) / 1000);
   if (diffInSeconds < 60) return "Just now";
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min ago`;
-  if (diffInSeconds < 86400)
-    return `${Math.floor(diffInSeconds / 3600)} hr ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hr ago`;
   if (diffInSeconds < 172800) return "Yesterday";
   return `${Math.floor(diffInSeconds / 86400)} days ago`;
 };
@@ -46,29 +47,18 @@ const PostDetailScreen = () => {
   const { post } = route.params || {};
 
   const db = getFirestore();
+  const auth = getAuth();
   const [likes, setLikes] = useState(post.likes || []);
+  const [authorData, setAuthorData] = useState(null);
 
-  if (!post) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="chevron-back" size={30} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Post</Text>
-          <View style={{ width: 30 }} />
-        </View>
-        <View style={styles.content}>
-          <Text style={{ color: "#fff", textAlign: "center" }}>
-            Post data not available.
-          </Text>
-        </View>
-      </View>
-    );
-  }
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, "users", post.userId), (docSnap) => {
+      if (docSnap.exists()) {
+        setAuthorData(docSnap.data());
+      }
+    });
+    return () => unsubscribe();
+  }, [post.userId]);
 
   const liked = likes.includes(user.uid);
 
@@ -87,20 +77,37 @@ const PostDetailScreen = () => {
 
   const handleShare = async () => {
     try {
-      const message = `@${post.username}'s workout: ${post.description || ""}`;
+      const message = `@${authorData?.username || "user"}'s workout: ${post.description || ""}`;
       await Share.share({
         message,
         url: post.imageUrl || undefined,
-        title: `@${post.username}'s workout on FitVibe`,
+        title: `@${authorData?.username || "user"}'s workout on FitVibe`,
       });
     } catch (error) {
       console.error("Error sharing post:", error);
     }
   };
 
+  const handleDelete = async () => {
+    Alert.alert("Delete Post", "Are you sure you want to delete this post?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteDoc(doc(db, "posts", post.id));
+            navigation.goBack();
+          } catch (error) {
+            console.error("Error deleting post:", error);
+          }
+        },
+      },
+    ]);
+  };
+
   const displayIcon = workoutIcons[post.workoutType] || "help-circle-outline";
-  const displayLabel =
-    post.workoutLabel || post.customWorkoutType || post.workoutType;
+  const displayLabel = post.workoutLabel || post.customWorkoutType || post.workoutType;
   const timeAgo = getTimeAgo(post.timestamp);
 
   return (
@@ -113,19 +120,23 @@ const PostDetailScreen = () => {
           <Ionicons name="chevron-back" size={30} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Post</Text>
-        <View style={{ width: 30 }} />
+        {user.uid === post.userId ? (
+          <TouchableOpacity onPress={handleDelete}>
+            <Ionicons name="ellipsis-vertical" size={22} color="#fff" />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 30 }} />
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.userSection}>
           <Image
-            source={{
-              uri: post.profilePicture || "https://via.placeholder.com/50",
-            }}
+            source={{ uri: authorData?.profilePicture || "https://via.placeholder.com/50" }}
             style={styles.avatar}
           />
           <View style={styles.userInfo}>
-            <Text style={styles.username}>@{post.username}</Text>
+            <Text style={styles.username}>@{authorData?.username || "user"}</Text>
             <Text style={styles.rank}>🏅 Rookie</Text>
             <Text style={styles.timeAgo}>{timeAgo}</Text>
           </View>
