@@ -1,4 +1,4 @@
-// FeedScreen.js (Updated to show custom "Other" workout label and post age like Instagram)
+// FeedScreen.js (Updated to hide posts from blocked users)
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
@@ -41,11 +41,9 @@ const workoutIcons = {
 
 const getTimeAgo = (timestamp) => {
   if (!timestamp) return "";
-
   const postDate = timestamp.toDate();
   const now = new Date();
   const diffInSeconds = Math.floor((now - postDate) / 1000);
-
   if (diffInSeconds < 60) return "Just now";
   if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min ago`;
   if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hr ago`;
@@ -58,18 +56,43 @@ const FeedScreen = () => {
   const navigation = useNavigation();
   const db = getFirestore();
   const [posts, setPosts] = useState([]);
+  const [blockedUsers, setBlockedUsers] = useState([]);
+
+  // Fetch blocked users first
+  const fetchBlockedUsers = async () => {
+    try {
+      if (!user || !user.uid) return [];
+      
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const blockedIds = userData.blockedUsers || [];
+        setBlockedUsers(blockedIds);
+        return blockedIds;
+      }
+      return [];
+    } catch (error) {
+      console.error("Error fetching blocked users:", error);
+      return [];
+    }
+  };
 
   const loadPosts = async () => {
     try {
+      // First get the blocked users
+      const blockedIds = await fetchBlockedUsers();
+      
       const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'));
       const snapshot = await getDocs(q);
-
-      const postsWithUsernames = await Promise.all(
+      
+      // Get all posts with user info
+      const allPostsWithUsernames = await Promise.all(
         snapshot.docs.map(async (docSnap) => {
           const postData = docSnap.data();
           const userRef = doc(db, 'users', postData.userId);
           const userDoc = await getDoc(userRef);
-
           return {
             id: docSnap.id,
             ...postData,
@@ -78,8 +101,13 @@ const FeedScreen = () => {
           };
         })
       );
-
-      setPosts(postsWithUsernames);
+      
+      // Filter out posts from blocked users
+      const filteredPosts = allPostsWithUsernames.filter(
+        post => !blockedIds.includes(post.userId)
+      );
+      
+      setPosts(filteredPosts);
     } catch (error) {
       console.error('Error loading posts:', error);
       Alert.alert('Error', 'Failed to load posts.');

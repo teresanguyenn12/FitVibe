@@ -23,13 +23,12 @@ const OtherFriendsListScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { userId, type = 'followers' } = route.params || {};
-
     const [activeTab, setActiveTab] = useState(type);
     const [list, setList] = useState([]);
     const [followingMap, setFollowingMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [profileOwner, setProfileOwner] = useState(null);
-
+    const [blockedUsers, setBlockedUsers] = useState([]);
     const auth = getAuth();
     const db = getFirestore();
     const currentUser = auth.currentUser;
@@ -37,6 +36,21 @@ const OtherFriendsListScreen = () => {
     // Determine if viewing own profile or someone else's
     const isOwnProfile = !userId || userId === currentUser.uid;
     const viewingUserId = isOwnProfile ? currentUser.uid : userId;
+
+    // Function to fetch the current user's blocked users
+    const fetchBlockedUsers = async () => {
+        try {
+            const currentUserDoc = await getDoc(doc(db, 'users', currentUser.uid));
+            if (currentUserDoc.exists()) {
+                const userData = currentUserDoc.data();
+                return userData.blockedUsers || [];
+            }
+            return [];
+        } catch (error) {
+            console.error('Failed to fetch blocked users:', error);
+            return [];
+        }
+    };
 
     // Function to fetch profile owner's data
     const fetchProfileOwner = async () => {
@@ -57,6 +71,10 @@ const OtherFriendsListScreen = () => {
         try {
             setLoading(true);
 
+            // Fetch blocked users first
+            const blockedUserIds = await fetchBlockedUsers();
+            setBlockedUsers(blockedUserIds);
+
             // Fetch the target user's data to get their followers/following
             const userDoc = await getDoc(doc(db, 'users', viewingUserId));
             const userData = userDoc.data();
@@ -71,6 +89,9 @@ const OtherFriendsListScreen = () => {
             const tempFollowing = {};
 
             for (const id of ids) {
+                // Skip blocked users
+                if (blockedUserIds.includes(id)) continue;
+
                 const friendDoc = await fetchUserById(id);
                 if (friendDoc) {
                     tempList.push(friendDoc);

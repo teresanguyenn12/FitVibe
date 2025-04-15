@@ -1,238 +1,278 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
-  Animated,
-  Keyboard,
+    View,
+    Text,
+    TextInput,
+    FlatList,
+    TouchableOpacity,
+    Image,
+    StyleSheet,
+    SafeAreaView,
+    Alert,
+    Animated,
+    Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { fetchAllUsers, followUser, unfollowUser } from "../api/addFriendsApi";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 const AddFriendsScreen = () => {
-  const navigation = useNavigation();
-  const [users, setUsers] = useState([]);
-  const [search, setSearch] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [following, setFollowing] = useState({});
-  const [fadeAnim] = useState(new Animated.Value(0));
-  const currentUser = getAuth().currentUser;
-  const db = getFirestore();
+    const navigation = useNavigation();
+    const [users, setUsers] = useState([]);
+    const [search, setSearch] = useState("");
+    const [filteredUsers, setFilteredUsers] = useState([]);
+    const [following, setFollowing] = useState({});
+    const [fadeAnim] = useState(new Animated.Value(0));
+    const [blockedUsers, setBlockedUsers] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const currentUser = getAuth().currentUser;
+    const db = getFirestore();
 
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        const { userList, followingMap } = await fetchAllUsers();
+    const fetchBlockedUsers = async () => {
+        try {
+            const userDocRef = doc(db, "users", currentUser.uid);
+            const userDoc = await getDoc(userDocRef);
 
-        const currentUserDoc = await getDoc(doc(db, "users", currentUser.uid));
-        const currentUserData = currentUserDoc.exists()
-          ? currentUserDoc.data()
-          : {};
-        const currentFollowing = currentUserData.following || [];
-
-        const usersWithMutuals = userList.map((user) => {
-          const userFollowers = user.followers || [];
-          const mutuals = userFollowers.filter((follower) =>
-            currentFollowing.includes(follower)
-          );
-          return {
-            ...user,
-            mutualFriends: mutuals.length,
-          };
-        });
-
-        setUsers(usersWithMutuals);
-        setFollowing(followingMap);
-      } catch (error) {
-        console.error("Error loading users:", error);
-      }
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                const blockedIds = userData.blockedUsers || [];
+                setBlockedUsers(blockedIds);
+                return blockedIds;
+            }
+            return [];
+        } catch (error) {
+            console.error("Error fetching blocked users:", error);
+            return [];
+        }
     };
 
-    loadUsers();
-  }, []);
+    const loadUsers = async (blockedIds = null) => {
+        setIsLoading(true);
+        try {
+            // If blockedIds is not provided, fetch them
+            const blockedUserIds = blockedIds || await fetchBlockedUsers();
 
-  useEffect(() => {
-    if (search.trim().length === 0) {
-      setFilteredUsers([]);
-      return;
-    }
+            const { userList, followingMap } = await fetchAllUsers();
 
-    const searchLower = search.toLowerCase();
-    const filtered = users.filter(
-      (user) =>
-        (user.fullName?.toLowerCase() || "").includes(searchLower) ||
-        (user.username?.toLowerCase() || "").includes(searchLower)
+            const currentUserDoc = await getDoc(doc(db, "users", currentUser.uid));
+            const currentUserData = currentUserDoc.exists()
+                ? currentUserDoc.data()
+                : {};
+            const currentFollowing = currentUserData.following || [];
+
+            // Filter out blocked users and the current user
+            const filteredUserList = userList.filter(user =>
+                user.uid !== currentUser.uid && !blockedUserIds.includes(user.uid)
+            );
+
+            const usersWithMutuals = filteredUserList.map((user) => {
+                const userFollowers = user.followers || [];
+                const mutuals = userFollowers.filter((follower) =>
+                    currentFollowing.includes(follower)
+                );
+                return {
+                    ...user,
+                    mutualFriends: mutuals.length,
+                };
+            });
+
+            setUsers(usersWithMutuals);
+            setFollowing(followingMap);
+        } catch (error) {
+            console.error("Error loading users:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Refresh the screen when it comes into focus
+    useFocusEffect(
+        useCallback(() => {
+            const refreshScreen = async () => {
+                const blockedIds = await fetchBlockedUsers();
+                loadUsers(blockedIds);
+            };
+
+            refreshScreen();
+
+            return () => {
+                // Clean up code if needed when screen loses focus
+            };
+        }, [])
     );
 
-    setFilteredUsers(filtered);
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  }, [search, users]);
+    // Initial load
+    useEffect(() => {
+        fetchBlockedUsers();
+    }, []);
 
-  const reloadUsers = async () => {
-    const { userList, followingMap } = await fetchAllUsers();
-    const currentUserDoc = await getDoc(doc(db, "users", currentUser.uid));
-    const currentUserData = currentUserDoc.exists()
-      ? currentUserDoc.data()
-      : {};
-    const currentFollowing = currentUserData.following || [];
+    useEffect(() => {
+        if (blockedUsers.length >= 0) {
+            loadUsers(blockedUsers);
+        }
+    }, [blockedUsers]);
 
-    const usersWithMutuals = userList.map((user) => {
-      const userFollowers = user.followers || [];
-      const mutuals = userFollowers.filter((f) => currentFollowing.includes(f));
-      return { ...user, mutualFriends: mutuals.length };
-    });
+    useEffect(() => {
+        if (search.trim().length === 0) {
+            setFilteredUsers([]);
+            return;
+        }
 
-    setUsers(usersWithMutuals);
-    setFollowing(followingMap);
-  };
+        const searchLower = search.toLowerCase();
+        const filtered = users.filter(
+            (user) =>
+                (user.fullName?.toLowerCase() || "").includes(searchLower) ||
+                (user.username?.toLowerCase() || "").includes(searchLower)
+        );
 
-  const handleFollow = async (userId) => {
-    setFollowing((prev) => ({ ...prev, [userId]: true }));
-    try {
-      await followUser(userId);
-      reloadUsers();
-    } catch (error) {
-      setFollowing((prev) => ({ ...prev, [userId]: false }));
-      Alert.alert("Error", "Failed to follow user");
-    }
-  };
-
-  const handleUnfollow = async (userId) => {
-    setFollowing((prev) => ({ ...prev, [userId]: false }));
-    try {
-      await unfollowUser(userId);
-      reloadUsers();
-    } catch (error) {
-      setFollowing((prev) => ({ ...prev, [userId]: true }));
-      Alert.alert("Error", "Failed to unfollow user");
-    }
-  };
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <TouchableOpacity
-        activeOpacity={1}
-        style={{ flex: 1 }}
-        onPress={() => {
-          Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 200,
+        setFilteredUsers(filtered);
+        Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 300,
             useNativeDriver: true,
-          }).start(() => Keyboard.dismiss());
-        }}
-      >
-        <View style={styles.searchContainer}>
-          <Ionicons
-            name="search"
-            size={20}
-            color="#ccc"
-            style={styles.searchIcon}
-          />
-          <TextInput
-            placeholder="Search by name or @username"
-            placeholderTextColor="#ccc"
-            style={styles.searchInput}
-            value={search}
-            onChangeText={setSearch}
-          />
-          {search.length > 0 && (
-            <TouchableOpacity
-              onPress={() => setSearch("")}
-              style={styles.clearButton}
-            >
-              <Ionicons name="close-circle" size={20} color="#aaa" />
-            </TouchableOpacity>
-          )}
-        </View>
+        }).start();
+    }, [search, users]);
 
-        {search.trim().length === 0 ? (
-          <View style={styles.placeholderContainer}>
-            <Ionicons
-              name="search-circle-outline"
-              size={90}
-              color="#444"
-              style={{ marginBottom: 16 }}
-            />
-            <Text style={styles.placeholderText}>
-              Start typing to search for friends
-            </Text>
-          </View>
-        ) : (
-          <Animated.FlatList
-            $1style={{ flex: 1, opacity: fadeAnim }}
-            contentContainerStyle={{ paddingBottom: 100 }}
-            keyboardDismissMode="on-drag"
-            keyboardShouldPersistTaps="handled"
-            data={filteredUsers}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.userItem}>
-                <TouchableOpacity
-                  style={styles.profileButton}
-                  onPress={() =>
-                    navigation.navigate("OtherProfile", { userId: item.id })
-                  }
-                >
-                  <Image
-                    source={{
-                      uri:
-                        item.profilePicture || "https://via.placeholder.com/50",
-                    }}
-                    style={styles.avatar}
-                  />
-                  <View style={styles.userInfo}>
-                    <Text style={styles.name}>{item.fullName}</Text>
-                    <Text style={styles.handle}>
-                      @{item.username || item.email?.split("@")[0]}
-                    </Text>
-                    {item.mutualFriends > 0 && (
-                      <Text style={styles.mutual}>
-                        {item.mutualFriends} mutual friend
-                        {item.mutualFriends > 1 ? "s" : ""}
-                      </Text>
+    const refreshUsers = async () => {
+        const blockedIds = await fetchBlockedUsers();
+        await loadUsers(blockedIds);
+    };
+
+    const handleFollow = async (userId) => {
+        setFollowing((prev) => ({ ...prev, [userId]: true }));
+        try {
+            await followUser(userId);
+            refreshUsers();
+        } catch (error) {
+            setFollowing((prev) => ({ ...prev, [userId]: false }));
+            Alert.alert("Error", "Failed to follow user");
+        }
+    };
+
+    const handleUnfollow = async (userId) => {
+        setFollowing((prev) => ({ ...prev, [userId]: false }));
+        try {
+            await unfollowUser(userId);
+            refreshUsers();
+        } catch (error) {
+            setFollowing((prev) => ({ ...prev, [userId]: true }));
+            Alert.alert("Error", "Failed to unfollow user");
+        }
+    };
+    return (
+        <SafeAreaView style={styles.container}>
+            <TouchableOpacity
+                activeOpacity={1}
+                style={{ flex: 1 }}
+                onPress={() => {
+                    Animated.timing(fadeAnim, {
+                        toValue: 0,
+                        duration: 200,
+                        useNativeDriver: true,
+                    }).start(() => Keyboard.dismiss());
+                }}
+            >
+                <View style={styles.searchContainer}>
+                    <Ionicons
+                        name="search"
+                        size={20}
+                        color="#ccc"
+                        style={styles.searchIcon}
+                    />
+                    <TextInput
+                        placeholder="Search by name or @username"
+                        placeholderTextColor="#ccc"
+                        style={styles.searchInput}
+                        value={search}
+                        onChangeText={setSearch}
+                    />
+                    {search.length > 0 && (
+                        <TouchableOpacity
+                            onPress={() => setSearch("")}
+                            style={styles.clearButton}
+                        >
+                            <Ionicons name="close-circle" size={20} color="#aaa" />
+                        </TouchableOpacity>
                     )}
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.followButton,
-                    following[item.id]
-                      ? styles.followingButton
-                      : styles.notFollowingButton,
-                  ]}
-                  onPress={() =>
-                    following[item.id]
-                      ? handleUnfollow(item.id)
-                      : handleFollow(item.id)
-                  }
-                >
-                  <Text style={styles.followText}>
-                    {following[item.id] ? "Following" : "Follow"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            )}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>No users found.</Text>
-            }
-          />
-        )}
-      </TouchableOpacity>
-    </SafeAreaView>
-  );
+                </View>
+
+                {search.trim().length === 0 ? (
+                    <View style={styles.placeholderContainer}>
+                        <Ionicons
+                            name="search-circle-outline"
+                            size={90}
+                            color="#444"
+                            style={{ marginBottom: 16 }}
+                        />
+                        <Text style={styles.placeholderText}>
+                            Start typing to search for friends
+                        </Text>
+                    </View>
+                ) : (
+                    <Animated.FlatList
+                        style={{ flex: 1, opacity: fadeAnim }}
+                        contentContainerStyle={{ paddingBottom: 100 }}
+                        keyboardDismissMode="on-drag"
+                        keyboardShouldPersistTaps="handled"
+                        data={filteredUsers}
+                        keyExtractor={(item) => item.id || item.uid}
+                        renderItem={({ item }) => (
+                            <View style={styles.userItem}>
+                                <TouchableOpacity
+                                    style={styles.profileButton}
+                                    onPress={() =>
+                                        navigation.navigate("OtherProfile", { userId: item.id || item.uid })
+                                    }
+                                >
+                                    <Image
+                                        source={{
+                                            uri:
+                                                item.profilePicture || "https://via.placeholder.com/50",
+                                        }}
+                                        style={styles.avatar}
+                                    />
+                                    <View style={styles.userInfo}>
+                                        <Text style={styles.name}>{item.fullName}</Text>
+                                        <Text style={styles.handle}>
+                                            @{item.username || (item.email && item.email.split("@")[0])}
+                                        </Text>
+                                        {item.mutualFriends > 0 && (
+                                            <Text style={styles.mutual}>
+                                                {item.mutualFriends} mutual friend
+                                                {item.mutualFriends > 1 ? "s" : ""}
+                                            </Text>
+                                        )}
+                                    </View>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.followButton,
+                                        following[item.id || item.uid]
+                                            ? styles.followingButton
+                                            : styles.notFollowingButton,
+                                    ]}
+                                    onPress={() =>
+                                        following[item.id || item.uid]
+                                            ? handleUnfollow(item.id || item.uid)
+                                            : handleFollow(item.id || item.uid)
+                                    }
+                                >
+                                    <Text style={styles.followText}>
+                                        {following[item.id || item.uid] ? "Following" : "Follow"}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                        ListEmptyComponent={
+                            <Text style={styles.emptyText}>No users found.</Text>
+                        }
+                    />
+                )}
+            </TouchableOpacity>
+        </SafeAreaView>
+    );
 };
 
 const styles = StyleSheet.create({
