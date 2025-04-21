@@ -31,7 +31,11 @@ export default function LoginScreen({ navigation }) {
   //  User authentication for login
   const handleLogin = async () => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const firebaseUser = userCredential.user;
 
       //  Fetch user details from Firestore
@@ -63,7 +67,10 @@ export default function LoginScreen({ navigation }) {
         {/*  App Logo */}
         <View style={styles.logoContainer}>
           <Text style={styles.title}>FitVibe</Text>
-          <Image source={require("../assets/FVLOGO.png")} style={styles.logoImage} />
+          <Image
+            source={require("../assets/FVLOGO.png")}
+            style={styles.logoImage}
+          />
         </View>
 
         {/*  Input Form */}
@@ -100,7 +107,7 @@ export default function LoginScreen({ navigation }) {
             </View>
             <TouchableOpacity
               style={styles.forgotPasswordContainer}
-              onPress={() => navigation.navigate("ForgotPassword")} 
+              onPress={() => navigation.navigate("ForgotPassword")}
             >
               <Text style={styles.forgotPassword}>Forgot Password?</Text>
             </TouchableOpacity>
@@ -125,7 +132,9 @@ export default function LoginScreen({ navigation }) {
           {/*  Navigate to SignUp */}
           <TouchableOpacity
             style={styles.createAccountButton}
-            onPress={() => navigation.navigate("SignUp")} 
+            onPress={() =>
+              navigation.navigate("SignUpFlow", { screen: "Welcome" })
+            }
           >
             <Text style={styles.createAccountText}>Create Account</Text>
           </TouchableOpacity>
@@ -172,7 +181,12 @@ const styles = StyleSheet.create({
     marginTop: height * 0.11,
   },
   inputContainer: { width: "100%", marginTop: 25, marginBottom: 25 },
-  label: { fontSize: 16, color: "#5A1A9B", marginBottom: 5, fontFamily: "TiltWarp-Regular" },
+  label: {
+    fontSize: 16,
+    color: "#5A1A9B",
+    marginBottom: 5,
+    fontFamily: "TiltWarp-Regular",
+  },
   input: {
     borderBottomWidth: 1.5,
     borderBottomColor: "#000",
