@@ -13,6 +13,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useUserSignUp } from "../../contexts/UserSignUpContext";
 import { useAuth } from "../../authProvider";
+import { auth } from "../../firebase";
+import { registerIndieID, unregisterIndieDevice } from 'native-notify';
+import axios from 'axios';
 
 export default function ReviewScreen() {
   const { formData } = useUserSignUp();
@@ -20,38 +23,44 @@ export default function ReviewScreen() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
 
-  const handleCreateAccount = async () => {
-    const {
-      firstName,
-      lastName,
-      username,
-      email,
-      password,
-      dob,
-      gender,
-      phone,
-      profilePicture,
-    } = formData;
+    const handleCreateAccount = async () => {
+        const {
+            firstName,
+            lastName,
+            username,
+            email,
+            password,
+            dob,
+            gender,
+            phone,
+            profilePicture,
+        } = formData;
+        const fullName = `${firstName} ${lastName}`;
+        setLoading(true);
+        try {
+            await register(email, password, fullName, {
+                username,
+                dob: dob ? dob.toISOString() : null,
+                gender,
+                phone,
+                profilePicture,
+            });
 
-    const fullName = `${firstName} ${lastName}`;
-    setLoading(true);
+            // Access the current user from Firebase auth
+            const currentUser = auth.currentUser;
 
-    try {
-      await register(email, password, fullName, {
-        username,
-        dob: dob ? dob.toISOString() : null,
-        gender,
-        phone,
-        profilePicture,
-      });
+            if (currentUser) {
+                // Register with Native Notify using the Firebase UID
+                registerIndieID(currentUser.uid, 29298, 'u04gYyaVKbAobwZ9ojzShp');
+            }
 
-      setJustSignedUp(true);
-    } catch (error) {
-      Alert.alert("Error", error.message || "Something went wrong");
-    } finally {
-      setTimeout(() => setLoading(false), 300);
-    }
-  };
+            setJustSignedUp(true);
+        } catch (error) {
+            Alert.alert("Error", error.message || "Something went wrong");
+        } finally {
+            setTimeout(() => setLoading(false), 300);
+        }
+    };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 40 }}>

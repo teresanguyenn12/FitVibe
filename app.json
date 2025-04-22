@@ -25,14 +25,17 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    
     "extra": {
       "firebaseApiKey": "AIzaSyCsQIG9D3RayftfIIV-rtP_RUZOFlX6Ev4",
       "firebaseAuthDomain": "fitvibe-46710.firebaseapp.com",
       "firebaseProjectId": "fitvibe-46710",
       "firebaseStorageBucket": "fitvibe-46710.firebasestorage.app",
       "firebaseMessagingSenderId": "208670780495",
-      "firebaseAppId": "1:208670780495:web:ff3d12340121695c5f4e3a"
-    }
+      "firebaseAppId": "1:208670780495:web:ff3d12340121695c5f4e3a",
+      "eas": {
+        "projectId": "8e015a34-5976-434a-bdfb-fcf70c05a8fe"
+      }
+    },
+    "owner": "adrianmendez"
   }
 }

@@ -17,6 +17,8 @@ import { useNavigation } from "@react-navigation/native";
 import { auth, db } from "../firebase";
 import { Image } from "react-native";
 import { getDoc, doc } from "firebase/firestore";
+import { registerIndieID, unregisterIndieDevice } from 'native-notify';
+import axios from 'axios';
 
 const { width, height } = Dimensions.get("window");
 
@@ -45,10 +47,11 @@ export default function LoginScreen({ navigation }) {
       if (userDocSnap.exists()) {
         const userData = userDocSnap.data();
         login(userData);
+        registerIndieID(userData.id, 29298, 'u04gYyaVKbAobwZ9ojzShp');
         console.log("User logged in successfully!", userData);
       } else {
         console.error("Firestore user document not found!");
-      }
+        }
     } catch (error) {
       console.error("Login error:", error.message);
       Alert.alert("Login Failed", error.message);

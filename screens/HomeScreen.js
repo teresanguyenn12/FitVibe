@@ -144,7 +144,7 @@ const HomeScreen = () => {
         </View>
         <View style={styles.topRightIcons}>
           <TouchableOpacity
-            onPress={() => navigation.navigate("Notifications")}
+            onPress={() => navigation.navigate("NotificationScreen")}
           >
             <Ionicons
               name="notifications-outline"

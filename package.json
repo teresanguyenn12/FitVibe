@@ -21,16 +21,22 @@
     "@tanstack/react-query": "^5.66.9",
     "@tanstack/react-query-devtools": "^5.66.9",
     "@types/node": "^22.13.5",
+    "axios": "^1.8.4",
     "babel-preset-expo": "^12.0.9",
     "expo": "~52.0.37",
     "expo-blur": "~14.0.3",
+    "expo-constants": "~17.0.8",
+    "expo-device": "~7.0.3",
+    "expo-haptics": "~14.0.1",
     "expo-image-picker": "~16.0.6",
     "expo-linear-gradient": "~14.0.2",
     "expo-location": "~18.0.8",
+    "expo-notifications": "~0.29.14",
     "expo-status-bar": "~2.0.1",
     "firebase": "^11.6.0",
     "firebase-admin": "^13.1.0",
     "haversine-distance": "^1.2.3",
+    "native-notify": "^4.0.9",
     "phosphor-react-native": "^2.3.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -48,8 +54,7 @@
     "react-native-screens": "~4.4.0",
     "react-native-svg": "^15.8.0",
     "react-native-vector-icons": "^10.2.0",
-    "react-native-web": "~0.19.13",
-    "expo-haptics": "~14.0.1"
+    "react-native-web": "~0.19.13"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

@@ -89,7 +89,7 @@ const MessagesScreen = () => {
         >
             <TouchableOpacity
                 style={styles.userItem}
-                onPress={() => navigation.navigate('ChatScreen', { chatroomId: item.id, otherUserId: item.otherUserId })}
+                onPress={() => navigation.navigate('ChatScreen', { chatroomId: item.id, otherUserName: item.fullName, otherUserId: item.otherUserId })}
             >
                 <Image source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }} style={styles.avatar} />
                 <View style={styles.userInfo}>

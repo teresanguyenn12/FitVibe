@@ -1,20 +1,28 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import { getAuth, signOut } from "firebase/auth";
+import { registerIndieID, unregisterIndieDevice } from 'native-notify';
+import axios from 'axios';
 
 const LogoutScreen = () => {
     const navigation = useNavigation();
     const auth = getAuth();
+    const currentUser = auth.currentUser;
 
     const handleLogout = async () => {
         try {
+            if (currentUser && currentUser.uid) {
+                // Native Notify Indie Push Unregistration Code
+                // Using current user's UID
+                unregisterIndieDevice(currentUser.uid, 29298, 'u04gYyaVKbAobwZ9ojzShp');
+                console.log("Device unregistered for push notifications");
+            }
+
             await signOut(auth);
             console.log("User signed out successfully.");
-            navigation.reset({
-                index: 0,
-                routes: [{ name: "Login" }],
-            });
+
+            
         } catch (error) {
             console.error("Logout failed:", error);
         }

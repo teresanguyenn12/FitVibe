@@ -211,8 +211,9 @@ const AddFriendsScreen = () => {
                         </Text>
                     </View>
                 ) : (
-                    <Animated.FlatList
-                        style={{ flex: 1, opacity: fadeAnim }}
+                        <Animated.FlatList
+                            //, opacity: fadeAnim
+                        style={{ flex: 1 }}
                         contentContainerStyle={{ paddingBottom: 100 }}
                         keyboardDismissMode="on-drag"
                         keyboardShouldPersistTaps="handled"
