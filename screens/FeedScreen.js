@@ -262,14 +262,16 @@ export default function FeedScreen() {
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() =>
+            onPress={() => {
+              const postLink = `https://fitvibe.app/post/${item.id}`; // Placeholder link
               Share.share({
-                message: `@${item.username}'s workout: ${
+                message: `💪 Check out @${
+                  item.username
+                }'s workout on FitVibe!\n${
                   item.description || ""
-                }`,
-                url: item.imageUrl,
-              })
-            }
+                }\n\nView it here: ${postLink}`,
+              });
+            }}
           >
             <Ionicons name="paper-plane-outline" size={22} color="#aaa" />
           </TouchableOpacity>
