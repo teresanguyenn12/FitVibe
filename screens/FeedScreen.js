@@ -1,5 +1,4 @@
-// FeedScreen.js (Updated to hide posts from blocked users)
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -10,10 +9,9 @@ import {
   SafeAreaView,
   Alert,
   Share,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import {
   getFirestore,
   collection,
@@ -24,94 +22,97 @@ import {
   getDoc,
   updateDoc,
   deleteDoc,
-} from 'firebase/firestore';
-import { useAuth } from '../authProvider';
+} from "firebase/firestore";
+import { useAuth } from "../authProvider";
+import { LinearGradient } from "expo-linear-gradient";
 
 const workoutIcons = {
-  'Strength Training': 'barbell',
-  Cardio: 'heart',
-  Yoga: 'leaf',
-  Cycling: 'bicycle',
-  Swimming: 'water',
-  Hiking: 'walk',
-  Pilates: 'medkit',
-  Sports: 'basketball',
-  Other: 'ellipsis-horizontal',
+  "Strength Training": "barbell",
+  Cardio: "heart",
+  Yoga: "leaf",
+  Cycling: "bicycle",
+  Swimming: "water",
+  Hiking: "walk",
+  Pilates: "medkit",
+  Sports: "basketball",
+  Other: "ellipsis-horizontal",
 };
 
 const getTimeAgo = (timestamp) => {
   if (!timestamp) return "";
-  const postDate = timestamp.toDate();
+  const postDate =
+    timestamp instanceof Date ? timestamp : timestamp?.toDate?.() ?? new Date();
   const now = new Date();
-  const diffInSeconds = Math.floor((now - postDate) / 1000);
-  if (diffInSeconds < 60) return "Just now";
-  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min ago`;
-  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hr ago`;
-  if (diffInSeconds < 172800) return "Yesterday";
-  return `${Math.floor(diffInSeconds / 86400)} days ago`;
+  const diff = Math.floor((now - postDate) / 1000);
+  if (diff < 60) return "Just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hr ago`;
+  if (diff < 172800) return "Yesterday";
+  return `${Math.floor(diff / 86400)} days ago`;
 };
 
-const FeedScreen = () => {
+export default function FeedScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
   const db = getFirestore();
+  const listRef = useRef(null);
   const [posts, setPosts] = useState([]);
   const [blockedUsers, setBlockedUsers] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Fetch blocked users first
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("tabPress", () => {
+      listRef.current?.scrollToOffset({ offset: 0, animated: true });
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   const fetchBlockedUsers = async () => {
-    try {
-      if (!user || !user.uid) return [];
-      
-      const userDocRef = doc(db, "users", user.uid);
-      const userDoc = await getDoc(userDocRef);
-      
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        const blockedIds = userData.blockedUsers || [];
-        setBlockedUsers(blockedIds);
-        return blockedIds;
-      }
-      return [];
-    } catch (error) {
-      console.error("Error fetching blocked users:", error);
-      return [];
-    }
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    const data = userDoc.exists() ? userDoc.data() : {};
+    const blocked = data.blockedUsers || [];
+    setBlockedUsers(blocked);
+    return blocked;
   };
 
   const loadPosts = async () => {
-    try {
-      // First get the blocked users
-      const blockedIds = await fetchBlockedUsers();
-      
-      const q = query(collection(db, 'posts'), orderBy('timestamp', 'desc'));
-      const snapshot = await getDocs(q);
-      
-      // Get all posts with user info
-      const allPostsWithUsernames = await Promise.all(
-        snapshot.docs.map(async (docSnap) => {
-          const postData = docSnap.data();
-          const userRef = doc(db, 'users', postData.userId);
-          const userDoc = await getDoc(userRef);
-          return {
-            id: docSnap.id,
-            ...postData,
-            username: userDoc.exists() ? userDoc.data().username : 'user',
-            profilePicture: userDoc.exists() ? userDoc.data().profilePicture : null,
-          };
-        })
-      );
-      
-      // Filter out posts from blocked users
-      const filteredPosts = allPostsWithUsernames.filter(
-        post => !blockedIds.includes(post.userId)
-      );
-      
-      setPosts(filteredPosts);
-    } catch (error) {
-      console.error('Error loading posts:', error);
-      Alert.alert('Error', 'Failed to load posts.');
-    }
+    const blocked = await fetchBlockedUsers();
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    const data = userDoc.exists() ? userDoc.data() : {};
+    const visible = Array.from(
+      new Set([...(data.following || []), ...(data.followers || []), user.uid])
+    );
+
+    const snap = await getDocs(
+      query(collection(db, "posts"), orderBy("timestamp", "desc"))
+    );
+
+    const posts = await Promise.all(
+      snap.docs.map(async (docSnap) => {
+        const postData = docSnap.data();
+        const userDoc = await getDoc(doc(db, "users", postData.userId));
+        const userData = userDoc.exists() ? userDoc.data() : {};
+        return {
+          id: docSnap.id,
+          ...postData,
+          username: userData.username || "user",
+          profilePicture: userData.profilePicture || null,
+          rank: userData.rank || "Rookie",
+        };
+      })
+    );
+
+    setPosts(
+      posts.filter(
+        (p) => visible.includes(p.userId) && !blocked.includes(p.userId)
+      )
+    );
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadPosts();
+    setRefreshing(false);
   };
 
   useFocusEffect(
@@ -120,107 +121,105 @@ const FeedScreen = () => {
     }, [])
   );
 
-  const handleDelete = (postId) => {
-    Alert.alert('Delete Post', 'Are you sure you want to delete this post?', [
-      { text: 'Cancel', style: 'cancel' },
+  const handleDelete = async (postId) => {
+    Alert.alert("Delete Post", "Confirm delete?", [
+      { text: "Cancel", style: "cancel" },
       {
-        text: 'Delete',
-        style: 'destructive',
+        text: "Delete",
+        style: "destructive",
         onPress: async () => {
-          try {
-            await deleteDoc(doc(db, 'posts', postId));
-            setPosts((prev) => prev.filter((p) => p.id !== postId));
-          } catch (error) {
-            console.error('Failed to delete:', error);
-          }
+          await deleteDoc(doc(db, "posts", postId));
+          setPosts((prev) => prev.filter((p) => p.id !== postId));
         },
       },
     ]);
   };
 
   const handleLike = async (post) => {
-    const postRef = doc(db, 'posts', post.id);
     const liked = post.likes?.includes(user.uid);
-
-    try {
-      const updatedLikes = liked
-        ? post.likes.filter((id) => id !== user.uid)
-        : [...(post.likes || []), user.uid];
-
-      await updateDoc(postRef, {
-        likes: updatedLikes,
-      });
-
-      setPosts((prev) =>
-        prev.map((p) => (p.id === post.id ? { ...p, likes: updatedLikes } : p))
-      );
-    } catch (error) {
-      console.error('Error updating like:', error);
-    }
-  };
-
-  const handleShare = async (item) => {
-    try {
-      const message = `@${item.username}'s workout: ${item.description || ''}`;
-      await Share.share({
-        message,
-        url: item.image || undefined,
-        title: `@${item.username}'s workout on FitVibe`,
-      });
-    } catch (error) {
-      console.error('Share error:', error);
-    }
+    const ref = doc(db, "posts", post.id);
+    const newLikes = liked
+      ? post.likes.filter((id) => id !== user.uid)
+      : [...(post.likes || []), user.uid];
+    await updateDoc(ref, { likes: newLikes });
+    setPosts((prev) =>
+      prev.map((p) => (p.id === post.id ? { ...p, likes: newLikes } : p))
+    );
   };
 
   const renderPost = ({ item }) => {
     const liked = item.likes?.includes(user.uid);
     const likeCount = item.likes?.length || 0;
+    const displayLabel =
+      item.workoutLabel || item.customWorkoutType || item.workoutType;
+    const displayIcon = workoutIcons[item.workoutType] || "help-circle-outline";
     const isOwner = item.userId === user.uid;
-
-    const isOther = item.workoutType === 'Other';
-    const displayLabel = isOther && item.customWorkoutType ? item.customWorkoutType : item.workoutType;
-    const displayIcon = workoutIcons[item.workoutType] || 'help-circle-outline';
     const timeAgo = getTimeAgo(item.timestamp);
+    const wasEdited = item.lastUpdated?.toDate?.() > item.timestamp?.toDate?.();
 
     return (
-        <View style={styles.postContainer}>
-            <View style={styles.postHeader}>
-                <TouchableOpacity
-                    style={styles.profileButton}
-                    onPress={() => {
-                        // Check if the post is from the current user
-                        if (item.userId === user.uid) {
-                            // Navigate to own profile screen
-                            navigation.navigate('ProfileScreen');
-                        } else {
-                            // Navigate to other user's profile screen
-                            navigation.navigate('OtherProfile', { userId: item.userId });
-                        }
-                    }}
-                >
-                    <Image
-                        source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }}
-                        style={styles.avatar}
-                    />
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.name}>@{item.username}</Text>
-                        <Text style={styles.rank}>🏅 Rookie</Text>
-                        <Text style={styles.timeAgo}>{timeAgo}</Text>
-                    </View>
-                </TouchableOpacity>
-
-                {isOwner && (
-                    <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                        <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
-                    </TouchableOpacity>
-                )}
+      <View style={styles.card}>
+        {/* Top Row: Profile Info */}
+        <View style={styles.postHeader}>
+          <TouchableOpacity
+            style={styles.profileSection}
+            onPress={() =>
+              navigation.navigate(isOwner ? "ProfileScreen" : "OtherProfile", {
+                userId: item.userId,
+              })
+            }
+          >
+            <Image
+              source={{ uri: item.profilePicture }}
+              style={styles.avatar}
+            />
+            <View>
+              <Text style={styles.username}>@{item.username}</Text>
+              <Text style={styles.rank}>{item.rank}</Text>
+              <Text style={styles.time}>
+                {timeAgo}
+                {wasEdited ? " • Edited" : ""}
+              </Text>
             </View>
+          </TouchableOpacity>
 
-        {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
+          {isOwner && (
+            <TouchableOpacity
+              onPress={() =>
+                Alert.alert("Post Options", "", [
+                  {
+                    text: "Edit",
+                    onPress: () =>
+                      navigation.navigate("EditPostScreen", {
+                        postId: item.id,
+                      }),
+                  },
+                  {
+                    text: "Delete",
+                    onPress: () => handleDelete(item.id),
+                    style: "destructive",
+                  },
+                  { text: "Cancel", style: "cancel" },
+                ])
+              }
+            >
+              <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
+            </TouchableOpacity>
+          )}
+        </View>
 
+        {/* Description */}
+        {item.description ? (
+          <Text style={styles.description}>{item.description}</Text>
+        ) : null}
+
+        {/* Workout Badge under description */}
         {displayLabel && (
           <View style={styles.workoutBadgeWrapper}>
-            <LinearGradient colors={['#8e2de2', '#4a00e0']} style={styles.badge}>
+            <LinearGradient
+              colors={["#8e2de2", "#4a00e0"]}
+              style={styles.badge}
+            >
               <Ionicons
                 name={displayIcon}
                 size={14}
@@ -232,38 +231,46 @@ const FeedScreen = () => {
           </View>
         )}
 
-        {/* Post Image - Using imageUrl from Firebase Storage */}
+        {/* Post Image */}
         {item.imageUrl && (
-            <View style={styles.postImageContainer}>
-                <Image
-                    source={{ uri: item.imageUrl }}
-                    style={styles.postImage}
-                    resizeMode="cover"
-                    defaultSource={require('../assets/FVLOGO.png')} // Replace with your placeholder image
-                    onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
-                />
-            </View>
+          <Image source={{ uri: item.imageUrl }} style={styles.postImage} />
         )}
 
+        {/* Actions Row */}
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => handleLike(item)}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleLike(item)}
+          >
             <Ionicons
-              name={liked ? 'heart' : 'heart-outline'}
+              name={liked ? "heart" : "heart-outline"}
               size={22}
-              color={liked ? '#e91e63' : '#aaa'}
+              color={liked ? "#e91e63" : "#aaa"}
             />
             <Text style={styles.actionText}>{likeCount}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => navigation.navigate('CommentsScreen', { postId: item.id })}
+            onPress={() =>
+              navigation.navigate("CommentsScreen", { postId: item.id })
+            }
           >
             <Ionicons name="chatbubble-outline" size={22} color="#aaa" />
             <Text style={styles.actionText}>{item.commentsCount || 0}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={() => handleShare(item)}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() =>
+              Share.share({
+                message: `@${item.username}'s workout: ${
+                  item.description || ""
+                }`,
+                url: item.imageUrl,
+              })
+            }
+          >
             <Ionicons name="paper-plane-outline" size={22} color="#aaa" />
           </TouchableOpacity>
         </View>
@@ -272,51 +279,57 @@ const FeedScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#111" }}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('AddPostsScreen')}>
+        <TouchableOpacity onPress={() => navigation.navigate("AddPostsScreen")}>
           <Ionicons name="duplicate-outline" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Feed</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('MessagesScreen')}>
+        <Text style={styles.title}>Posts</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("MessagesScreen")}>
           <Ionicons name="chatbubbles-outline" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
       <FlatList
+        ref={listRef}
         data={posts}
         keyExtractor={(item) => item.id}
         renderItem={renderPost}
         contentContainerStyle={{ paddingBottom: 100 }}
+        refreshing={refreshing}
+        onRefresh={handleRefresh}
       />
     </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111' },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 16,
-    justifyContent: 'space-between',
   },
   title: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
-  postContainer: {
-    backgroundColor: '#1a1a1a',
+  card: {
+    backgroundColor: "#1a1a1a",
+    marginBottom: 16,
+    padding: 14,
+    marginHorizontal: 12,
     borderRadius: 14,
-    padding: 16,
-    marginHorizontal: 14,
-    marginBottom: 22,
   },
   postHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 10,
+  },
+  profileSection: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   avatar: {
     width: 40,
@@ -324,67 +337,60 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 10,
   },
-  name: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+  username: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
   },
   rank: {
-    color: '#aaa',
-    fontSize: 12,
-  },
-  timeAgo: {
-    color: '#777',
+    color: "#ccc",
     fontSize: 11,
-    marginTop: 2,
+  },
+  time: {
+    color: "#777",
+    fontSize: 10,
   },
   description: {
-    color: '#ddd',
+    color: "#ddd",
     fontSize: 14,
     marginBottom: 10,
   },
-  workoutBadgeWrapper: {
-    alignItems: 'flex-end',
+  postImage: {
+    width: "100%",
+    height: 320,
+    borderRadius: 10,
     marginBottom: 10,
-    marginTop: 5,
+    backgroundColor: "#222",
+  },
+  workoutBadgeWrapper: {
+    alignItems: "flex-end",
+    marginBottom: 10,
   },
   badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 20,
+    backgroundColor: "#4a00e0",
   },
   badgeText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
-    fontWeight: '600',
-  },
-  postImage: {
-    width: '100%',
-    height: 400,
-    borderRadius: 15,
-    resizeMode: 'cover',
-    marginBottom: 10,
+    fontWeight: "600",
   },
   actionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    marginTop: 10,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 8,
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   actionText: {
-    color: '#aaa',
-    marginLeft: 5,
-    },
-    profileButton: {
-        flexDirection: 'row',
-        flex: 1
-    }
+    color: "#aaa",
+    marginLeft: 6,
+    fontSize: 13,
+  },
 });
-
-export default FeedScreen;
