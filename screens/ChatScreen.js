@@ -11,11 +11,12 @@ import { getFirestore, doc, getDocs, collection, addDoc, query, orderBy, onSnaps
 import * as ImagePicker from 'expo-image-picker';
 import { storage } from '../firebase'; // Make sure this path matches your project structure
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import axios from 'axios';
 
 const ChatScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { chatroomId } = route.params;
+    const { chatroomId, otherUserName, otherUserId } = route.params;
 
     const auth = getAuth();
     const db = getFirestore();
@@ -140,6 +141,15 @@ const ChatScreen = () => {
                 lastMessageTime: serverTimestamp(),
             });
 
+            // Send push notification to the other user
+            axios.post(`https://app.nativenotify.com/api/indie/notification`, {
+                subID: otherUserId,
+                appId: 29298,
+                appToken: 'u04gYyaVKbAobwZ9ojzShp',
+                title: 'FitVibe',
+                message: `${currentUser.displayName || 'Someone'} sent you an image.`
+            });
+
             setSelectedImage(null);
         } catch (error) {
             console.error('Error sending image message:', error);
@@ -163,6 +173,15 @@ const ChatScreen = () => {
             await updateDoc(chatroomRef, {
                 lastMessage: inputText,
                 lastMessageTime: serverTimestamp(),
+            });
+
+            // Send push notification to the other user
+            axios.post(`https://app.nativenotify.com/api/indie/notification`, {
+                subID: otherUserId,
+                appId: 29298,
+                appToken: 'u04gYyaVKbAobwZ9ojzShp',
+                title: 'FitVibe',
+                message: `${currentUser.displayName || 'Someone'} sent you a message.`
             });
 
             setInputText('');
@@ -229,7 +248,7 @@ const ChatScreen = () => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#fff" />
                 </TouchableOpacity>
-                <Text style={styles.title}>Chat</Text>
+                <Text style={styles.title}>{otherUserName || 'Chat'}</Text>
             </View>
 
             <KeyboardAvoidingView
@@ -316,11 +335,11 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 15,
+        
     },
     backButton: {
         padding: 5,
-        marginRight: 15
+        
     },
     title: {
         color: '#fff',

@@ -61,6 +61,7 @@ import CommentsScreen from "./screens/CommentsScreen";
 import OtherProfileScreen from "./screens/OtherProfileScreen";
 import OtherFriendsListScreen from "./screens/OtherFriendsListScreen";
 import PostDetailScreen from "./screens/PostDetailScreen";
+import NotificationScreen from "./screens/NotificationScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -421,6 +422,10 @@ function Navigation() {
               <Stack.Screen
                 name="ChallengeCard"
                 component={ChallengeScreens.ChallengeCard}
+              />
+              <Stack.Screen
+                name="NotificationScreen"
+                component={NotificationScreen}
               />
             </>
           )}

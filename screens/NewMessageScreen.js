@@ -123,6 +123,7 @@ const NewMessageScreen = () => {
             // Navigate to the new chatroom
             navigation.navigate('ChatScreen', {
                 chatroomId: newChatroomRef.id,
+                otherUserName: otherUserData.fullName,
                 otherUserId: otherUserId
             });
 
