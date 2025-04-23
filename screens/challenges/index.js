@@ -17,3 +17,4 @@ export {default as ChallengeCompletedScreen} from "./ChallengeCompletedScreen";
 export {default as InviteFriendsQueueScreen} from "./InviteFriendsQueue";
 export {default as ChallengeChatScreen} from "./ChallengeChatScreen";
 export {default as ChallengeCard} from "./ChallengeCard";
+

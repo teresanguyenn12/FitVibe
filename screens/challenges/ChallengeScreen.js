@@ -139,6 +139,7 @@ const ChallengesScreen = () => {
       <ChallengeSection title="⏳ Upcoming" data={upcoming} type="Upcoming" />
       <ChallengeSection title="✅ Completed" data={completed} type="Completed" />
     </ScrollView>
+    
   );
 };
 

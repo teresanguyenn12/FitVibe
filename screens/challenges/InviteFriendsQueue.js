@@ -1,3 +1,4 @@
+import { setDoc, doc, getDoc } from "firebase/firestore";
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -14,7 +15,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../../authProvider';
 import { fetchUserFriends } from '../../api/fetchUserFriends';
-
 import {
   getFirestore,
   collection,
@@ -40,8 +40,15 @@ const InviteFriendsQueueScreen = () => {
   useEffect(() => {
     const loadFriends = async () => {
       if (user) {
-        const friendsList = await fetchUserFriends();
-        setFriends(friendsList);
+        const currentUserDoc = await getDoc(doc(db, 'users', user.uid));
+        const currentUserData = currentUserDoc.data();
+        const following = currentUserData?.following || [];
+        const followers = currentUserData?.followers || [];
+        const mutuals = following.filter(uid => followers.includes(uid));
+
+        const allFriends = await fetchUserFriends();
+        const mutualFriends = allFriends.filter(f => mutuals.includes(f.id));
+        setFriends(mutualFriends);
       }
     };
     loadFriends();
@@ -87,7 +94,6 @@ const InviteFriendsQueueScreen = () => {
 
     try {
       const chatroomsRef = collection(db, 'chatrooms');
-
       const q = query(chatroomsRef, where('challengeId', '==', challenge.id));
       const snapshot = await getDocs(q);
 
@@ -111,17 +117,27 @@ const InviteFriendsQueueScreen = () => {
           challengeId: challenge.id,
           challengeTitle: challenge?.title || 'Untitled Challenge',
           createdAt: serverTimestamp(),
-          lastMessage: '',
-          lastMessageTime: null,
+          lastMessage: `Welcome to the \"${challenge?.title || 'the challenge'}\" challenge! Let's go!`,
+          lastMessageTime: serverTimestamp(),
           participantDetails: Object.fromEntries(
             participants.map((p) => [
               p.id,
               { name: p.name, profilePicture: p.avatar },
             ])
           ),
-        });        
+        });
         chatroomId = newDocRef.id;
       }
+
+      const inviteId = `${challenge.id}_${user.uid}`;
+      await setDoc(doc(db, "groupChallengeInvites", inviteId), {
+        challengeId: challenge.id,
+        fromUserId: user.uid,
+        toUserIds: selectedFriends,
+        message: `Join me in the \"${challenge?.title}\" challenge!`,
+        status: "pending",
+        createdAt: serverTimestamp(),
+      });
 
       navigation.navigate("ChallengeChatScreen", {
         chatroomId,

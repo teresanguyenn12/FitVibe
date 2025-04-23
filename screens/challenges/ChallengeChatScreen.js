@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,71 +8,113 @@ import {
   Image,
   StyleSheet,
   SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
 import {
   getFirestore,
-  doc,
-  getDoc,
   collection,
   addDoc,
   query,
   orderBy,
   onSnapshot,
   serverTimestamp,
+  doc,
+  updateDoc,
+  getDoc
 } from 'firebase/firestore';
-import { useRoute, useNavigation } from '@react-navigation/native';
-import ChallengeCard from './ChallengeCard';
+import { joinChallenge } from '../../services/joinChallenge';
+import { getChallengeImage } from '../../utils/imageHelpers';
 
 const ChallengeChatScreen = () => {
-  const route = useRoute();
   const navigation = useNavigation();
-  const { chatroomId, challenge, participants } = route.params || {};
+  const route = useRoute();
+  const { chatroomId, participants } = route.params;
 
   const auth = getAuth();
   const db = getFirestore();
   const currentUser = auth.currentUser;
 
+  const [challenge, setChallenge] = useState(route.params.challenge || null);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef(null);
+
+  useEffect(() => {
+    const fetchChallenge = async () => {
+      if (!challenge && chatroomId) {
+        try {
+          const chatroomRef = doc(db, 'chatrooms', chatroomId);
+          const chatroomSnap = await getDoc(chatroomRef);
+          const chatroomData = chatroomSnap.data();
+
+          if (chatroomData?.challengeId) {
+            const challengeDoc = await getDoc(doc(db, 'challenges', chatroomData.challengeId));
+            if (challengeDoc.exists()) {
+              setChallenge(challengeDoc.data());
+            }
+          }
+        } catch (err) {
+          console.error("Could not fetch challenge details:", err);
+        }
+      }
+    };
+    fetchChallenge();
+  }, [chatroomId, challenge]);
 
   useEffect(() => {
     if (!chatroomId) return;
     const messagesRef = collection(db, 'chatrooms', chatroomId, 'messages');
     const messagesQuery = query(messagesRef, orderBy('timestamp', 'asc'));
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setMessages(msgs);
+      const fetchedMessages = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setMessages(fetchedMessages);
     });
     return () => unsubscribe();
   }, [chatroomId]);
 
   const sendMessage = async () => {
-    if (!inputText.trim() || !chatroomId || !currentUser) return;
-    const messagesRef = collection(db, 'chatrooms', chatroomId, 'messages');
-    await addDoc(messagesRef, {
-      senderId: currentUser.uid,
-      text: inputText,
-      timestamp: serverTimestamp(),
-    });
-    setInputText('');
+    if (!inputText.trim()) return;
+    try {
+      const messagesRef = collection(db, 'chatrooms', chatroomId, 'messages');
+      await addDoc(messagesRef, {
+        senderId: currentUser.uid,
+        text: inputText,
+        timestamp: serverTimestamp(),
+        type: 'text',
+      });
+      setInputText('');
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+
+  const handleJoinChallenge = async () => {
+    if (currentUser && challenge?.id) {
+      await joinChallenge(currentUser.uid, challenge.id);
+      await addDoc(collection(db, 'chatrooms', chatroomId, 'messages'), {
+        senderId: currentUser.uid,
+        text: `Welcome to the "${challenge.name}" challenge! Let's go!`,
+        timestamp: serverTimestamp(),
+        type: 'text',
+      });
+      Alert.alert('Joined!', `You've joined the ${challenge.name} challenge.`);
+    }
   };
 
   const renderMessage = ({ item }) => {
-    const isCurrentUser = item.senderId === currentUser?.uid;
+    const isCurrentUser = item.senderId === currentUser.uid;
     return (
-      <View style={[styles.messageRow, isCurrentUser ? styles.right : styles.left]}>
-        {!isCurrentUser && <Image source={{ uri: item.avatar || 'https://via.placeholder.com/40' }} style={styles.avatar} />}
-        <View style={[styles.messageBubble, isCurrentUser ? styles.purple : styles.gray]}>
-          <Text style={styles.messageText}>{item.text}</Text>
-        </View>
+      <View style={[styles.messageBubble, isCurrentUser ? styles.sent : styles.received]}>
+        <Text style={styles.messageText}>{item.text}</Text>
       </View>
     );
   };
+
+  const imageSource = getChallengeImage(challenge?.category);
+  const displayNames = participants?.filter(p => p.id !== currentUser.uid).map(p => p.name).join(', ');
 
   return (
     <SafeAreaView style={styles.container}>
@@ -80,131 +122,106 @@ const ChallengeChatScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <FlatList
-          data={participants}
-          horizontal
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.participantBubble}>
-              <Image source={{ uri: item.avatar || 'https://via.placeholder.com/40' }} style={styles.avatarSmall} />
-              <Text style={styles.participantName}>{item.name}</Text>
-            </View>
-          )}
-          showsHorizontalScrollIndicator={false}
-        />
+        <Text style={styles.participantText}>{displayNames || 'You'}</Text>
       </View>
 
-      {challenge && <ChallengeCard challenge={challenge} />}
-
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={{ padding: 16 }}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        />
-
-        <View style={styles.inputContainer}>
-          <TextInput
-            placeholder="Message..."
-            placeholderTextColor="#aaa"
-            value={inputText}
-            onChangeText={setInputText}
-            style={styles.input}
-          />
-          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-            <Ionicons name="send" size={20} color="#fff" />
+      <View style={styles.challengeCard}>
+        <Image source={imageSource} style={styles.challengeImage} />
+        <View style={styles.challengeDetails}>
+          <Text style={styles.challengeTitle}>{challenge?.name || 'Challenge'}</Text>
+          <Text style={styles.challengeInfo}>Distance: {challenge?.distance || '-'}</Text>
+          <Text style={styles.challengeInfo}>Duration: {challenge?.duration || '-'}</Text>
+          <Text style={styles.challengeInfo}>Reward: {challenge?.reward || '-'}</Text>
+          <TouchableOpacity onPress={handleJoinChallenge} style={styles.joinButton}>
+            <Text style={styles.joinButtonText}>Join Challenge</Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </View>
+
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        keyExtractor={(item) => item.id}
+        renderItem={renderMessage}
+        contentContainerStyle={{ padding: 20 }}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+        onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+      />
+
+      <View style={styles.inputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Message..."
+          placeholderTextColor="#999"
+          value={inputText}
+          onChangeText={setInputText}
+        />
+        <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+          <Ionicons name="arrow-up" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#111',
+  container: { flex: 1, backgroundColor: '#000' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 15 },
+  backButton: { padding: 5, marginRight: 10 },
+  participantText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  challengeCard: {
+    backgroundColor: '#1e1e1e',
+    margin: 15,
+    borderRadius: 15,
+    overflow: 'hidden'
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  challengeImage: {
+    width: '100%',
+    height: 200,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15
+  },
+  challengeDetails: { padding: 15 },
+  challengeTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff', marginBottom: 5 },
+  challengeInfo: { fontSize: 14, color: '#ccc', marginBottom: 3 },
+  joinButton: {
+    marginTop: 10,
+    backgroundColor: '#9b59b6',
     padding: 10,
-    backgroundColor: '#000',
+    borderRadius: 10,
+    alignItems: 'center'
   },
-  backButton: {
-    marginRight: 10,
-  },
-  participantBubble: {
-    marginRight: 10,
-    alignItems: 'center',
-  },
-  avatarSmall: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  participantName: {
-    color: '#fff',
-    fontSize: 12,
-  },
-  messageRow: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  left: {
-    justifyContent: 'flex-start',
-  },
-  right: {
-    justifyContent: 'flex-end',
-    alignSelf: 'flex-end',
-  },
+  joinButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   messageBubble: {
-    maxWidth: '70%',
     padding: 10,
-    borderRadius: 15,
+    borderRadius: 20,
+    marginBottom: 10,
+    maxWidth: '80%'
   },
-  purple: {
-    backgroundColor: '#A0006D',
-  },
-  gray: {
-    backgroundColor: '#333',
-  },
-  messageText: {
-    color: '#fff',
-  },
-  avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    marginRight: 8,
-  },
+  sent: { backgroundColor: '#9b59b6', alignSelf: 'flex-end' },
+  received: { backgroundColor: '#333', alignSelf: 'flex-start' },
+  messageText: { color: '#fff', fontSize: 16 },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
     borderTopWidth: 1,
-    borderTopColor: '#222',
+    borderTopColor: '#222'
   },
   input: {
     flex: 1,
     backgroundColor: '#222',
-    borderRadius: 20,
     color: '#fff',
+    borderRadius: 20,
     paddingHorizontal: 15,
-    height: 40,
+    height: 40
   },
   sendButton: {
     marginLeft: 10,
-    backgroundColor: '#A0006D',
-    padding: 10,
+    backgroundColor: '#9b59b6',
     borderRadius: 20,
-  },
+    padding: 10
+  }
 });
 
 export default ChallengeChatScreen;

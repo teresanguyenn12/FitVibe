@@ -6,7 +6,10 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../authProvider";
-import { getFirestore, collection, query, where, getDocs, doc, getDoc, deleteDoc } from 'firebase/firestore';
+import {
+    getFirestore, collection, query, where, getDocs,
+    doc, getDoc, deleteDoc
+} from 'firebase/firestore';
 import { Swipeable } from 'react-native-gesture-handler';
 
 const MessagesScreen = () => {
@@ -26,26 +29,56 @@ const MessagesScreen = () => {
         try {
             setLoading(true);
             const db = getFirestore();
+
             const userDoc = await getDoc(doc(db, 'users', user.uid));
             const userData = userDoc.data();
-            const followingIds = new Set(userData?.following || []);
+            const following = new Set(userData?.following || []);
+            const followers = new Set(userData?.followers || []);
+
+            const mutuals = new Set([...following].filter(id => followers.has(id)));
 
             const chatroomsRef = collection(db, 'chatrooms');
-            const chatroomsQuery = query(chatroomsRef, where('participants', 'array-contains', user.uid));
+            const chatroomsQuery = query(chatroomsRef, where('participantDetails.' + user.uid, '!=', null));
             const chatroomsSnapshot = await getDocs(chatroomsQuery);
 
             const usersMap = new Map();
+
             for (const chatroomDoc of chatroomsSnapshot.docs) {
                 const chatroomData = chatroomDoc.data();
-                const otherUserId = chatroomData.participants.find(id => id !== user.uid);
 
-                if (followingIds.has(otherUserId) && !usersMap.has(otherUserId)) {
-                    const otherUserDoc = await getDoc(doc(db, 'users', otherUserId));
-                    if (otherUserDoc.exists()) {
-                        usersMap.set(otherUserId, { id: chatroomDoc.id, otherUserId, ...otherUserDoc.data() });
+                const participantIds = Object.keys(chatroomData.participantDetails || {});
+                const isGroup = participantIds.length > 2;
+
+                if (isGroup) {
+                    const names = participantIds
+                        .filter(id => id !== user.uid)
+                        .map(id => chatroomData.participantDetails[id]?.name || "Unknown")
+                        .join(', ');
+
+                    usersMap.set(chatroomDoc.id, {
+                        id: chatroomDoc.id,
+                        isGroup: true,
+                        title: names,
+                        lastMessage: chatroomData.lastMessage || 'Group Challenge',
+                        participantDetails: chatroomData.participantDetails,
+                        challenge: chatroomData.challenge || null
+                    });
+                } else {
+                    const otherUserId = participantIds.find(id => id !== user.uid);
+                    if (mutuals.has(otherUserId)) {
+                        const otherUserDoc = await getDoc(doc(db, 'users', otherUserId));
+                        if (otherUserDoc.exists()) {
+                            usersMap.set(chatroomDoc.id, {
+                                id: chatroomDoc.id,
+                                isGroup: false,
+                                otherUserId,
+                                ...otherUserDoc.data(),
+                            });
+                        }
                     }
                 }
             }
+
             setChatUsers(Array.from(usersMap.values()));
         } catch (error) {
             console.error('Error fetching chat users:', error);
@@ -58,7 +91,7 @@ const MessagesScreen = () => {
         try {
             const db = getFirestore();
             await deleteDoc(doc(db, 'chatrooms', chatroomId));
-            setChatUsers(prevUsers => prevUsers.filter(user => user.id !== chatroomId));
+            setChatUsers(prev => prev.filter(user => user.id !== chatroomId));
         } catch (error) {
             console.error('Error deleting chatroom:', error);
         }
@@ -75,31 +108,40 @@ const MessagesScreen = () => {
         );
     };
 
-    const filteredUsers = chatUsers.filter(user =>
-        user.fullName.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredUsers = chatUsers.filter(user => {
+        if (user.isGroup) return user.title.toLowerCase().includes(search.toLowerCase());
+        return user.fullName?.toLowerCase().includes(search.toLowerCase());
+    });
 
-    const renderItem = ({ item }) => (
-        <Swipeable
-            renderRightActions={() => (
-                <TouchableOpacity style={styles.deleteButton} onPress={() => confirmDelete(item.id)}>
-                    <Ionicons name="trash" size={24} color="#fff" />
-                </TouchableOpacity>
-            )}
-        >
-            <TouchableOpacity
-                style={styles.userItem}
-                onPress={() => navigation.navigate('ChatScreen', { chatroomId: item.id, otherUserName: item.fullName, otherUserId: item.otherUserId })}
+    const renderItem = ({ item }) => {
+        return (
+            <Swipeable
+                renderRightActions={() => (
+                    <TouchableOpacity style={styles.deleteButton} onPress={() => confirmDelete(item.id)}>
+                        <Ionicons name="trash" size={24} color="#fff" />
+                    </TouchableOpacity>
+                )}
             >
-                <Image source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }} style={styles.avatar} />
-                <View style={styles.userInfo}>
-                    <Text style={styles.name}>{item.fullName}</Text>
-                    <Text style={styles.handle}>@{item.username || item.email?.split('@')[0]}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={24} color="#666" />
-            </TouchableOpacity>
-        </Swipeable>
-    );
+                <TouchableOpacity
+                    style={styles.userItem}
+                    onPress={() => navigation.navigate(item.isGroup ? 'ChallengeChatScreen' : 'ChatScreen', {
+                        chatroomId: item.id,
+                        ...(item.isGroup ? { challenge: item.challenge } : { otherUserId: item.otherUserId })
+                    })}
+                >
+                    <Image
+                        source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }}
+                        style={styles.avatar}
+                    />
+                    <View style={styles.userInfo}>
+                        <Text style={styles.name}>{item.isGroup ? item.title : item.fullName}</Text>
+                        <Text style={styles.handle}>{item.lastMessage || '@' + (item.username || item.email?.split('@')[0])}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={24} color="#666" />
+                </TouchableOpacity>
+            </Swipeable>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container}>
