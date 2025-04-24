@@ -25,6 +25,7 @@ import Animated, {
     useAnimatedStyle,
 } from "react-native-reanimated";
 import { TouchableWithoutFeedback } from "react-native-gesture-handler";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import LoginScreen from "./screens/LoginScreen";
 import ForgotPasswordScreen from "./screens/ForgotPasswordScreen";
@@ -438,24 +439,29 @@ function Navigation() {
     );
 }
 
+
 export default function App() {
-    const [fontsLoaded] = useFonts({
-        "TiltWarp-Regular": require("./assets/TiltWarp-Regular.ttf"),
-    });
-    if (!fontsLoaded) {
-        return (
-            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                <ActivityIndicator size="large" color="#8e24aa" />
-            </View>
-        );
-    }
+  const [fontsLoaded] = useFonts({
+    "TiltWarp-Regular": require("./assets/TiltWarp-Regular.ttf"),
+  });
+
+  if (!fontsLoaded) {
     return (
-        <AuthProvider>
-            <ThemeProvider>
-                <Navigation />
-            </ThemeProvider>
-        </AuthProvider>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#8e24aa" />
+      </View>
     );
+  }
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <ThemeProvider>
+          <Navigation />
+        </ThemeProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
+  );
 }
 
 const styles = StyleSheet.create({

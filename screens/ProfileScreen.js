@@ -22,7 +22,7 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-
+import PostCard from "../screens/components/PostCard";
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const auth = getAuth();
@@ -211,21 +211,29 @@ const ProfileScreen = () => {
           <Text style={styles.emptyText}>No posts yet.</Text>
         ) : (
           <View style={styles.postGrid}>
-            {userPosts.map((post) => (
-              <TouchableOpacity
-                key={post.id}
-                onPress={() =>
-                  navigation.navigate("PostDetailScreen", { post })
-                }
-                style={styles.postWrapper}
-              >
-                <Image
-                  source={{ uri: post.imageUrl }}
-                  style={styles.postThumbnail}
-                />
-              </TouchableOpacity>
-            ))}
-          </View>
+  {userPosts.map((post) => (
+    <TouchableOpacity
+      key={post.id}
+      onPress={() => navigation.navigate("PostDetailScreen", { post })}
+      style={styles.postWrapper}
+    >
+      <Image
+  source={{ uri: post.media?.[0]?.url || post.imageUrl }}
+  style={styles.postThumbnail}
+/>
+      {post.media?.length > 1 && (
+        <Ionicons
+          name="layers-outline"
+          size={18}
+          color="#fff"
+          style={styles.multipleIcon}
+        />
+      )}
+    </TouchableOpacity>
+  ))}
+</View>
+
+
         )}
       </View>
     </ScrollView>
@@ -293,6 +301,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
+  multipleIcon: {
+    position: "absolute",
+    bottom: 6,
+    right: 6,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    padding: 4,
+    borderRadius: 10,
+  },  
 });
 
 export default ProfileScreen;
