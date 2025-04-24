@@ -31,32 +31,25 @@ export default function LoginScreen({ navigation }) {
   const { login } = useAuth();
 
   //  User authentication for login
-  const handleLogin = async () => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const firebaseUser = userCredential.user;
+    const handleLogin = async () => {
+        try {
+            // Use the login function from your auth context
+            await login(email, password);
 
-      //  Fetch user details from Firestore
-      const userDocRef = doc(db, "users", firebaseUser.uid);
-      const userDocSnap = await getDoc(userDocRef);
+            // The auth context's login function already handles fetching user data
+            // After login, we can access the current user from Firebase auth
+            const currentUser = auth.currentUser;
 
-      if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        login(userData);
-        registerIndieID(userData.id, 29298, 'u04gYyaVKbAobwZ9ojzShp');
-        console.log("User logged in successfully!", userData);
-      } else {
-        console.error("Firestore user document not found!");
+            if (currentUser) {
+                // Register with Native Notify using the Firebase UID
+                registerIndieID(currentUser.uid, 29298, 'u04gYyaVKbAobwZ9ojzShp');
+                console.log("User logged in and registered for notifications!");
+            }
+        } catch (error) {
+            console.error("Login error:", error.message);
+            Alert.alert("Login Failed", error.message);
         }
-    } catch (error) {
-      console.error("Login error:", error.message);
-      Alert.alert("Login Failed", error.message);
-    }
-  };
+    };
 
   return (
     <LinearGradient

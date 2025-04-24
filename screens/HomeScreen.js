@@ -29,6 +29,7 @@ const HomeScreen = () => {
   const [user, setUser] = useState({ firstName: "User", profilePicture: null });
   const [trendingChallenge, setTrendingChallenge] = useState(null);
   const wave = useSharedValue(0);
+  
 
   const mutedGradientCombos = [
     {
