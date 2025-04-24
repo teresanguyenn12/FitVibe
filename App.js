@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from 'react';
 import {
   View,
   ActivityIndicator,
@@ -63,6 +63,7 @@ import OtherFriendsListScreen from "./screens/OtherFriendsListScreen";
 import PostDetailScreen from "./screens/PostDetailScreen";
 import EditPostScreen from './screens/EditPostScreen';
 import NotificationScreen from "./screens/NotificationScreen";
+import SplashScreen from "./screens/SplashScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -196,33 +197,33 @@ function SignUpFlow() {
 function Navigation() {
   const { user, isLoading } = useAuth();
   const { theme } = React.useContext(ThemeContext);
+  const [showSplash, setShowSplash] = useState(true);
 
-  if (isLoading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#8e24aa" />
-      </View>
-    );
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show splash screen while it's active
+  if (showSplash || isLoading) {
+    return <SplashScreen />;
   }
 
   return (
-    <NavigationContainer theme={theme === "dark" ? DarkTheme : DefaultTheme}>
+    <NavigationContainer theme={theme === 'dark' ? DarkTheme : DefaultTheme}>
       <UserSignUpProvider>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {!user ? (
             <>
               <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen
-                name="ForgotPassword"
-                component={ForgotPasswordScreen}
-              />
+              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
               <Stack.Screen name="SignUpFlow" component={SignUpFlow} />
             </>
           ) : (
             <>
               <Stack.Screen name="HomeTabs" component={BottomTabs} />
               <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
-              <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreens.SettingsScreen} />
               <Stack.Screen
                 name="ThemeSettings"
                 component={SettingsScreens.ThemeSettings}

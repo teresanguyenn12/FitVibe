@@ -117,7 +117,7 @@ const InviteFriendsQueueScreen = () => {
           challengeId: challenge.id,
           challengeTitle: challenge?.title || 'Untitled Challenge',
           createdAt: serverTimestamp(),
-          lastMessage: `Welcome to the \"${challenge?.title || 'the challenge'}\" challenge! Let's go!`,
+          lastMessage: `Welcome to the \"${challenge?.name || 'the challenge'}\" challenge! Let's go!`,
           lastMessageTime: serverTimestamp(),
           participantDetails: Object.fromEntries(
             participants.map((p) => [
