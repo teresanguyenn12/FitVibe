@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -16,10 +16,11 @@ import {
   collection,
   query,
   where,
-  onSnapshot,
-  doc,
+  getDoc,
   getDocs,
   orderBy,
+  doc,
+  onSnapshot,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import PostCard from "../screens/components/PostCard";
@@ -34,17 +35,35 @@ const ProfileScreen = () => {
   const [featuredGoals, setFeaturedGoals] = useState([]);
   const [userPosts, setUserPosts] = useState([]);
 
-  const screenWidth = Dimensions.get("window").width;
-  const imageSize = Math.floor((screenWidth - 40 - 8) / 3);
-
   useFocusEffect(
     useCallback(() => {
-      const unsubscribeUser = onSnapshot(
-        doc(db, "users", currentUser.uid),
-        (docSnap) => {
-          if (docSnap.exists()) setUserData(docSnap.data());
+      const fetchUserData = async () => {
+        try {
+          const userRef = doc(db, "users", currentUser.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            setUserData(userSnap.data());
+          }
+        } catch (err) {
+          console.error("Error fetching user data:", err);
         }
-      );
+      };
+
+      const fetchFeaturedGoals = async () => {
+        try {
+          const q = query(
+            collection(db, "goals"),
+            where("displayFeatured", "==", true),
+            where("userId", "==", currentUser.uid)
+          );
+          const snapshot = await getDocs(q);
+          setFeaturedGoals(
+            snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+          );
+        } catch (err) {
+          console.error("Failed to fetch featured goals:", err);
+        }
+      };
 
       const unsubscribePosts = onSnapshot(
         query(
@@ -61,31 +80,14 @@ const ProfileScreen = () => {
         }
       );
 
-      const fetchFeaturedGoals = async () => {
-        try {
-          const q = query(
-            collection(db, "goals"),
-            where("displayFeatured", "==", true),
-            where("userId", "==", currentUser.uid)
-          );
-          const snapshot = await getDocs(q);
-          setFeaturedGoals(
-            snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-          );
-        } catch (err) {
-          console.error("Failed to fetch featured goals:", err);
-        } finally {
-          setLoading(false);
-        }
-      };
-
+      fetchUserData();
       fetchFeaturedGoals();
+      setLoading(false);
 
       return () => {
-        unsubscribeUser();
         unsubscribePosts();
       };
-    }, [])
+    }, [currentUser.uid])
   );
 
   if (loading || !userData) {
@@ -103,7 +105,7 @@ const ProfileScreen = () => {
     followers = [],
     following = [],
     challenges = 0,
-    calories = 0,
+    burnedCalories = 0,
     workouts = 0,
   } = userData;
 
@@ -126,23 +128,19 @@ const ProfileScreen = () => {
         <Text style={styles.fullName}>{fullName}</Text>
         <Text style={styles.username}>@{username || "no-username"}</Text>
         <View style={styles.countContainer}>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("FriendsList", { type: "followers" })
-            }
-          >
-            <Text style={styles.countNumber}>{followers.length}</Text>
-            <Text style={styles.countLabel}>Followers</Text>
-          </TouchableOpacity>
+          <View style={styles.countItem}>
+            <TouchableOpacity onPress={() => navigation.navigate("FriendsList", { type: "followers" })}>
+              <Text style={styles.countNumber}>{followers.length}</Text>
+              <Text style={styles.countLabel}>Followers</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.separator}>|</Text>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("FriendsList", { type: "following" })
-            }
-          >
-            <Text style={styles.countNumber}>{following.length}</Text>
-            <Text style={styles.countLabel}>Following</Text>
-          </TouchableOpacity>
+          <View style={styles.countItem}>
+            <TouchableOpacity onPress={() => navigation.navigate("FriendsList", { type: "following" })}>
+              <Text style={styles.countNumber}>{following.length}</Text>
+              <Text style={styles.countLabel}>Following</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
@@ -155,32 +153,17 @@ const ProfileScreen = () => {
         <Text style={styles.sectionTitle}>My Career Stats</Text>
         <View style={styles.statBox}>
           <View style={styles.statItem}>
-            <Ionicons
-              name="trophy-outline"
-              size={22}
-              color="#fff"
-              style={styles.statIcon}
-            />
+            <Ionicons name="trophy-outline" size={22} color="#fff" style={styles.statIcon} />
             <Text style={styles.statValue}>{challenges}</Text>
             <Text style={styles.statLabel}>Challenges</Text>
           </View>
           <View style={styles.statItem}>
-            <Ionicons
-              name="flame-outline"
-              size={22}
-              color="#fff"
-              style={styles.statIcon}
-            />
-            <Text style={styles.statValue}>{calories}</Text>
+            <Ionicons name="flame-outline" size={22} color="#fff" style={styles.statIcon} />
+            <Text style={styles.statValue}>{burnedCalories}</Text>
             <Text style={styles.statLabel}>Calories</Text>
           </View>
           <View style={styles.statItem}>
-            <Ionicons
-              name="barbell-outline"
-              size={22}
-              color="#fff"
-              style={styles.statIcon}
-            />
+            <Ionicons name="barbell-outline" size={22} color="#fff" style={styles.statIcon} />
             <Text style={styles.statValue}>{workouts}</Text>
             <Text style={styles.statLabel}>Workouts</Text>
           </View>
@@ -242,60 +225,30 @@ const ProfileScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#131417", paddingHorizontal: 20 },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: "#131417",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 70,
-    paddingBottom: 10,
-  },
+  loadingContainer: { flex: 1, backgroundColor: "#131417", justifyContent: "center", alignItems: "center" },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 70, paddingBottom: 10 },
   profileSection: { alignItems: "center", marginVertical: 20 },
   profileImage: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
   fullName: { fontSize: 22, fontWeight: "bold", color: "#fff" },
   username: { color: "#aaa", fontSize: 14 },
-  countContainer: { flexDirection: "row", marginTop: 12, alignItems: "center" },
-  countNumber: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 18,
-    textAlign: "center",
-  },
-  countLabel: { color: "#aaa", fontSize: 14, textAlign: "center" },
+  countContainer: { flexDirection: "row", alignItems: "center", marginTop: 12 },
+  countItem: { alignItems: "center" },
+  countNumber: { color: "#fff", fontWeight: "bold", fontSize: 18 },
+  countLabel: { color: "#aaa", fontSize: 14 },
   separator: { marginHorizontal: 16, color: "#555", fontSize: 18 },
   section: { marginVertical: 15 },
-  sectionTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 6,
-  },
+  sectionTitle: { color: "#fff", fontSize: 18, fontWeight: "bold", marginBottom: 6 },
   sectionContent: { color: "#ccc", fontSize: 15, marginBottom: 4 },
   emptyText: { color: "#888", fontStyle: "italic", marginTop: 5 },
   postGrid: { flexDirection: "row", flexWrap: "wrap" },
-  postWrapper: {
-    width: (Dimensions.get("window").width - 40 - 8) / 3,
-    aspectRatio: 1,
-    marginBottom: 4,
-  },
+  postWrapper: { width: (Dimensions.get("window").width - 40 - 8) / 3, aspectRatio: 1, marginBottom: 4 },
   postThumbnail: { width: "100%", height: "100%", borderRadius: 6 },
-  statBox: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: "#2B2D31",
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 10,
-  },
+  statBox: { flexDirection: "row", justifyContent: "space-between", backgroundColor: "#2B2D31", padding: 15, borderRadius: 10, marginTop: 10 },
   statItem: { alignItems: "center", flex: 1 },
   statValue: { color: "#fff", fontSize: 18, fontWeight: "bold" },
   statLabel: { color: "#aaa", fontSize: 13, marginTop: 2 },
   statIcon: { marginBottom: 6 },
+<<<<<<< Updated upstream
   goalsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -309,6 +262,9 @@ const styles = StyleSheet.create({
     padding: 4,
     borderRadius: 10,
   },  
+=======
+  goalsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+>>>>>>> Stashed changes
 });
 
 export default ProfileScreen;

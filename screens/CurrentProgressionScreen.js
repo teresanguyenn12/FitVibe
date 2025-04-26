@@ -14,7 +14,7 @@ const CurrentProgressionScreen = () => {
 
   return (
     <View style = {styles.container}>
-      <TouchableOpacity style = {styles.backButton} onPress = {() => navigation.goBack()}>
+      <TouchableOpacity style = {styles.backButton} onPress = {() => navigation.navigate("HomeTabs")}>
         <Ionicons name = "close" size = {28} color = "#fff" />
       </TouchableOpacity>
 

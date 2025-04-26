@@ -23,9 +23,9 @@ import {
   serverTimestamp,
   doc,
   updateDoc,
-  getDoc
+  getDoc,
+  arrayUnion,
 } from 'firebase/firestore';
-import { joinChallenge } from '../../services/joinChallenge';
 import { getChallengeImage } from '../../utils/imageHelpers';
 
 const ChallengeChatScreen = () => {
@@ -42,22 +42,19 @@ const ChallengeChatScreen = () => {
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef(null);
 
+  // fetch challenge if not passed
   useEffect(() => {
     const fetchChallenge = async () => {
       if (!challenge && chatroomId) {
-        try {
-          const chatroomRef = doc(db, 'chatrooms', chatroomId);
-          const chatroomSnap = await getDoc(chatroomRef);
-          const chatroomData = chatroomSnap.data();
+        const chatroomRef = doc(db, 'chatrooms', chatroomId);
+        const chatroomSnap = await getDoc(chatroomRef);
+        const chatroomData = chatroomSnap.data();
 
-          if (chatroomData?.challengeId) {
-            const challengeDoc = await getDoc(doc(db, 'challenges', chatroomData.challengeId));
-            if (challengeDoc.exists()) {
-              setChallenge(challengeDoc.data());
-            }
+        if (chatroomData?.challengeId) {
+          const challengeDoc = await getDoc(doc(db, 'challenges', chatroomData.challengeId));
+          if (challengeDoc.exists()) {
+            setChallenge({ id: challengeDoc.id, ...challengeDoc.data() });
           }
-        } catch (err) {
-          console.error("Could not fetch challenge details:", err);
         }
       }
     };
@@ -77,30 +74,48 @@ const ChallengeChatScreen = () => {
 
   const sendMessage = async () => {
     if (!inputText.trim()) return;
-    try {
-      const messagesRef = collection(db, 'chatrooms', chatroomId, 'messages');
-      await addDoc(messagesRef, {
-        senderId: currentUser.uid,
-        text: inputText,
-        timestamp: serverTimestamp(),
-        type: 'text',
-      });
-      setInputText('');
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
+    const messagesRef = collection(db, 'chatrooms', chatroomId, 'messages');
+    await addDoc(messagesRef, {
+      senderId: currentUser.uid,
+      text: inputText,
+      timestamp: serverTimestamp(),
+      type: 'text',
+    });
+    setInputText('');
   };
 
   const handleJoinChallenge = async () => {
-    if (currentUser && challenge?.id) {
-      await joinChallenge(currentUser.uid, challenge.id);
-      await addDoc(collection(db, 'chatrooms', chatroomId, 'messages'), {
-        senderId: currentUser.uid,
-        text: `Welcome to the "${challenge.name}" challenge! Let's go!`,
-        timestamp: serverTimestamp(),
-        type: 'text',
-      });
-      Alert.alert('Joined!', `You've joined the ${challenge.name} challenge.`);
+    if (!challenge || !currentUser) return;
+
+    const userRef = doc(db, 'users', currentUser.uid);
+    await updateDoc(userRef, {
+      activeChallenges: arrayUnion(challenge.id),
+      [`challengeProgress.${challenge.id}`]: {
+        distance: 0,
+        duration: 0,
+        joinedAt: serverTimestamp(),
+      },
+    });
+
+    // Skip message, navigate directly to challenge progress screen
+    switch (challenge.category) {
+      case 'Run':
+        navigation.navigate('RunChallengeProgressScreen', { challenge });
+        break;
+      case 'Walk':
+        navigation.navigate('WalkChallengeProgressScreen', { challenge });
+        break;
+      case 'Yoga':
+        navigation.navigate('YogaChallengeProgressScreen', { challenge });
+        break;
+      case 'Cycling':
+        navigation.navigate('CyclingChallengeProgressScreen', { challenge });
+        break;
+      case 'Lifting':
+        navigation.navigate('LiftingChallengeProgressScreen', { challenge });
+        break;
+      default:
+        Alert.alert('Unknown Challenge Type', 'Unsupported challenge category.');
     }
   };
 
@@ -125,18 +140,20 @@ const ChallengeChatScreen = () => {
         <Text style={styles.participantText}>{displayNames || 'You'}</Text>
       </View>
 
-      <View style={styles.challengeCard}>
-        <Image source={imageSource} style={styles.challengeImage} />
-        <View style={styles.challengeDetails}>
-          <Text style={styles.challengeTitle}>{challenge?.name || 'Challenge'}</Text>
-          <Text style={styles.challengeInfo}>Distance: {challenge?.distance || '-'}</Text>
-          <Text style={styles.challengeInfo}>Duration: {challenge?.duration || '-'}</Text>
-          <Text style={styles.challengeInfo}>Reward: {challenge?.reward || '-'}</Text>
-          <TouchableOpacity onPress={handleJoinChallenge} style={styles.joinButton}>
-            <Text style={styles.joinButtonText}>Join Challenge</Text>
-          </TouchableOpacity>
+      {challenge && (
+        <View style={styles.challengeCard}>
+          <Image source={imageSource} style={styles.challengeImage} />
+          <View style={styles.challengeDetails}>
+            <Text style={styles.challengeTitle}>{challenge?.name}</Text>
+            <Text style={styles.challengeInfo}>Distance: {challenge?.distanceGoal || '-'}</Text>
+            <Text style={styles.challengeInfo}>Duration: {challenge?.durationGoal || '-'}</Text>
+            <Text style={styles.challengeInfo}>Reward: {challenge?.reward || '-'} XP</Text>
+            <TouchableOpacity onPress={handleJoinChallenge} style={styles.joinButton}>
+              <Text style={styles.joinButtonText}>Join Challenge</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
 
       <FlatList
         ref={flatListRef}
@@ -173,13 +190,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#1e1e1e',
     margin: 15,
     borderRadius: 15,
-    overflow: 'hidden'
+    overflow: 'hidden',
   },
   challengeImage: {
     width: '100%',
     height: 200,
     borderTopLeftRadius: 15,
-    borderTopRightRadius: 15
+    borderTopRightRadius: 15,
   },
   challengeDetails: { padding: 15 },
   challengeTitle: { fontSize: 20, fontWeight: 'bold', color: '#fff', marginBottom: 5 },
@@ -189,14 +206,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#9b59b6',
     padding: 10,
     borderRadius: 10,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   joinButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   messageBubble: {
     padding: 10,
     borderRadius: 20,
     marginBottom: 10,
-    maxWidth: '80%'
+    maxWidth: '80%',
   },
   sent: { backgroundColor: '#9b59b6', alignSelf: 'flex-end' },
   received: { backgroundColor: '#333', alignSelf: 'flex-start' },
@@ -206,7 +223,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     borderTopWidth: 1,
-    borderTopColor: '#222'
+    borderTopColor: '#222',
   },
   input: {
     flex: 1,
@@ -214,14 +231,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     borderRadius: 20,
     paddingHorizontal: 15,
-    height: 40
+    height: 40,
   },
   sendButton: {
     marginLeft: 10,
     backgroundColor: '#9b59b6',
     borderRadius: 20,
-    padding: 10
-  }
+    padding: 10,
+  },
 });
 
 export default ChallengeChatScreen;

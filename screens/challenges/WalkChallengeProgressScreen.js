@@ -5,15 +5,8 @@ import * as Location from "expo-location";
 import haversine from "haversine-distance";
 import { Ionicons } from "@expo/vector-icons";
 import { db, auth } from "../../firebase";
-import {
-  doc,
-  getDoc,
-  updateDoc,
-  arrayRemove,
-  arrayUnion,
-  serverTimestamp,
-  increment,
-} from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, serverTimestamp, increment } from "firebase/firestore";
+import { updateCareerStatByType } from "../../utils/updateCareerStats"; 
 
 export default function WalkChallengeProgressScreen({ route, navigation }) {
   const { challenge } = route.params;
@@ -48,120 +41,151 @@ export default function WalkChallengeProgressScreen({ route, navigation }) {
   }, []);
 
   const fetchProgress = async () => {
-    try {
-      const challengeRef = doc(db, "challenges", challenge.id);
-      const challengeSnap = await getDoc(challengeRef);
-      const data = challengeSnap.data();
-      const userProgress = data.progress?.find((p) => p.userId === user.uid);
-      setProgress(userProgress || {});
-    } catch (error) {
-      console.error("Error fetching progress:", error);
-    }
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+    setProgress(userSnap.data()?.challengeProgress?.[challenge.id] || {});
   };
 
   const startTracking = async () => {
     watchId.current = await Location.watchPositionAsync(
       {
-        accuracy: Location.Accuracy.High,
+        accuracy: Location.Accuracy.Highest,
         timeInterval: 1000,
         distanceInterval: 1,
       },
-      (newLocation) => {
-        if (location) {
-          const dist = haversine(location.coords, newLocation.coords) / 1609.34; // meters to miles
-          setSessionDistance((prev) => prev + dist);
+      async (newLocation) => {
+        if (!isTracking) return;
+
+        const { latitude, longitude } = newLocation.coords;
+        const newCoord = { latitude, longitude };
+
+        if (routeCoordinates.length > 0) {
+          const lastCoord = routeCoordinates[routeCoordinates.length - 1];
+          const dist = haversine(lastCoord, newCoord) / 1609.34; // meters to miles
+          const updatedDistance = sessionDistance + dist;
+          setSessionDistance(updatedDistance);
+
+          const userRef = doc(db, "users", user.uid);
+          const progressPath = `challengeProgress.${challenge.id}`;
+
+          await updateDoc(userRef, {
+            [`${progressPath}.distance`]: increment(dist),
+            [`${progressPath}.lastUpdated`]: serverTimestamp(),
+          });
+
+          const progressSnap = await getDoc(userRef);
+          const updated = progressSnap.data()?.challengeProgress?.[challenge.id];
+          setProgress(updated);
+
+          const metDistance = (updated?.distance ?? 0) >= (challenge.distanceGoal ?? Infinity);
+          const metDuration = (updated?.duration ?? 0) >= (challenge.durationGoal ?? Infinity);
+
+          if (metDistance || metDuration) {
+            // --- Career Stats Update ---
+            const MET = 3.5; // Walking MET
+            const weightKg = 70; // avg assumed weight
+            const timeHours = (Date.now() - startTime) / (1000 * 60 * 60);
+            const estimatedCaloriesBurned = MET * weightKg * timeHours;
+
+            await updateCareerStatByType(user.uid, "walk", {
+              calories: Math.round(estimatedCaloriesBurned),
+            });
+
+            // Mark challenge as completed
+            await updateDoc(userRef, {
+              activeChallenges: arrayRemove(challenge.id),
+              completedChallenges: arrayUnion(challenge.id),
+              xp: increment(challenge.xp || 100),
+            });
+
+            navigation.navigate("ChallengeCompletedScreen", {
+              challenge: {
+                name: challenge.name,
+                reward: `${challenge.xp || 100} XP`,
+                duration: formatMinutes((Date.now() - startTime) / 60000),
+                distance: (updated?.distance ?? 0).toFixed(2) + " miles",
+                status: "Completed",
+              },
+            });
+          }
         }
-        setLocation(newLocation);
+
+        setRouteCoordinates((prev) => [...prev, newCoord]);
+        setLocation(newCoord);
       }
     );
   };
 
-  const stopTracking = async () => {
-    if (watchId.current) {
-      watchId.current.remove();
-    }
-    setIsTracking(false);
-    try {
-      const challengeRef = doc(db, "challenges", challenge.id);
-      await updateDoc(challengeRef, {
-        progress: arrayRemove(progress),
-      });
-      const updatedProgress = {
-        ...progress,
-        milesCompleted: (progress.milesCompleted || 0) + sessionDistance,
-        lastUpdated: serverTimestamp(),
-      };
-      await updateDoc(challengeRef, {
-        progress: arrayUnion(updatedProgress),
-      });
-      Alert.alert("Workout saved", `Distance: ${sessionDistance.toFixed(2)} miles`);
-    } catch (error) {
-      console.error("Error updating progress:", error);
-    }
+  const toggleTracking = () => setIsTracking((prev) => !prev);
+
+  const handleQuitChallenge = async () => {
+    if (!user) return;
+    const userRef = doc(db, "users", user.uid);
+    await updateDoc(userRef, {
+      activeChallenges: arrayRemove(challenge.id),
+    });
+    Alert.alert("Challenge Quit");
+    navigation.goBack();
+  };
+
+  const formatMinutes = (min) => {
+    const h = Math.floor(min / 60);
+    const m = Math.floor(min % 60);
+    return `${h}h ${m}m`;
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Ionicons name="arrow-back" size={30} color="#fff" />
       </TouchableOpacity>
 
-      <Text style={styles.title}>{challenge.name}</Text>
-      <MapView
-        style={styles.map}
-        region={{
-          latitude: location?.coords.latitude || 37.78825,
-          longitude: location?.coords.longitude || -122.4324,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        }}
-      >
-        {location && <Marker coordinate={location.coords} />}
-        <Polyline coordinates={routeCoordinates} strokeWidth={5} strokeColor="#00BFFF" />
-      </MapView>
-      <Text style={styles.distanceText}>Distance: {sessionDistance.toFixed(2)} mi</Text>
-      <TouchableOpacity style={styles.stopButton} onPress={stopTracking}>
-        <Text style={styles.stopText}>Stop</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      {location && (
+        <MapView
+          style={styles.map}
+          initialRegion={{
+            ...location,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }}
+          region={{
+            ...location,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }}
+        >
+          <Polyline coordinates={routeCoordinates} strokeWidth={5} strokeColor="#00f" />
+          <Marker coordinate={location} title="You" />
+        </MapView>
+      )}
+
+      <ScrollView style={styles.infoContainer}>
+        <Text style={styles.sessionTitle}>Tracking Challenge: {challenge.name}</Text>
+        <Text style={styles.infoText}>Session Distance: {sessionDistance.toFixed(2)} miles</Text>
+        <Text style={styles.infoText}>Session Time: {formatMinutes((Date.now() - startTime) / 60000)}</Text>
+        <Button title={isTracking ? "Pause" : "Resume"} onPress={toggleTracking} />
+
+        <View style={styles.challengeCard}>
+          <Text style={styles.challengeTitle}>{challenge.name}</Text>
+          <Text style={styles.progressText}>
+            Distance: {(progress.distance ?? 0).toFixed(2)} / {challenge.distanceGoal ?? "-"} mi
+          </Text>
+          <Button title="Quit Challenge" color="red" onPress={handleQuitChallenge} />
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#121212",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
-    color: "white",
-    marginVertical: 20,
-    marginTop: 60,
-  },
-  map: {
-    width: "100%",
-    height: 300,
-  },
-  distanceText: {
-    fontSize: 18,
-    color: "white",
-    textAlign: "center",
-    marginVertical: 10,
-  },
-  stopButton: {
-    backgroundColor: "#FF7F7F",
-    marginHorizontal: 20,
-    borderRadius: 10,
-    padding: 15,
-    alignItems: "center",
-  },
-  stopText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#121212",
-  },
+  container: { flex: 1 },
+  map: { flex: 1 },
+  infoContainer: { padding: 16, backgroundColor: "#1E1E1E" },
+  sessionTitle: { color: "#fff", fontSize: 20, fontWeight: "bold", marginBottom: 12 },
+  infoText: { color: "#fff", fontSize: 16, marginBottom: 8 },
+  challengeCard: { backgroundColor: "#333", padding: 16, borderRadius: 12, marginVertical: 10 },
+  challengeTitle: { color: "#fff", fontSize: 18, fontWeight: "600", marginBottom: 6 },
+  progressText: { color: "#ddd", fontSize: 15, marginBottom: 4 },
   backButton: {
     position: "absolute",
     top: 50,

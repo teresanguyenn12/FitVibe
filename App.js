@@ -49,7 +49,6 @@ import RewardsScreen from "./screens/RewardsScreen";
 import ProgressionScreen from "./screens/ProgressionScreen";
 import CurrentProgressionScreen from "./screens/CurrentProgressionScreen";
 import GoalsScreen from "./screens/GoalsScreen";
-import SettingsScreen from "./screens/SettingsScreen";
 import FriendsListScreen from "./screens/FriendsListScreen";
 import AddFriendsScreen from "./screens/AddFriendsScreen";
 import FriendsScreen from "./screens/FriendsScreen";
@@ -65,6 +64,7 @@ import PostDetailScreen from "./screens/PostDetailScreen";
 import EditPostScreen from './screens/EditPostScreen';
 import NotificationScreen from "./screens/NotificationScreen";
 import SplashScreen from "./screens/SplashScreen";
+import SettingsScreen from "./screens/SettingsScreen";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -210,6 +210,7 @@ function Navigation() {
         return <SplashScreen />;
     }
 
+<<<<<<< Updated upstream
     return (
         <NavigationContainer theme={theme === 'dark' ? DarkTheme : DefaultTheme}>
             <UserSignUpProvider>
@@ -437,6 +438,235 @@ function Navigation() {
             </UserSignUpProvider>
         </NavigationContainer>
     );
+=======
+  return (
+    <NavigationContainer theme={theme === 'dark' ? DarkTheme : DefaultTheme}>
+      <UserSignUpProvider>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {!user ? (
+            <>
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+              <Stack.Screen name="SignUpFlow" component={SignUpFlow} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="HomeTabs" component={BottomTabs} />
+              <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+              <Stack.Screen name="Settings" component={SettingsScreen} />
+              <Stack.Screen
+                name="ThemeSettings"
+                component={SettingsScreens.ThemeSettings}
+              />
+              <Stack.Screen
+                name="LanguageSettings"
+                component={SettingsScreens.LanguageSettings}
+              />
+              <Stack.Screen
+                name="NotificationSettings"
+                component={SettingsScreens.NotificationSettings}
+              />
+              <Stack.Screen
+                name="PrivacyPolicy"
+                component={SettingsScreens.PrivacyPolicy}
+              />
+              <Stack.Screen
+                name="PrivacySettings"
+                component={SettingsScreens.PrivacySettings}
+              />
+              <Stack.Screen
+                name="ProfileSettings"
+                component={SettingsScreens.ProfileSettings}
+              />
+              <Stack.Screen
+                name="DeleteAccount"
+                component={SettingsScreens.DeleteAccount}
+              />
+              <Stack.Screen
+                name="LogoutScreen"
+                component={SettingsScreens.LogoutScreen}
+              />
+              <Stack.Screen
+                name="BlockedUsers"
+                component={SettingsScreens.BlockedUsers}
+              />
+              <Stack.Screen
+                name="HelpCenter"
+                component={SettingsScreens.HelpCenter}
+              />
+              <Stack.Screen name="FAQ" component={SettingsScreens.FAQ} />
+              <Stack.Screen
+                name="ContactSupport"
+                component={SettingsScreens.ContactSupport}
+              />
+              <Stack.Screen
+                name="TermsOfService"
+                component={SettingsScreens.TermsOfService}
+              />
+              <Stack.Screen
+                name="CommunityGuidelines"
+                component={SettingsScreens.CommunityGuidelines}
+              />
+              <Stack.Screen
+                name="Troubleshooting"
+                component={SettingsScreens.Troubleshooting}
+              />
+              <Stack.Screen
+                name="ReportProblem"
+                component={SettingsScreens.ReportProblem}
+              />
+              <Stack.Screen
+                name="ActivityTracking"
+                component={SettingsScreens.ActivityTracking}
+              />
+              <Stack.Screen
+                name="ConnectedApps"
+                component={SettingsScreens.ConnectedApps}
+              />
+              <Stack.Screen
+                name="ConnectedDevices"
+                component={SettingsScreens.ConnectedDevices}
+              />
+              <Stack.Screen
+                name="UnitsSettings"
+                component={SettingsScreens.UnitsSettings}
+              />
+              <Stack.Screen
+                name="StartWorkout"
+                component={StartWorkoutScreen}
+              />
+              <Stack.Screen name="Cardio" component={CardioScreen} />
+              <Stack.Screen name="Cycling" component={CyclingScreen} />
+              <Stack.Screen name="Hiking" component={HikingScreen} />
+              <Stack.Screen name="Pilates" component={PilatesScreen} />
+              <Stack.Screen
+                name="StrengthTraining"
+                component={StrengthTrainingScreen}
+              />
+              <Stack.Screen name="Swimming" component={SwimmingScreen} />
+              <Stack.Screen name="Yoga" component={YogaScreen} />
+              <Stack.Screen name="MyWorkouts" component={MyWorkoutScreen} />
+              <Stack.Screen name="Rewards" component={RewardsScreen} />
+              <Stack.Screen
+                name="Progression"
+                component={CurrentProgressionScreen}
+              />
+              <Stack.Screen
+                name="ProgressionInfo"
+                component={ProgressionScreen}
+              />
+              <Stack.Screen name="Goals" component={GoalsScreen} />
+              <Stack.Screen name="MessagesScreen" component={MessagesScreen} />
+              <Stack.Screen
+                name="NewMessageScreen"
+                component={NewMessageScreen}
+              />
+              <Stack.Screen name="ChatScreen" component={ChatScreen} />
+              <Stack.Screen name="AddFriends" component={AddFriendsScreen} />
+              <Stack.Screen name="FriendsList" component={FriendsListScreen} />
+              <Stack.Screen name="FriendsScreen" component={FriendsScreen} />
+              <Stack.Screen
+                name="OtherProfile"
+                component={OtherProfileScreen}
+              />
+              <Stack.Screen
+                name="OtherFriendsList"
+                component={OtherFriendsListScreen}
+              />
+              <Stack.Screen name="AddPostsScreen" component={AddPostsScreen} />
+              <Stack.Screen
+                name="PostDetailScreen"
+                component={PostDetailScreen}
+              />
+              <Stack.Screen name="CommentsScreen" component={CommentsScreen} />
+              <Stack.Screen
+                name="InviteFriendsScreen"
+                component={InviteFriendsScreen}
+              />
+              <Stack.Screen
+                name="ChallengeDetails"
+                component={ChallengeScreens.ChallengeDetailsScreen}
+              />
+              <Stack.Screen
+                name="JoinChallenges"
+                component={ChallengeScreens.JoinChallengesScreen}
+              />
+              <Stack.Screen
+                name="MyChallengesScreen"
+                component={ChallengeScreens.MyChallengesScreen}
+              />
+              <Stack.Screen
+                name="MyChallengeInfoScreen"
+                component={ChallengeScreens.MyChallengeInfoScreen}
+              />
+              <Stack.Screen
+                name="RunConfirmSoloChallenge"
+                component={ChallengeScreens.RunConfirmSoloChallenge}
+              />
+              <Stack.Screen
+                name="RunChallengeProgressScreen"
+                component={ChallengeScreens.RunChallengeProgressScreen}
+              />
+              <Stack.Screen
+                name="WalkConfirmSoloChallenge"
+                component={ChallengeScreens.WalkConfirmSoloChallengeScreen}
+              />
+              <Stack.Screen
+                name="YogaConfirmSoloChallenge"
+                component={ChallengeScreens.YogaConfirmSoloChallengeScreen}
+              />
+              <Stack.Screen
+                name="LiftingConfirmSoloChallenge"
+                component={ChallengeScreens.LiftingConfirmSoloChallengeScreen}
+              />
+              <Stack.Screen
+                name="CyclingConfirmSoloChallenge"
+                component={ChallengeScreens.CyclingConfirmSoloChallengeScreen}
+              />
+              <Stack.Screen
+                name="WalkChallengeProgressScreen"
+                component={ChallengeScreens.WalkChallengeProgressScreen}
+              />
+              <Stack.Screen
+                name="YogaChallengeProgressScreen"
+                component={ChallengeScreens.YogaChallengeProgressScreen}
+              />
+              <Stack.Screen
+                name="LiftingChallengeProgressScreen"
+                component={ChallengeScreens.LiftingChallengeProgressScreen}
+              />
+              <Stack.Screen
+                name="CyclingChallengeProgressScreen"
+                component={ChallengeScreens.CyclingChallengeProgressScreen}
+              />
+              <Stack.Screen
+                name="ChallengeCompletedScreen"
+                component={ChallengeScreens.ChallengeCompletedScreen}
+              />
+              <Stack.Screen
+                name="InviteFriendsQueueScreen"
+                component={ChallengeScreens.InviteFriendsQueueScreen}
+              />
+              <Stack.Screen
+                name="ChallengeChatScreen"
+                component={ChallengeScreens.ChallengeChatScreen}
+              />
+              <Stack.Screen
+                name="ChallengeCard"
+                component={ChallengeScreens.ChallengeCard}
+              />
+              <Stack.Screen name="EditPostScreen" component={EditPostScreen} />
+              <Stack.Screen
+                name="NotificationScreen"
+                component={NotificationScreen}
+              />
+            </>
+          )}
+        </Stack.Navigator>
+      </UserSignUpProvider>
+    </NavigationContainer>
+  );
+>>>>>>> Stashed changes
 }
 
 

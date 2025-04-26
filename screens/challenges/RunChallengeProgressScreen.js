@@ -5,15 +5,8 @@ import * as Location from "expo-location";
 import haversine from "haversine-distance";
 import { Ionicons } from "@expo/vector-icons";
 import { db, auth } from "../../firebase";
-import {
-  doc,
-  getDoc,
-  updateDoc,
-  arrayRemove,
-  arrayUnion,
-  serverTimestamp,
-  increment,
-} from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayRemove, arrayUnion, serverTimestamp, increment } from "firebase/firestore";
+import { updateCareerStatByType } from "../../utils/updateCareerStats"; 
 
 export default function RunChallengeProgressScreen({ route, navigation }) {
   const { challenge } = route.params;
@@ -53,6 +46,12 @@ export default function RunChallengeProgressScreen({ route, navigation }) {
     setProgress(userSnap.data()?.challengeProgress?.[challenge.id] || {});
   };
 
+  const getMET = (category) => {
+    if (category === "Walk") return 3.5;
+    if (category === "Run") return 8;
+    return 6; // fallback MET
+  };
+
   const startTracking = async () => {
     watchId.current = await Location.watchPositionAsync(
       {
@@ -68,7 +67,7 @@ export default function RunChallengeProgressScreen({ route, navigation }) {
 
         if (routeCoordinates.length > 0) {
           const lastCoord = routeCoordinates[routeCoordinates.length - 1];
-          const dist = haversine(lastCoord, newCoord) / 1609.34;
+          const dist = haversine(lastCoord, newCoord) / 1609.34; // meters to miles
           const updatedDistance = sessionDistance + dist;
           setSessionDistance(updatedDistance);
 
@@ -88,21 +87,7 @@ export default function RunChallengeProgressScreen({ route, navigation }) {
           const metDuration = (updated?.duration ?? 0) >= (challenge.durationGoal ?? Infinity);
 
           if (metDistance || metDuration) {
-            await updateDoc(userRef, {
-              activeChallenges: arrayRemove(challenge.id),
-              completedChallenges: arrayUnion(challenge.id),
-              xp: increment(challenge.xp || 100), // Optional XP reward
-            });
-
-            navigation.navigate("ChallengeCompletedScreen", {
-              challenge: {
-                name: challenge.name,
-                reward: `${challenge.xp || 100} XP`,
-                duration: formatMinutes((Date.now() - startTime) / 60000),
-                distance: (updated?.distance ?? 0).toFixed(2) + " miles",
-                status: "Completed",
-              },
-            });
+            await completeChallenge();
           }
         }
 
@@ -110,6 +95,64 @@ export default function RunChallengeProgressScreen({ route, navigation }) {
         setLocation(newCoord);
       }
     );
+  };
+
+  const completeChallenge = async () => {
+    const MET = getMET(challenge.category || "Run");
+    const weightKg = 70;
+    const timeHours = (Date.now() - startTime) / (1000 * 60 * 60);
+    const estimatedCaloriesBurned = MET * weightKg * timeHours;
+
+    await updateCareerStatByType(user.uid, "run", {
+      calories: Math.round(estimatedCaloriesBurned),
+    });
+
+    const userRef = doc(db, "users", user.uid);
+    await updateDoc(userRef, {
+      activeChallenges: arrayRemove(challenge.id),
+      completedChallenges: arrayUnion(challenge.id),
+      xp: increment(challenge.xp || 100),
+    });
+
+    navigation.navigate("ChallengeCompletedScreen", {
+      challenge: {
+        name: challenge.name,
+        reward: `${challenge.xp || 100} XP`,
+        duration: formatMinutes((Date.now() - startTime) / 60000),
+        distance: (progress?.distance ?? 0).toFixed(2) + " miles",
+        status: "Completed",
+      },
+    });
+  };
+
+  const handleTestComplete = async () => {
+    if (!user || !challenge) return;
+
+    const MET = getMET(challenge.category || "Run");
+    const weightKg = 70;
+    const timeHours = 0.01; 
+    const estimatedCaloriesBurned = MET * weightKg * timeHours;
+
+    await updateCareerStatByType(user.uid, "run", {
+      calories: Math.round(estimatedCaloriesBurned),
+    });
+
+    const userRef = doc(db, "users", user.uid);
+    await updateDoc(userRef, {
+      activeChallenges: arrayRemove(challenge.id),
+      completedChallenges: arrayUnion(challenge.id),
+      xp: increment(challenge.xp || 100),
+    });
+
+    navigation.navigate("ChallengeCompletedScreen", {
+      challenge: {
+        name: challenge.name,
+        reward: `${challenge.xp || 100} XP`,
+        duration: "0h 1m",
+        distance: "0.06 miles",
+        status: "Completed",
+      },
+    });
   };
 
   const toggleTracking = () => setIsTracking((prev) => !prev);
@@ -161,6 +204,11 @@ export default function RunChallengeProgressScreen({ route, navigation }) {
         <Text style={styles.infoText}>Session Time: {formatMinutes((Date.now() - startTime) / 60000)}</Text>
         <Button title={isTracking ? "Pause" : "Resume"} onPress={toggleTracking} />
 
+        {/* Test Complete Button */}
+        <TouchableOpacity style={styles.testCompleteButton} onPress={handleTestComplete}>
+          <Text style={styles.testCompleteText}>Test Complete (Dev Only)</Text>
+        </TouchableOpacity>
+
         <View style={styles.challengeCard}>
           <Text style={styles.challengeTitle}>{challenge.name}</Text>
           <Text style={styles.progressText}>
@@ -168,34 +216,6 @@ export default function RunChallengeProgressScreen({ route, navigation }) {
           </Text>
           <Button title="Quit Challenge" color="red" onPress={handleQuitChallenge} />
         </View>
-
-        {/* Dev: Manually test completion screen */}
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate("ChallengeCompletedScreen", {
-              challenge: {
-                name: "Test Running Challenge",
-                reward: "100 XP",
-                duration: "00:45:00",
-                distance: "5.0 miles",
-                status: "Completed",
-              },
-            })
-          }
-          style={{
-            backgroundColor: "#5A1A9B",
-            padding: 14,
-            borderRadius: 10,
-            marginTop: 20,
-            alignItems: "center",
-            width: "60%",
-            alignSelf: "center",
-          }}
-        >
-          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold" }}>
-            Test Completion Screen
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -204,38 +224,12 @@ export default function RunChallengeProgressScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  infoContainer: {
-    padding: 16,
-    backgroundColor: "#1E1E1E",
-  },
-  sessionTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  infoText: {
-    color: "#fff",
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  challengeCard: {
-    backgroundColor: "#333",
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 10,
-  },
-  challengeTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 6,
-  },
-  progressText: {
-    color: "#ddd",
-    fontSize: 15,
-    marginBottom: 4,
-  },
+  infoContainer: { padding: 16, backgroundColor: "#1E1E1E" },
+  sessionTitle: { color: "#fff", fontSize: 20, fontWeight: "bold", marginBottom: 12 },
+  infoText: { color: "#fff", fontSize: 16, marginBottom: 8 },
+  challengeCard: { backgroundColor: "#333", padding: 16, borderRadius: 12, marginVertical: 10 },
+  challengeTitle: { color: "#fff", fontSize: 18, fontWeight: "600", marginBottom: 6 },
+  progressText: { color: "#ddd", fontSize: 15, marginBottom: 4 },
   backButton: {
     position: "absolute",
     top: 50,
@@ -243,5 +237,17 @@ const styles = StyleSheet.create({
     zIndex: 999,
     backgroundColor: "#00000088",
     padding: 6,
+  },
+  testCompleteButton: {
+    backgroundColor: "#8e24aa",
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  testCompleteText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
 });

@@ -11,11 +11,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import Pressable from "react-native/Libraries/Components/Pressable/Pressable";
 import { fetchCompletedChallenges } from "../../services/challengeService";
 
@@ -52,9 +48,10 @@ const ChallengesScreen = () => {
     const getCompleted = async () => {
       try {
         const data = await fetchCompletedChallenges();
-        setCompletedChallenges(data);
+        setCompletedChallenges(Object.keys(data || {}));
       } catch (e) {
-        console.error("Error:", e);
+        console.error("Error fetching completed challenges:", e);
+        setCompletedChallenges([]);
       } finally {
         setLoading(false);
       }
@@ -66,17 +63,13 @@ const ChallengesScreen = () => {
     id: `challengeId${index + 1}`,
     month,
     status:
-      index === currentMonthIndex
-        ? "Active"
-        : index < currentMonthIndex
-        ? "Completed"
-        : "Upcoming",
+      index === currentMonthIndex ? "Active" : index < currentMonthIndex ? "Completed" : "Upcoming",
   }));
 
+  const safeCompletedChallenges = completedChallenges || [];
+
   const active = challenges.filter(c => c.status === "Active");
-  const completed = challenges.filter(
-    c => c.status === "Completed" && completedChallenges.includes(c.id)
-  );
+  const completed = challenges.filter(c => c.status === "Completed" && safeCompletedChallenges.includes(c.id));
   const upcoming = challenges.filter(c => c.status === "Upcoming");
 
   if (loading) {
@@ -90,17 +83,8 @@ const ChallengesScreen = () => {
   }
 
   return (
-    <ScrollView
-  contentContainerStyle={{ ...styles.container, paddingBottom: 100 }}
-  bounces={false}
->
-
-      <LinearGradient
-        colors={headerGradientColors}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={styles.headerGradient}
-      >
+    <ScrollView contentContainerStyle={{ ...styles.container, paddingBottom: 100 }} bounces={false}>
+      <LinearGradient colors={headerGradientColors} start={{ x: 1, y: 0 }} end={{ x: 0, y: 1 }} style={styles.headerGradient}>
         <View style={styles.headerContent}>
           <Text style={styles.headerText}>Challenges</Text>
           <Text style={styles.levelText}>Level 3 • 720 XP / 1000 XP</Text>
@@ -139,7 +123,6 @@ const ChallengesScreen = () => {
       <ChallengeSection title="⏳ Upcoming" data={upcoming} type="Upcoming" />
       <ChallengeSection title="✅ Completed" data={completed} type="Completed" />
     </ScrollView>
-    
   );
 };
 
@@ -147,7 +130,7 @@ const ChallengeSection = ({ title, data, type }) => (
   <View style={styles.section}>
     <Text style={styles.sectionTitle}>{title}</Text>
     {data.length ? (
-      data.map((item) => (
+      data.map(item => (
         <QuestCard key={item.id} item={item} type={type} locked={type === "Upcoming"} />
       ))
     ) : (
@@ -164,11 +147,7 @@ const QuestCard = ({ item, type, goal, progress, reward, onPress, locked }) => {
 
   const isLocked = locked || type === "Upcoming";
   const badgeGradient =
-    type === "Active"
-      ? ["#7C3AED", "#7C3AED"]
-      : type === "Upcoming"
-      ? ["#444", "#222"]
-      : standardGradientColors;
+    type === "Active" ? ["#7C3AED", "#7C3AED"] : type === "Upcoming" ? ["#444", "#222"] : standardGradientColors;
 
   return (
     <Pressable
@@ -177,24 +156,12 @@ const QuestCard = ({ item, type, goal, progress, reward, onPress, locked }) => {
       onPressOut={() => (scale.value = withSpring(1))}
       onPress={onPress}
     >
-      <Animated.View
-        style={[
-          styles.questCard,
-          animatedStyle,
-          isLocked && styles.lockedCard,
-          type === "Active" && styles.activeCardBorder,
-        ]}
-      >
+      <Animated.View style={[styles.questCard, animatedStyle, isLocked && styles.lockedCard, type === "Active" && styles.activeCardBorder]}>
         <Text style={styles.questTitle}>{item.month} Challenge</Text>
         {goal && <Text style={styles.questDetail}>🎯 Goal: {goal}</Text>}
         {progress && <Text style={styles.questDetail}>📊 Progress: {progress}</Text>}
-        {reward && <Text style={styles.questDetail}>🎁 Reward: {reward}</Text>}
-        <LinearGradient
-          colors={badgeGradient}
-          start={{ x: 1, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={styles.questBadge}
-        >
+        {reward && <Text style={styles.questDetail}>🏰 Reward: {reward}</Text>}
+        <LinearGradient colors={badgeGradient} start={{ x: 1, y: 0 }} end={{ x: 0, y: 1 }} style={styles.questBadge}>
           <Text style={styles.badgeText}>{type.toUpperCase()}</Text>
         </LinearGradient>
       </Animated.View>
@@ -203,16 +170,8 @@ const QuestCard = ({ item, type, goal, progress, reward, onPress, locked }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: bgDark,
-    paddingBottom: 50,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: bgDark,
-  },
+  container: { backgroundColor: bgDark, paddingBottom: 50 },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: bgDark },
   headerGradient: {
     paddingTop: Platform.OS === "ios" ? 60 : StatusBar.currentHeight + 20,
     paddingBottom: 40,
@@ -220,116 +179,29 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
   },
-  headerContent: {
-    paddingTop: 10,
-  },
-  headerText: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
-    fontFamily: "TiltWarp-Regular",
-    textAlign: "center",
-  },
-  levelText: {
-    textAlign: "center",
-    fontSize: 14,
-    color: "#ddd",
-    marginTop: 4,
-  },
-  xpTrack: {
-    height: 8,
-    backgroundColor: "#333",
-    borderRadius: 5,
-    marginTop: 10,
-    overflow: "hidden",
-  },
-  xpFill: {
-    height: 8,
-    backgroundColor: "#7C3AED",
-    borderRadius: 5,
-  },
-  countdown: {
-    color: "#bbb",
-    fontSize: 12,
-    marginTop: 6,
-    textAlign: "center",
-  },
-  progressPanel: {
-    padding: 20,
-  },
-  panelTitle: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 14,
-  },
-  myChallengesButton: {
-    marginTop: 18,
-    borderRadius: 20,
-    overflow: "hidden",
-  },
-  myChallengesButtonGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 20,
-  },
-  myChallengesText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "bold",
-  },
-  section: {
-    paddingHorizontal: 20,
-    marginTop: 20,
-  },
-  sectionTitle: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  questCard: {
-    backgroundColor: cardDark,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 14,
-  },
-  activeCardBorder: {
-    borderColor: standardGradientColors[0],
-    borderWidth: 1.5,
-  },
-  questTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    fontFamily: "TiltWarp-Regular",
-  },
-  questDetail: {
-    color: "#bbb",
-    fontSize: 13,
-    marginTop: 4,
-  },
-  questBadge: {
-    alignSelf: "flex-start",
-    marginTop: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "bold",
-  },
-  emptyText: {
-    color: "#666",
-    fontStyle: "italic",
-  },
-  lockedCard: {
-    opacity: 0.5,
-  },
+  headerContent: { paddingTop: 10 },
+  headerText: { fontSize: 24, fontWeight: "bold", color: "#fff", textAlign: "center" },
+  levelText: { textAlign: "center", fontSize: 14, color: "#ddd", marginTop: 4 },
+  xpTrack: { height: 8, backgroundColor: "#333", borderRadius: 5, marginTop: 10, overflow: "hidden" },
+  xpFill: { height: 8, backgroundColor: "#7C3AED", borderRadius: 5 },
+  countdown: { color: "#bbb", fontSize: 12, marginTop: 6, textAlign: "center" },
+  progressPanel: { padding: 20 },
+  panelTitle: { color: "#fff", fontSize: 16, fontWeight: "bold", marginBottom: 14 },
+  myChallengesButton: { marginTop: 18, borderRadius: 20, overflow: "hidden" },
+  myChallengesButtonGradient: { flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 12, borderRadius: 20 },
+  myChallengesText: { color: "#fff", fontSize: 15, fontWeight: "bold" },
+  section: { paddingHorizontal: 20, marginTop: 20 },
+  sectionTitle: { color: "#fff", fontSize: 17, fontWeight: "bold", marginBottom: 12 },
+  questCard: { backgroundColor: cardDark, padding: 16, borderRadius: 16, marginBottom: 14 },
+  activeCardBorder: { borderColor: standardGradientColors[0], borderWidth: 1.5 },
+  questTitle: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  questDetail: { color: "#bbb", fontSize: 13, marginTop: 4 },
+  questBadge: { alignSelf: "flex-start", marginTop: 10, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  badgeText: { color: "#fff", fontSize: 11, fontWeight: "bold" },
+  emptyText: { color: "#666", fontStyle: "italic" },
+  lockedCard: { opacity: 0.5 },
 });
 
 export default ChallengesScreen;
+
+

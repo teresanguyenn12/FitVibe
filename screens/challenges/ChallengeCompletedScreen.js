@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, Image, TouchableOpacity, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,10 +12,12 @@ export default function ChallengeCompletedScreen() {
   const route = useRoute();
   const { challenge } = route.params;
   const user = auth.currentUser;
+
   const [xpAmount, setXpAmount] = useState(0);
   const [badgeImage, setBadgeImage] = useState(null);
   const [level, setLevel] = useState(null);
   const [fitcoinReward, setFitcoinReward] = useState(0);
+  const [ringAnimation] = useState(new Animated.Value(0));
 
   useEffect(() => {
     if (challenge?.reward) {
@@ -48,16 +50,42 @@ export default function ChallengeCompletedScreen() {
     if (user && xpAmount) {
       const userRef = doc(db, "users", user.uid);
       try {
+        // Update XP and FitCoin
         await updateDoc(userRef, {
           xp: increment(xpAmount),
           fitcoin: increment(fitcoinReward),
         });
+
+        // Update Career Stats: Challenges Completed + Calories Burned
+        const MET = challenge?.category === "Walk" ? 3.5 : (challenge?.category === "Run" ? 8 : 6);
+        const timeHours = (challenge?.duration ? parseFloat(challenge.duration) : 0) / 60;
+        const estimatedCaloriesBurned = MET * 70 * timeHours;
+
+        await updateDoc(userRef, {
+          challenges: increment(1),
+          burnedCalories: increment(Math.round(estimatedCaloriesBurned)),
+          completedChallenges: increment(1), // Optional: also count in completed challenges
+        });
+
         navigation.navigate("Progression");
       } catch (err) {
-        console.error("Error updating XP and FitCoin:", err);
+        console.error("Error updating stats:", err);
       }
     }
   };
+
+  useEffect(() => {
+    Animated.timing(ringAnimation, {
+      toValue: 1,
+      duration: 1500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const ringScale = ringAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 1],
+  });
 
   return (
     <View style={styles.container}>
@@ -70,15 +98,15 @@ export default function ChallengeCompletedScreen() {
 
       <Ionicons name="checkmark-circle" size={80} color="limegreen" style={styles.icon} />
       <Text style={styles.title}>Challenge Completed!</Text>
-      <Text style={styles.subtitle}>XP Level {level ?? "..."}</Text>
+      <Text style={styles.subtitle}>Level {level ?? "..."}</Text>
 
       {/* Progress Ring */}
       <View style={styles.progressContainer}>
-        <View style={styles.outerRing}>
+        <Animated.View style={[styles.outerRing, { transform: [{ scale: ringScale }] }]}>
           <View style={styles.innerRing}>
             {badgeImage && <Image source={badgeImage} style={styles.iconImage} />}
           </View>
-        </View>
+        </Animated.View>
         <Text style={styles.xpText}>+{xpAmount} XP</Text>
       </View>
 
@@ -90,7 +118,7 @@ export default function ChallengeCompletedScreen() {
 
       <TouchableOpacity onPress={handleClaim}>
         <LinearGradient colors={["#fff", "#eee"]} style={styles.claimButton}>
-          <Text style={styles.claimText}>Claim</Text>
+          <Text style={styles.claimText}>Claim Reward</Text>
         </LinearGradient>
       </TouchableOpacity>
     </View>
