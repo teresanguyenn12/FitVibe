@@ -31,7 +31,6 @@ const HomeScreen = () => {
   const [trendingChallenge, setTrendingChallenge] = useState(null);
   const wave = useSharedValue(0);
   const { theme } = useTheme();
-  
 
   const mutedGradientCombos = [
     {
@@ -189,9 +188,9 @@ const HomeScreen = () => {
       <View style={styles.greetingWrapper}>
         <Text style={[styles.greeting, { color: theme.text }]}>
           Hello {user.firstName}
-          <Animated.Text style={[styles.emoji, waveStyle]}> 👋</Animated.Text>
+          <Animated.Text style={[styles.emoji, waveStyle, { color: theme.text }]}> 👋</Animated.Text>
         </Text>
-        <Text style={[styles.subtext, { color: theme.subtext }]}>Let's get active!</Text>
+        <Text style={[styles.subtext, { color: theme.secondaryText }]}>Let's get active!</Text>
       </View>
 
       {/* Trending Challenge */}
