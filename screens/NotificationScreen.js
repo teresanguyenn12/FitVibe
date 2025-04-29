@@ -1,21 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { getIndieNotificationInbox, deleteIndieNotificationInbox } from 'native-notify';
-import { View, Text, Image, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useCallback } from 'react';
+import { getIndieNotificationInbox, deleteIndieNotificationInbox, getNotificationInbox } from 'native-notify';
+import { View, Text, Image, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, SafeAreaView } from "react-native";
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { getAuth } from 'firebase/auth';
 
 export default function NotificationScreen() {
-    const [data, setData] = useState([]);
+    const navigation = useNavigation();
+    const [activeTab, setActiveTab] = useState('personal');
+    const [personalData, setPersonalData] = useState([]);
+    const [systemData, setSystemData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const auth = getAuth();
     const currentUser = auth.currentUser;
 
-    useEffect(() => {
-        fetchNotifications();
-    }, []);
-
-    const fetchNotifications = async () => {
+    // Fetch personal notifications (indie notifications)
+    const fetchPersonalNotifications = async () => {
         if (!currentUser || !currentUser.uid) {
             setError("User not authenticated");
             setLoading(false);
@@ -32,30 +33,74 @@ export default function NotificationScreen() {
                 10, // take: number of notifications to fetch
                 0   // skip: number of notifications to skip (for pagination)
             );
-            console.log("notifications: ", notifications);
-            setData(notifications);
+            console.log("personal notifications: ", notifications);
+            setPersonalData(notifications);
             setLoading(false);
         } catch (err) {
-            console.error("Error fetching notifications:", err);
+            console.error("Error fetching personal notifications:", err);
             setError("Failed to load notifications");
             setLoading(false);
         }
     };
 
-    const handleDeleteNotification = async (notificationId) => {
+    // Fetch system notifications
+    const fetchSystemNotifications = async () => {
         try {
-            // First parameter is the subscriber ID (user's UID), second is the notification ID
-            const notifications = await deleteIndieNotificationInbox(
+            setLoading(true);
+            const notifications = await getNotificationInbox(
+                29298,
+                'u04gYyaVKbAobwZ9ojzShp',
+                10, // take: number of notifications to fetch
+                0   // skip: number of notifications to skip (for pagination)
+            );
+            console.log("system notifications: ", notifications);
+            setSystemData(notifications);
+            setLoading(false);
+        } catch (err) {
+            console.error("Error fetching system notifications:", err);
+            setError("Failed to load system notifications");
+            setLoading(false);
+        }
+    };
+
+    // Fetch notifications based on active tab
+    const fetchNotifications = () => {
+        if (activeTab === 'personal') {
+            fetchPersonalNotifications();
+        } else {
+            fetchSystemNotifications();
+        }
+    };
+
+    // Effect to fetch notifications when tab changes
+    useFocusEffect(
+        useCallback(() => {
+            fetchNotifications();
+        }, [activeTab])
+    );
+
+    const handleDeleteNotification = async (notificationId) => {
+        if (!currentUser || !currentUser.uid) {
+            console.error("Cannot delete notification: User not authenticated");
+            setError("Authentication required to delete notifications");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            await deleteIndieNotificationInbox(
                 currentUser.uid,
                 notificationId,
                 29298,
                 'u04gYyaVKbAobwZ9ojzShp'
             );
-            console.log("notifications: ", notifications);
-            setData(notifications);
+
+            // After deletion, refresh the notifications list
+            fetchPersonalNotifications();
         } catch (err) {
             console.error("Error deleting notification:", err);
             setError("Failed to delete notification");
+            setLoading(false);
         }
     };
 
@@ -76,7 +121,7 @@ export default function NotificationScreen() {
         }
     };
 
-    const renderNotificationItem = ({ item }) => (
+    const renderPersonalNotificationItem = ({ item }) => (
         <TouchableOpacity style={styles.userRow}>
             {item.image ? (
                 <Image
@@ -102,7 +147,7 @@ export default function NotificationScreen() {
             </View>
             <TouchableOpacity
                 style={{ padding: 10 }}
-                onPress={() => handleDeleteNotification(item.id)}
+                onPress={() => handleDeleteNotification(item.notification_id)}
             >
                 <Ionicons name="trash-outline" size={20} color="#ff6b6b" />
             </TouchableOpacity>
@@ -118,22 +163,38 @@ export default function NotificationScreen() {
         </TouchableOpacity>
     );
 
-    const renderEmptyList = () => (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40 }}>
-            <Text style={styles.noBlockedText}>No notifications yet</Text>
-            <TouchableOpacity
-                style={styles.unblockButton}
-                onPress={fetchNotifications}
-            >
-                <Text style={styles.unblockButtonText}>Refresh</Text>
-            </TouchableOpacity>
-        </View>
+    const renderSystemNotificationItem = ({ item }) => (
+        <TouchableOpacity style={styles.userRow}>
+            <View style={[styles.avatar, { backgroundColor: "#2B2D31", justifyContent: 'center', alignItems: 'center' }]}>
+                <Ionicons
+                    name="information-circle-outline"
+                    size={24}
+                    color="#fff"
+                />
+            </View>
+            <View style={styles.userInfo}>
+                <Text style={styles.name} numberOfLines={1}>{item.title || 'System Notification'}</Text>
+                <Text style={styles.handle} numberOfLines={2}>{item.message}</Text>
+                <Text style={[styles.handle, { fontSize: 12, marginTop: 4 }]}>
+                    {formatDate(item.created_at)}
+                </Text>
+            </View>
+            {!item.read && (
+                <View style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: "#8e24aa",
+                    marginLeft: 10
+                }} />
+            )}
+        </TouchableOpacity>
     );
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.headerContainer}>
-                <TouchableOpacity style={styles.backButton}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
                 <Text style={styles.headerText}>Notifications</Text>
@@ -141,40 +202,148 @@ export default function NotificationScreen() {
                     <Ionicons name="refresh" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>
+            <View style={styles.tabContainer}>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'personal' ? styles.activeTab : null]}
+                    onPress={() => setActiveTab('personal')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'personal' ? styles.activeTabText : null]}>Personal</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'system' ? styles.activeTab : null]}
+                    onPress={() => setActiveTab('system')}
+                >
+                    <Text style={[styles.tabText, activeTab === 'system' ? styles.activeTabText : null]}>System</Text>
+                </TouchableOpacity>
+            </View>
 
             {loading ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#8e24aa" />
                 </View>
             ) : error ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-                    <Text style={{ color: '#ff6b6b', fontSize: 16, marginBottom: 20 }}>{error}</Text>
-                    <TouchableOpacity
-                        style={styles.unblockButton}
-                        onPress={fetchNotifications}
-                    >
-                        <Text style={styles.unblockButtonText}>Retry</Text>
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity style={styles.retryButton} onPress={fetchNotifications}>
+                        <Text style={styles.retryText}>Retry</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
                 <FlatList
-                    data={data}
-                    renderItem={renderNotificationItem}
-                    keyExtractor={(item) => (item.id ? item.id.toString() : Math.random().toString())}
-                    contentContainerStyle={{ flexGrow: 1 }}
-                    ListEmptyComponent={renderEmptyList}
-                    showsVerticalScrollIndicator={false}
+                    data={activeTab === 'personal' ? personalData : systemData}
+                    renderItem={activeTab === 'personal' ? renderPersonalNotificationItem : renderSystemNotificationItem}
+                    keyExtractor={(item) => item.notification_id.toString()}
+                    contentContainerStyle={styles.listContent}
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <Ionicons name="notifications-off-outline" size={60} color="#4A4A4A" />
+                            <Text style={styles.emptyText}>No notifications yet</Text>
+                        </View>
+                    }
                 />
             )}
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#131417",
-        paddingTop: 50,
+        backgroundColor: '#1A1A1A',
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        marginVertical: 15,
+        marginHorizontal: 20,
+        backgroundColor: '#2B2D31',
+        borderRadius: 20,
+        padding: 4,
+    },
+    tab: {
+        flex: 1,
+        paddingVertical: 10,
+        alignItems: 'center',
+        borderRadius: 18,
+    },
+    activeTab: {
+        backgroundColor: '#8e24aa',
+    },
+    tabText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#AAAAAA',
+    },
+    activeTabText: {
+        color: '#FFFFFF',
+    },
+    listContent: {
+        paddingHorizontal: 20,
+        paddingBottom: 40,
+    },
+    userRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    },
+    avatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        marginRight: 15,
+    },
+    userInfo: {
+        flex: 1,
+    },
+    name: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+    },
+    handle: {
+        fontSize: 14,
+        color: '#AAAAAA',
+        marginTop: 3,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    errorText: {
+        color: '#FF6B6B',
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    retryButton: {
+        backgroundColor: '#8e24aa',
+        paddingVertical: 12,
+        paddingHorizontal: 25,
+        borderRadius: 20,
+    },
+    retryText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: 100,
+    },
+    emptyText: {
+        marginTop: 20,
+        fontSize: 16,
+        color: '#4A4A4A',
     },
     headerContainer: {
         flexDirection: "row",
@@ -193,56 +362,4 @@ const styles = StyleSheet.create({
         fontWeight: "bold",
         color: "#FFFFFF",
     },
-    userRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: "#2B2D31",
-    },
-    profileButton: {
-        flexDirection: 'row',
-        flex: 1,
-        alignItems: 'center'
-    },
-    avatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        marginRight: 15
-    },
-    userInfo: {
-        flex: 1
-    },
-    name: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: "600"
-    },
-    handle: {
-        color: '#888',
-        fontSize: 14,
-        marginTop: 2
-    },
-    unblockButton: {
-        backgroundColor: "#2B2D31",
-        paddingVertical: 8,
-        paddingHorizontal: 15,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: "#8e24aa",
-    },
-    unblockButtonText: {
-        color: "#FFFFFF",
-        fontWeight: "600",
-        fontSize: 14,
-    },
-    noBlockedText: {
-        color: "#8e8e8e",
-        fontSize: 16,
-        textAlign: "center",
-        marginBottom: 20,
-        fontStyle: "italic",
-    }
 });

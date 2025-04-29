@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   statValue: { color: "#fff", fontSize: 18, fontWeight: "bold" },
   statLabel: { color: "#aaa", fontSize: 13, marginTop: 2 },
   statIcon: { marginBottom: 6 },
-<<<<<<< Updated upstream
+
   goalsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -262,9 +262,7 @@ const styles = StyleSheet.create({
     padding: 4,
     borderRadius: 10,
   },  
-=======
-  goalsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
->>>>>>> Stashed changes
+
 });
 
 export default ProfileScreen;

@@ -8,6 +8,7 @@ import {
     TouchableOpacity,
     SafeAreaView,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -167,7 +168,11 @@ const FriendsListScreen = () => {
             </View>
 
             {/* Friend List */}
-            {list.length === 0 ? (
+            {loading ? (
+                <View style={styles.loaderContainer}>
+                    <ActivityIndicator size="large" color="#5A1A9B" />
+                </View>
+            ) : list.length === 0 ? (
                 <Text style={styles.emptyText}>
                     No {activeTab === 'followers' ? 'followers' : 'followings'} yet.
                 </Text>
