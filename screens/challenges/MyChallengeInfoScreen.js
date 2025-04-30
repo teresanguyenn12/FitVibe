@@ -1,4 +1,3 @@
-// Detail Info of User's active challenges
 import React, { useState, useCallback } from "react";
 import {
   View,
@@ -14,6 +13,8 @@ import {
 } from "@react-navigation/native";
 import { auth, db } from "../../firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function MyChallengeDetailsScreen() {
   const route = useRoute();
@@ -68,64 +69,108 @@ export default function MyChallengeDetailsScreen() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={30} color="#fff" />
-      </TouchableOpacity>
-
-
-
-      <Text style={styles.title}>{challenge.name}</Text>
+      <LinearGradient colors={["#5A1A9B", "#1A4A80"]} style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={26} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.title}>{challenge.name}</Text>
+        <View style={styles.progressBadge}>
+          <Text style={styles.progressText}>{calculateProgress()} complete</Text>
+        </View>
+      </LinearGradient>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#A0006D" />
+        <ActivityIndicator size="large" color="#A0006D" style={{ marginTop: 40 }} />
       ) : (
-        <>
-          <Text style={styles.detailText}>
-            <Text style={styles.bold}>Progress:</Text> {calculateProgress()}
-          </Text>
-
-          <Text style={styles.detailText}>
-            <Text style={styles.bold}>Distance:</Text>{" "}
-            {(progress?.distance ?? 0).toFixed(2)} / {challenge.distanceGoal ?? "?"} mi
-          </Text>
-
-          <Text style={styles.detailText}>
-            <Text style={styles.bold}>Duration:</Text>{" "}
-            {formatMinutes(progress?.duration ?? 0)} / {formatMinutes(challenge.durationGoal ?? 0)}
-          </Text>
-        </>
+        <View style={styles.card}>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Distance:</Text>
+            <Text style={styles.statValue}>
+              {(progress?.distance ?? 0).toFixed(2)} / {challenge.distanceGoal ?? "?"} mi
+            </Text>
+          </View>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Duration:</Text>
+            <Text style={styles.statValue}>
+              {formatMinutes(progress?.duration ?? 0)} /{" "}
+              {formatMinutes(challenge.durationGoal ?? 0)}
+            </Text>
+          </View>
+        </View>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#121212" },
-  backButton: { marginBottom: 20 },
-  backText: { color: "#A0006D", fontSize: 18, fontWeight: "bold" },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
-    textAlign: "center",
-    marginBottom: 20,
+  container: {
+    flex: 1,
+    backgroundColor: "#131417",
   },
-  detailText: {
-    fontSize: 16,
-    color: "#bbb",
-    marginBottom: 10,
-  },
-  bold: {
-    fontWeight: "bold",
-    color: "#fff",
+  header: {
+    paddingTop: 60,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
   backButton: {
     position: "absolute",
-    top: 50,
+    top: 60,
     left: 20,
-    zIndex: 999,
-    backgroundColor: "#00000088",
     padding: 6,
+    backgroundColor: "#00000066",
+    borderRadius: 20,
+    zIndex: 99,
   },
-  
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+    marginTop: 10,
+  },
+  progressBadge: {
+    backgroundColor: "#FFD700",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 50,
+    marginTop: 10,
+  },
+  progressText: {
+    fontWeight: "bold",
+    fontSize: 14,
+    color: "#000",
+  },
+  card: {
+    backgroundColor: "#2B2D31",
+    margin: 20,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+  },
+  statRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  statLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ccc",
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+  },
 });
