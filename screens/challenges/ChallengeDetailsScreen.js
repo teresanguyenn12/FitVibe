@@ -6,7 +6,13 @@ import * as Location from "expo-location";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { auth, db } from "../../firebase";
-import { doc, setDoc, serverTimestamp, arrayUnion } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  serverTimestamp,
+  arrayUnion,
+  increment,
+} from "firebase/firestore";
 
 const ChallengeDetailsScreen = ({ route }) => {
   const { challenge } = route.params;
@@ -14,6 +20,8 @@ const ChallengeDetailsScreen = ({ route }) => {
   const [city, setCity] = useState("Loading...");
   const navigation = useNavigation();
   const user = auth.currentUser;
+  const challengeRef = doc(db, "challenges", challenge.id);
+  const userRef = doc(db, "users", user.uid);
 
   useEffect(() => {
     let locationSubscription = null;
@@ -33,7 +41,9 @@ const ChallengeDetailsScreen = ({ route }) => {
         },
         async (newLocation) => {
           setLocation(newLocation.coords);
-          const geoData = await Location.reverseGeocodeAsync(newLocation.coords);
+          const geoData = await Location.reverseGeocodeAsync(
+            newLocation.coords
+          );
           if (geoData.length > 0) {
             const place = geoData[0];
             setCity(place.city || place.region || place.name);
@@ -60,19 +70,32 @@ const ChallengeDetailsScreen = ({ route }) => {
 
       const userRef = doc(db, "users", user.uid);
 
-      await setDoc(
-        userRef,
-        {
-          activeChallenges: arrayUnion(challenge.id),
-          [`challengeProgress.${challenge.id}`]: {
-            distance: 0,
-            duration: 0,
-            startedAt: serverTimestamp(),
-            lastUpdated: serverTimestamp(),
+      await Promise.all([
+        // 1. Update user document
+        setDoc(
+          userRef,
+          {
+            activeChallenges: arrayUnion(challenge.id),
+            [`challengeProgress.${challenge.id}`]: {
+              distance: 0,
+              duration: 0,
+              startedAt: serverTimestamp(),
+              lastUpdated: serverTimestamp(),
+            },
           },
-        },
-        { merge: true }
-      );
+          { merge: true }
+        ),
+
+        // 2. Update challenge document
+        setDoc(
+          challengeRef,
+          {
+            participants: arrayUnion(user.uid),
+            participantCount: increment(1), // 🔥 this increases popularity
+          },
+          { merge: true }
+        ),
+      ]);
 
       const categoryToConfirmScreen = {
         Run: "RunConfirmSoloChallenge",
@@ -105,7 +128,10 @@ const ChallengeDetailsScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
         <Ionicons name="arrow-back" size={30} color="#fff" />
       </TouchableOpacity>
 
@@ -126,22 +152,38 @@ const ChallengeDetailsScreen = ({ route }) => {
           }
         }
       >
-        {location && <Marker coordinate={location} title="You" pinColor="blue" />}
+        {location && (
+          <Marker coordinate={location} title="You" pinColor="blue" />
+        )}
       </MapView>
 
       <View style={styles.detailsContainer}>
         <Text style={styles.challengeTitle}>{challenge.name}</Text>
-        <Text style={styles.detailText}><Text style={{ fontWeight: "bold" }}>Location:</Text> {city}</Text>
-        <Text style={styles.detailText}><Text style={{ fontWeight: "bold" }}>Distance:</Text> {challenge.distance || "10 miles"}</Text>
-        <Text style={styles.detailText}><Text style={{ fontWeight: "bold" }}>Duration:</Text> {challenge.duration || "24 hours"}</Text>
-        <Text style={styles.detailText}><Text style={{ fontWeight: "bold" }}>Reward:</Text> {challenge.reward || "+500 XP"}</Text>
+        <Text style={styles.detailText}>
+          <Text style={{ fontWeight: "bold" }}>Location:</Text> {city}
+        </Text>
+        <Text style={styles.detailText}>
+          <Text style={{ fontWeight: "bold" }}>Distance:</Text>{" "}
+          {challenge.distance || "10 miles"}
+        </Text>
+        <Text style={styles.detailText}>
+          <Text style={{ fontWeight: "bold" }}>Duration:</Text>{" "}
+          {challenge.duration || "24 hours"}
+        </Text>
+        <Text style={styles.detailText}>
+          <Text style={{ fontWeight: "bold" }}>Reward:</Text>{" "}
+          {challenge.reward || "+500 XP"}
+        </Text>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button} onPress={handleJoinSolo}>
             <Text style={styles.buttonText}>Join Solo</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.buttonOutline} onPress={handleInviteFriend}>
+          <TouchableOpacity
+            style={styles.buttonOutline}
+            onPress={handleInviteFriend}
+          >
             <Text style={styles.buttonTextOutline}>Invite a Friend</Text>
           </TouchableOpacity>
         </View>
