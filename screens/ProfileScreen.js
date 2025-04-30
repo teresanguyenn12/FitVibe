@@ -25,6 +25,7 @@ import {
 import { getAuth } from "firebase/auth";
 import { useTheme } from "../contexts/ThemeContext";
 import PostCard from "../screens/components/PostCard";
+
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const auth = getAuth();
@@ -32,8 +33,8 @@ const ProfileScreen = () => {
   const currentUser = auth.currentUser;
   const { theme } = useTheme();
 
-  const isDarkMode = theme.background === "#131417" || theme.background === "#000000"; // <-- dark check
-  const secondaryTextColor = isDarkMode ? "#CCCCCC" : "#555555"; // <-- dynamic color!
+  const isDarkMode = theme.background === "#131417" || theme.background === "#000000";
+  const secondaryTextColor = isDarkMode ? "#CCCCCC" : "#555555";
 
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -183,7 +184,7 @@ const ProfileScreen = () => {
           </View>
           <View style={styles.statItem}>
             <Ionicons name="flame-outline" size={22} color={theme.text} />
-            <Text style={[styles.statValue, { color: theme.text }]}>{calories}</Text>
+            <Text style={[styles.statValue, { color: theme.text }]}>{burnedCalories}</Text>
             <Text style={[styles.statLabel, { color: secondaryTextColor }]}>Calories</Text>
           </View>
           <View style={styles.statItem}>

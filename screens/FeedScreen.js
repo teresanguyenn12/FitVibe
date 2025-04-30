@@ -68,6 +68,7 @@ export default function FeedScreen() {
           const postData = docSnap.data();
           const userDoc = await getDoc(doc(db, "users", postData.userId));
           const userData = userDoc.exists() ? userDoc.data() : {};
+          
           return {
             id: docSnap.id,
             ...postData,
@@ -76,6 +77,11 @@ export default function FeedScreen() {
             rank: userData.rank || "Rookie",
             isPrivate: userData.isPrivate || false,
             ownerFollowers: userData.followers || [], 
+            calories: postData.calories || 0,
+            workoutType: postData.workoutType || "General",
+            workoutLabel: postData.workoutLabel || "Workout",
+            likes: postData.likes || [],
+            comments: postData.comments || []
           };
         })
       );
@@ -160,6 +166,7 @@ export default function FeedScreen() {
         description: postData.description,
         workoutType: postData.workoutType,
         workoutLabel: postData.workoutLabel,
+        calories: postData.calories || 0,
         media: uploadedUrls,
         timestamp: serverTimestamp(),
         likes: [],
@@ -190,6 +197,47 @@ export default function FeedScreen() {
       prev.map((p) => (p.id === post.id ? { ...p, likes: newLikes } : p))
     );
   };
+
+  // Dynamic styles based on theme
+  const styles = StyleSheet.create({
+    container: { 
+      flex: 1,
+      backgroundColor: theme.background,
+    },
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: 16,
+      backgroundColor: theme.headerBg,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.border,
+      marginBottom: 20,
+    },
+    title: {
+      fontSize: 22,
+      fontWeight: "bold",
+      color: theme.text,
+    },
+    uploadingBar: {
+      padding: 10,
+      marginHorizontal: 20,
+      borderRadius: 10,
+      marginBottom: 10,
+      backgroundColor: theme.card,
+    },
+    uploadProgressBackground: {
+      height: 8,
+      backgroundColor: theme.mode === 'dark' ? '#444' : '#E0E0E0',
+      borderRadius: 4,
+      marginTop: 6,
+    },
+    uploadProgressBar: {
+      height: 8,
+      backgroundColor: theme.primary,
+      borderRadius: 4,
+    },
+  });
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -225,6 +273,7 @@ export default function FeedScreen() {
             user={user}
             handleLike={handleLike}
             handleDelete={handleDelete}
+            theme={theme}
           />
         )}
         refreshControl={
@@ -233,6 +282,7 @@ export default function FeedScreen() {
             onRefresh={handleRefresh}
             colors={[theme.primary]}
             tintColor={theme.primary}
+            progressBackgroundColor={theme.card}
           />
         }
         contentContainerStyle={{ paddingBottom: 100 }}
