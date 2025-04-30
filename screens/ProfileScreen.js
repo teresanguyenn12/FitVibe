@@ -25,6 +25,7 @@ import {
 import { getAuth } from "firebase/auth";
 import { useTheme } from "../contexts/ThemeContext";
 import PostCard from "../screens/components/PostCard";
+
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const auth = getAuth();
@@ -32,8 +33,8 @@ const ProfileScreen = () => {
   const currentUser = auth.currentUser;
   const { theme } = useTheme();
 
-  const isDarkMode = theme.background === "#131417" || theme.background === "#000000"; // <-- dark check
-  const secondaryTextColor = isDarkMode ? "#CCCCCC" : "#555555"; // <-- dynamic color!
+  const isDarkMode = theme.background === "#131417" || theme.background === "#000000";
+  const secondaryTextColor = isDarkMode ? "#CCCCCC" : "#555555";
 
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -144,11 +145,11 @@ const ProfileScreen = () => {
             }
             style={styles.countItem}
           >
-            <Text style={styles.countNumber}>{followers.length}</Text>
-            <Text style={styles.countLabel}>Followers</Text>
+            <Text style={[styles.countNumber, { color: theme.text }]}>{followers.length}</Text>
+            <Text style={[styles.countLabel, { color: secondaryTextColor }]}>Followers</Text>
           </TouchableOpacity>
 
-          <View style={styles.verticalDivider} />
+          <View style={[styles.verticalDivider, { backgroundColor: secondaryTextColor }]} />
 
           <TouchableOpacity
             onPress={() =>
@@ -156,8 +157,8 @@ const ProfileScreen = () => {
             }
             style={styles.countItem}
           >
-            <Text style={styles.countNumber}>{following.length}</Text>
-            <Text style={styles.countLabel}>Following</Text>
+            <Text style={[styles.countNumber, { color: theme.text }]}>{following.length}</Text>
+            <Text style={[styles.countLabel, { color: secondaryTextColor }]}>Following</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -176,15 +177,14 @@ const ProfileScreen = () => {
             <Ionicons
               name="trophy-outline"
               size={22}
-              color="#fff"
-              style={styles.statIcon}
+              color={theme.text}
             />
-            <Text style={styles.statValue}>{challenges}</Text>
-            <Text style={styles.statLabel}>Challenges</Text>
+            <Text style={[styles.statValue, { color: theme.text }]}>{challenges}</Text>
+            <Text style={[styles.statLabel, { color: secondaryTextColor }]}>Challenges</Text>
           </View>
           <View style={styles.statItem}>
             <Ionicons name="flame-outline" size={22} color={theme.text} />
-            <Text style={[styles.statValue, { color: theme.text }]}>{calories}</Text>
+            <Text style={[styles.statValue, { color: theme.text }]}>{burnedCalories}</Text>
             <Text style={[styles.statLabel, { color: secondaryTextColor }]}>Calories</Text>
           </View>
           <View style={styles.statItem}>
@@ -253,10 +253,9 @@ const ProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#131417", paddingHorizontal: 20 },
+  container: { flex: 1, paddingHorizontal: 20 },
   loadingContainer: {
     flex: 1,
-    backgroundColor: "#131417",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -269,22 +268,25 @@ const styles = StyleSheet.create({
   },
   profileSection: { alignItems: "center", marginVertical: 20 },
   profileImage: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
-  fullName: { fontSize: 22, fontWeight: "bold", color: "#fff" },
-  username: { color: "#aaa", fontSize: 14 },
+  fullName: { fontSize: 22, fontWeight: "bold" },
+  username: { fontSize: 14 },
   countContainer: { flexDirection: "row", alignItems: "center", marginTop: 12 },
   countItem: { alignItems: "center" },
-  countNumber: { color: "#fff", fontWeight: "bold", fontSize: 18 },
-  countLabel: { color: "#aaa", fontSize: 14 },
-  separator: { marginHorizontal: 16, color: "#555", fontSize: 18 },
+  countNumber: { fontWeight: "bold", fontSize: 18 },
+  countLabel: { fontSize: 14 },
+  verticalDivider: {
+    width: 1,
+    height: 20,
+    marginHorizontal: 20,
+  },
   section: { marginVertical: 15 },
   sectionTitle: {
-    color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 6,
   },
-  sectionContent: { color: "#ccc", fontSize: 15, marginBottom: 4 },
-  emptyText: { color: "#888", fontStyle: "italic", marginTop: 5 },
+  sectionContent: { fontSize: 15, marginBottom: 4 },
+  emptyText: { fontStyle: "italic", marginTop: 5 },
   postGrid: { flexDirection: "row", flexWrap: "wrap" },
   postWrapper: {
     width: (Dimensions.get("window").width - 40 - 8) / 3,
@@ -295,21 +297,13 @@ const styles = StyleSheet.create({
   statBox: {
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: "#2B2D31",
     padding: 15,
     borderRadius: 10,
     marginTop: 10,
   },
   statItem: { alignItems: "center", flex: 1 },
-  statValue: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-  statLabel: { color: "#aaa", fontSize: 13, marginTop: 2 },
-  statIcon: { marginBottom: 6 },
-  verticalDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: "#555",
-    marginHorizontal: 20,
-  },
+  statValue: { fontSize: 18, fontWeight: "bold" },
+  statLabel: { fontSize: 13, marginTop: 2 },
   goalsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

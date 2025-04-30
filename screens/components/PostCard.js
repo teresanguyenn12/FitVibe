@@ -242,6 +242,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 14,
     overflow: "hidden",
+    marginHorizontal: 20,
   },
   postHeader: {
     flexDirection: "row",

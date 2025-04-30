@@ -1,4 +1,3 @@
-// FeedScreen.js — Fully integrated with PostCard and upload logic
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
@@ -29,6 +28,7 @@ import {
 import { getAuth } from "firebase/auth";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { storage } from "../firebase";
+import { useTheme } from '../contexts/ThemeContext';
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../authProvider";
 import PostCard from "./components/PostCard";
@@ -39,7 +39,7 @@ export default function FeedScreen() {
   const db = getFirestore();
   const auth = getAuth();
   const listRef = useRef(null);
-  const { theme } = useTheme(); // <-- added
+  const { theme } = useTheme();
   const [posts, setPosts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -88,7 +88,7 @@ export default function FeedScreen() {
         })
       );
     } catch (err) {
-      console.error("Error fetching posts:", err);  //important to catch any problems
+      console.error("Error fetching posts:", err);
     }
   };
 
@@ -109,7 +109,6 @@ export default function FeedScreen() {
         });
       }
 
-      // Handle post upload passed from AddPostScreen
       if (route?.params?.pendingPost && !uploading) {
         handleUpload(route.params.pendingPost);
         navigation.setParams({ pendingPost: null });
@@ -194,21 +193,24 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.card }]}>
         <TouchableOpacity onPress={() => navigation.navigate("AddPostsScreen")}>
-          <Ionicons name="duplicate-outline" size={24} color="#fff" />
+          <Ionicons name="duplicate-outline" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Posts</Text>
+        <Text style={[styles.title, { color: theme.text }]}>Posts</Text>
         <TouchableOpacity onPress={() => navigation.navigate("MessagesScreen")}>
-          <Ionicons name="chatbubbles-outline" size={24} color="#fff" />
+          <Ionicons name="chatbubbles-outline" size={24} color={theme.text} />
         </TouchableOpacity>
       </View>
 
       {uploading && (
-        <View style={styles.uploadingBar}>
-          <Text style={{ color: "#fff", fontSize: 14 }}>Uploading...</Text>
-          <View style={styles.uploadProgressBackground}>
-            <View style={[styles.uploadProgressBar, { width: `${uploadProgress * 100}%` }]} />
+        <View style={[styles.uploadingBar, { backgroundColor: theme.card }]}>
+          <Text style={{ color: theme.text, fontSize: 14 }}>Uploading...</Text>
+          <View style={[styles.uploadProgressBackground, { backgroundColor: theme.border }]}>
+            <View style={[styles.uploadProgressBar, { 
+              width: `${uploadProgress * 100}%`,
+              backgroundColor: theme.primary 
+            }]} />
           </View>
         </View>
       )}
@@ -226,7 +228,12 @@ export default function FeedScreen() {
           />
         )}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            colors={[theme.primary]}
+            tintColor={theme.primary}
+          />
         }
         contentContainerStyle={{ paddingBottom: 100 }}
       />
@@ -235,34 +242,31 @@ export default function FeedScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#131417" },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
+    borderBottomWidth: 1,
   },
   title: {
-    color: "#fff",
     fontSize: 22,
     fontWeight: "bold",
   },
   uploadingBar: {
     padding: 10,
-    backgroundColor: "#222",
-    marginHorizontal: 20,
     borderRadius: 10,
+    marginHorizontal: 20,
     marginBottom: 10,
   },
   uploadProgressBackground: {
     height: 8,
-    backgroundColor: "#444",
     borderRadius: 4,
     marginTop: 6,
   },
   uploadProgressBar: {
     height: 8,
-    backgroundColor: "#8e2de2",
     borderRadius: 4,
   },
 });

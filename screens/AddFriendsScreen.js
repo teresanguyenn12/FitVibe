@@ -1,17 +1,5 @@
-// AddFriendsScreen.js — Updated for Private Account Requests
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  SafeAreaView,
-  Alert,
-  Animated,
-  Keyboard,
   View,
   Text,
   TextInput,
@@ -28,25 +16,25 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { fetchAllUsers, followUser, unfollowUser } from "../api/addFriendsApi";
 import { getAuth } from "firebase/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { useTheme } from "../contexts/ThemeContext"; // theme context
+import { getFirestore, doc, getDoc, updateDoc, arrayRemove } from "firebase/firestore";
+import { useTheme } from "../contexts/ThemeContext";
 
 const AddFriendsScreen = () => {
   const navigation = useNavigation();
-  const { theme, themeMode } = useTheme(); // get theme + themeMode
+  const { theme, themeMode } = useTheme();
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [following, setFollowing] = useState({});
+  const [requested, setRequested] = useState({}); // Added this line
   const [fadeAnim] = useState(new Animated.Value(0));
   const [blockedUsers, setBlockedUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const currentUser = getAuth().currentUser;
   const db = getFirestore();
 
-  // Custom placeholder color depending on mode
   const placeholderColor = themeMode === "light" ? "#555" : "#ccc";
-  const bigIconColor = themeMode === "light" ? "#bbb" : "#ccc"; // lighter in light mode, softer in dark mode
+  const bigIconColor = themeMode === "light" ? "#bbb" : "#ccc";
 
   const fetchBlockedUsers = async () => {
     try {
@@ -102,6 +90,7 @@ const AddFriendsScreen = () => {
       setRequested(requestedMap);
     } catch (error) {
       console.error("Error loading users:", error);
+      Alert.alert("Error", "Failed to load users");
     } finally {
       setIsLoading(false);
     }
@@ -158,52 +147,47 @@ const AddFriendsScreen = () => {
     try {
       const targetSnap = await getDoc(doc(db, "users", userId));
       const isPrivate = targetSnap.exists() ? targetSnap.data().isPrivate : false;
-  
+
       await followUser(userId);
-  
+
       if (isPrivate) {
         setRequested((prev) => ({ ...prev, [userId]: true }));
       } else {
         setFollowing((prev) => ({ ...prev, [userId]: true }));
       }
-  
+
       await refreshUsers();
     } catch (error) {
       Alert.alert("Error", "Failed to follow user");
     }
   };
-  
-  
 
   const handleUnfollow = async (userId) => {
     try {
       const targetRef = doc(db, "users", userId);
       const targetSnap = await getDoc(targetRef);
       const targetData = targetSnap.exists() ? targetSnap.data() : null;
-  
+
       if (!targetData) return;
-  
+
       if (targetData.followers?.includes(currentUser.uid)) {
-        // Currently following → unfollow
         setFollowing((prev) => ({ ...prev, [userId]: false }));
         await unfollowUser(userId);
       } else if (targetData.pendingRequests?.includes(currentUser.uid)) {
-        // Cancel request
         await updateDoc(targetRef, {
           pendingRequests: arrayRemove(currentUser.uid),
         });
         setRequested((prev) => ({ ...prev, [userId]: false }));
       }
-  
+
       await refreshUsers();
     } catch (error) {
       Alert.alert("Error", "Failed to unfollow user");
     }
   };
-  
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <TouchableOpacity
         activeOpacity={1}
         style={{ flex: 1 }}
@@ -211,29 +195,28 @@ const AddFriendsScreen = () => {
           Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => Keyboard.dismiss());
         }}
       >
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#ccc" style={styles.searchIcon} />
+        <View style={[styles.searchContainer, { borderColor: theme.border }]}>
+          <Ionicons name="search" size={20} color={placeholderColor} style={styles.searchIcon} />
           <TextInput
             placeholder="Search by name or @username"
-            placeholderTextColor="#ccc"
-            style={styles.searchInput}
+            placeholderTextColor={placeholderColor}
+            style={[styles.searchInput, { color: theme.text }]}
             value={search}
             onChangeText={setSearch}
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch("")} style={styles.clearButton}>
-              <Ionicons name="close-circle" size={20} color="#aaa" />
+              <Ionicons name="close-circle" size={20} color={placeholderColor} />
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Results or Placeholder */}
         {search.trim().length === 0 ? (
           <View style={styles.placeholderContainer}>
             <Ionicons
               name="search-circle-outline"
               size={90}
-              color={bigIconColor} // lighter giant icon color
+              color={bigIconColor}
               style={{ marginBottom: 16 }}
             />
             <Text style={[styles.placeholderText, { color: placeholderColor }]}>
@@ -279,16 +262,29 @@ const AddFriendsScreen = () => {
                     styles.followButton,
                     following[item.id || item.uid]
                       ? { backgroundColor: theme.background, borderColor: theme.border, borderWidth: 1 }
+                      : requested[item.id || item.uid]
+                      ? { backgroundColor: theme.background, borderColor: theme.border, borderWidth: 1 }
                       : { backgroundColor: theme.primary },
                   ]}
                   onPress={() =>
-                    following[item.id || item.uid]
+                    following[item.id || item.uid] || requested[item.id || item.uid]
                       ? handleUnfollow(item.id || item.uid)
                       : handleFollow(item.id || item.uid)
                   }
                 >
-                  <Text style={[styles.followText, { color: following[item.id || item.uid] ? theme.text : "#fff" }]}>
-                    {following[item.id || item.uid] ? "Following" : "Follow"}
+                  <Text style={[
+                    styles.followText,
+                    { 
+                      color: following[item.id || item.uid] || requested[item.id || item.uid] 
+                        ? theme.text 
+                        : "#fff" 
+                    }
+                  ]}>
+                    {following[item.id || item.uid] 
+                      ? "Following" 
+                      : requested[item.id || item.uid] 
+                      ? "Requested" 
+                      : "Follow"}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -306,7 +302,9 @@ const AddFriendsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { 
+    flex: 1 
+  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -317,14 +315,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
   },
-  searchIcon: { marginRight: 10, opacity: 0.6 },
+  searchIcon: { 
+    marginRight: 10, 
+    opacity: 0.6 
+  },
   searchInput: {
     flex: 1,
     fontSize: 15,
     fontWeight: "500",
     paddingVertical: 6,
   },
-  clearButton: { paddingLeft: 8 },
+  clearButton: { 
+    paddingLeft: 8 
+  },
   placeholderContainer: {
     flex: 1,
     justifyContent: "center",
@@ -347,7 +350,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 10,
   },
-  profileButton: { flexDirection: "row", flex: 1 },
+  profileButton: { 
+    flexDirection: "row", 
+    flex: 1 
+  },
   avatar: {
     width: 52,
     height: 52,
@@ -356,10 +362,21 @@ const styles = StyleSheet.create({
     borderColor: "#444",
     borderWidth: 1,
   },
-  userInfo: { flex: 1 },
-  name: { fontSize: 16, fontWeight: "500" },
-  handle: { fontSize: 13, marginTop: 2 },
-  mutual: { fontSize: 12, marginTop: 4 },
+  userInfo: { 
+    flex: 1 
+  },
+  name: { 
+    fontSize: 16, 
+    fontWeight: "500" 
+  },
+  handle: { 
+    fontSize: 13, 
+    marginTop: 2 
+  },
+  mutual: { 
+    fontSize: 12, 
+    marginTop: 4 
+  },
   followButton: {
     paddingVertical: 6,
     paddingHorizontal: 18,
