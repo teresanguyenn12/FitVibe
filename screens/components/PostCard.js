@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { Video } from "expo-av";
 import { useAuth } from "../../authProvider";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -46,6 +47,7 @@ const getTimeAgo = (timestamp) => {
 
 export default function PostCard({ item, handleLike, handleDelete }) {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   const navigation = useNavigation();
 
@@ -59,8 +61,18 @@ export default function PostCard({ item, handleLike, handleDelete }) {
   const timeAgo = getTimeAgo(item.timestamp);
   const wasEdited = item.lastUpdated?.toDate?.() > item.timestamp?.toDate?.();
 
+  const cardStyle = {
+    backgroundColor: theme.mode === "light" ? "#F5F5F5" : "#131417",
+    marginBottom: 16,
+    borderRadius: 14,
+    overflow: "hidden",
+    marginHorizontal: 20,
+  };
+
+  const iconColor = theme.mode === "light" ? "#000" : "#fff";
+
   return (
-    <View style={styles.card}>
+    <View style={cardStyle}>
       {/* Header */}
       <View style={styles.postHeader}>
         <TouchableOpacity
@@ -73,9 +85,9 @@ export default function PostCard({ item, handleLike, handleDelete }) {
         >
           <Image source={{ uri: item.profilePicture }} style={styles.avatar} />
           <View>
-            <Text style={styles.username}>@{item.username}</Text>
-            <Text style={styles.rank}>{item.rank}</Text>
-            <Text style={styles.time}>
+            <Text style={[styles.username, { color: theme.text }]}>@{item.username}</Text>
+            <Text style={[styles.rank, { color: theme.subtext }]}>{item.rank}</Text>
+            <Text style={[styles.time, { color: theme.subtext }]}>
               {timeAgo}
               {wasEdited ? " • Edited" : ""}
             </Text>
@@ -85,41 +97,42 @@ export default function PostCard({ item, handleLike, handleDelete }) {
         {isOwner && (
           <TouchableOpacity
             onPress={() => {
-  Alert.alert("Post Options", "", [
-    {
-      text: "Edit",
-      onPress: () =>
-        navigation.navigate("EditPostScreen", {
-          postId: item.id,
-        }),
-    },
-    {
-      text: "Delete",
-      style: "destructive",
-      onPress: () => {
-        Alert.alert("Confirm Delete", "Are you sure?", [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: () => handleDelete(item.id),
-          },
-        ]);
-      },
-    },
-    { text: "Cancel", style: "cancel" },
-  ]);
-}}
-
+              Alert.alert("Post Options", "", [
+                {
+                  text: "Edit",
+                  onPress: () =>
+                    navigation.navigate("EditPostScreen", {
+                      postId: item.id,
+                    }),
+                },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: () => {
+                    Alert.alert("Confirm Delete", "Are you sure?", [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: () => handleDelete(item.id),
+                      },
+                    ]);
+                  },
+                },
+                { text: "Cancel", style: "cancel" },
+              ]);
+            }}
           >
-            <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
+            <Ionicons name="ellipsis-vertical" size={20} color={iconColor} />
           </TouchableOpacity>
         )}
       </View>
 
       {/* Description */}
       {item.description && (
-        <Text style={styles.description}>{item.description}</Text>
+        <Text style={[styles.description, { color: theme.text }]}>
+          {item.description}
+        </Text>
       )}
 
       {/* Workout Type Badge */}
@@ -139,59 +152,59 @@ export default function PostCard({ item, handleLike, handleDelete }) {
 
       {/* Media */}
       {item.media?.length > 0 && (
-  <View style={styles.mediaContainer}>
-    <FlatList
-      data={item.media}
-      keyExtractor={(media, idx) => media.url + idx}
-      horizontal
-      pagingEnabled
-      showsHorizontalScrollIndicator={false}
-      onScroll={(e) => {
-        const index = Math.round(
-          e.nativeEvent.contentOffset.x / screenWidth
-        );
-        setCurrentIndex(index);
-      }}
-      scrollEventThrottle={16}
-      renderItem={({ item: mediaItem }) => (
-        <View
-  style={[
-    styles.mediaItemWrapper,
-    item.media.length === 1 && { marginBottom: 16 }, // Add spacing if only 1 media item
-  ]}
->
-          {mediaItem.type === "video" ? (
-            <Video
-              source={{ uri: mediaItem.url }}
-              useNativeControls
-              resizeMode="cover"
-              style={styles.postMedia}
-            />
-          ) : (
-            <Image
-              source={{ uri: mediaItem.url }}
-              style={styles.postMedia}
-              resizeMode="cover"
-            />
+        <View style={styles.mediaContainer}>
+          <FlatList
+            data={item.media}
+            keyExtractor={(media, idx) => media.url + idx}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={(e) => {
+              const index = Math.round(
+                e.nativeEvent.contentOffset.x / screenWidth
+              );
+              setCurrentIndex(index);
+            }}
+            scrollEventThrottle={16}
+            renderItem={({ item: mediaItem }) => (
+              <View
+                style={[
+                  styles.mediaItemWrapper,
+                  item.media.length === 1 && { marginBottom: 16 },
+                ]}
+              >
+                {mediaItem.type === "video" ? (
+                  <Video
+                    source={{ uri: mediaItem.url }}
+                    useNativeControls
+                    resizeMode="cover"
+                    style={styles.postMedia}
+                  />
+                ) : (
+                  <Image
+                    source={{ uri: mediaItem.url }}
+                    style={styles.postMedia}
+                    resizeMode="cover"
+                  />
+                )}
+              </View>
+            )}
+          />
+          {item.media.length > 1 && (
+            <View style={styles.dotRow}>
+              {item.media.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.dot,
+                    { opacity: currentIndex === index ? 1 : 0.3 },
+                  ]}
+                />
+              ))}
+            </View>
           )}
         </View>
       )}
-    />
-    {item.media.length > 1 && (
-  <View style={styles.dotRow}>
-    {item.media.map((_, index) => (
-      <View
-        key={index}
-        style={[
-          styles.dot,
-          { opacity: currentIndex === index ? 1 : 0.3 },
-        ]}
-      />
-    ))}
-  </View>
-)}
-  </View>
-)}
 
       {/* Actions */}
       <View style={styles.actionsRow}>
@@ -202,9 +215,11 @@ export default function PostCard({ item, handleLike, handleDelete }) {
           <Ionicons
             name={liked ? "heart" : "heart-outline"}
             size={22}
-            color={liked ? "#e91e63" : "#aaa"}
+            color={liked ? "#e91e63" : iconColor}
           />
-          <Text style={styles.actionText}>{item.likes?.length || 0}</Text>
+          <Text style={[styles.actionText, { color: iconColor }]}>
+            {item.likes?.length || 0}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -213,8 +228,10 @@ export default function PostCard({ item, handleLike, handleDelete }) {
             navigation.navigate("CommentsScreen", { postId: item.id })
           }
         >
-          <Ionicons name="chatbubble-outline" size={22} color="#aaa" />
-          <Text style={styles.actionText}>{item.commentsCount || 0}</Text>
+          <Ionicons name="chatbubble-outline" size={22} color={iconColor} />
+          <Text style={[styles.actionText, { color: iconColor }]}>
+            {item.commentsCount || 0}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -222,14 +239,13 @@ export default function PostCard({ item, handleLike, handleDelete }) {
           onPress={() => {
             const postLink = `https://fitvibe.app/post/${item.id}`;
             Share.share({
-              message: `💪 Check out @$
-                {item.username}'s workout on FitVibe!\n$${
-                item.description || ""
-              }\n\nView it here: ${postLink}`,
+              message: `💪 Check out @${
+                item.username
+              }'s workout on FitVibe!\n${item.description || ""}\n\nView it here: ${postLink}`,
             });
           }}
         >
-          <Ionicons name="paper-plane-outline" size={22} color="#aaa" />
+          <Ionicons name="paper-plane-outline" size={22} color={iconColor} />
         </TouchableOpacity>
       </View>
     </View>
@@ -237,13 +253,6 @@ export default function PostCard({ item, handleLike, handleDelete }) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#131417",
-    marginBottom: 16,
-    borderRadius: 14,
-    overflow: "hidden",
-    marginHorizontal: 20,
-  },
   postHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -261,20 +270,16 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   username: {
-    color: "#fff",
     fontWeight: "bold",
     fontSize: 14,
   },
   rank: {
-    color: "#ccc",
     fontSize: 11,
   },
   time: {
-    color: "#777",
     fontSize: 10,
   },
   description: {
-    color: "#ddd",
     fontSize: 15,
     paddingHorizontal: 14,
     marginTop: -6,
@@ -291,7 +296,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
-    backgroundColor: "#4a00e0",
   },
   badgeText: {
     color: "#fff",
@@ -304,7 +308,7 @@ const styles = StyleSheet.create({
   },
   mediaItemWrapper: {
     width: screenWidth,
-    aspectRatio: 1, 
+    aspectRatio: 1,
     overflow: "hidden",
     backgroundColor: "#000",
   },
@@ -335,7 +339,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   actionText: {
-    color: "#aaa",
     marginLeft: 6,
     fontSize: 13,
   },

@@ -209,10 +209,6 @@ export default function FeedScreen() {
       justifyContent: "space-between",
       alignItems: "center",
       padding: 16,
-      backgroundColor: theme.headerBg,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.border,
-      marginBottom: 20,
     },
     title: {
       fontSize: 22,
@@ -241,7 +237,7 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { backgroundColor: theme.card }]}>
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.navigate("AddPostsScreen")}>
           <Ionicons name="duplicate-outline" size={24} color={theme.text} />
         </TouchableOpacity>
@@ -285,9 +281,15 @@ export default function FeedScreen() {
             progressBackgroundColor={theme.card}
           />
         }
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{
+          paddingTop:10,
+          paddingBottom: 100,
+          flexGrow: 1,
+        }}
+        style={{ flex: 1 }}
       />
     </SafeAreaView>
+
   );
 }
 
