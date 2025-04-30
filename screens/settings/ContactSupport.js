@@ -1,10 +1,32 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Alert, 
+  KeyboardAvoidingView, 
+  Platform 
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../../contexts/ThemeContext"; // ThemeContext
+import { useColorScheme } from "react-native"; // System appearance
 
 const ContactSupport = () => {
   const navigation = useNavigation();
+  const { theme, themeMode } = useTheme();
+  const systemColorScheme = useColorScheme();
+
+  const headerTextColor = themeMode === "dark"
+    ? "#FFFFFF"
+    : themeMode === "light"
+      ? "#111"
+      : systemColorScheme === "dark"
+        ? "#FFFFFF"
+        : "#111";
+
   const [message, setMessage] = useState("");
 
   const handleSubmit = () => {
@@ -13,29 +35,32 @@ const ContactSupport = () => {
       return;
     }
 
-    // In a real app, this is where you'd send the message to support (e.g., Firebase, email)
     Alert.alert("Message Sent", "Thanks! Our support team will get back to you soon.");
     setMessage("");
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView 
+      style={[styles.container, { backgroundColor: theme.background }]} 
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={30} color="#fff" />
+          <Ionicons name="chevron-back" size={30} color={headerTextColor} />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Contact Support</Text>
+        <Text style={[styles.headerText, { color: headerTextColor }]}>Contact Support</Text>
+        <View style={{ width: 30 }} />
       </View>
 
       {/* Form */}
       <View style={styles.formContainer}>
-        <Text style={styles.label}>How can we help you?</Text>
+        <Text style={[styles.label, { color: theme.text }]}>How can we help you?</Text>
         <TextInput
-          style={styles.textInput}
+          style={[styles.textInput, { backgroundColor: theme.card, color: theme.text }]}
           multiline
           placeholder="Write your message here..."
-          placeholderTextColor="#888"
+          placeholderTextColor={theme.subtext}
           value={message}
           onChangeText={setMessage}
         />
@@ -50,13 +75,12 @@ const ContactSupport = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#131417",
     paddingHorizontal: 20,
   },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 60,
+    paddingTop: 80,
     paddingBottom: 15,
   },
   backButton: {
@@ -64,7 +88,6 @@ const styles = StyleSheet.create({
   },
   headerText: {
     flex: 1,
-    color: "#fff",
     fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
@@ -73,17 +96,14 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   label: {
-    color: "#fff",
     fontSize: 18,
     marginBottom: 10,
   },
   textInput: {
-    backgroundColor: "#2B2D31",
     borderRadius: 10,
     padding: 15,
     height: 150,
     textAlignVertical: "top",
-    color: "#fff",
     fontSize: 16,
   },
   submitButton: {

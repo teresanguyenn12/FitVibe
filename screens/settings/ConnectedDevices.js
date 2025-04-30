@@ -16,15 +16,28 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../../contexts/ThemeContext"; // Import ThemeContext
+import { useColorScheme } from "react-native"; // Import system color scheme
 
 const ConnectedDevices = () => {
   const navigation = useNavigation();
+  const { theme, themeMode } = useTheme();
+  const systemColorScheme = useColorScheme();
+
   const auth = getAuth();
   const db = getFirestore();
   const user = auth.currentUser;
 
   const [devices, setDevices] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const headerTextColor = themeMode === "dark"
+    ? "#FFFFFF"
+    : themeMode === "light"
+      ? "#111"
+      : systemColorScheme === "dark"
+        ? "#FFFFFF"
+        : "#111";
 
   useEffect(() => {
     if (user) fetchConnectedDevices();
@@ -59,10 +72,10 @@ const ConnectedDevices = () => {
   };
 
   const renderDevice = ({ item }) => (
-    <View style={styles.deviceCard}>
+    <View style={[styles.deviceCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
       <View style={styles.deviceInfo}>
-        <MaterialCommunityIcons name={item.icon} size={30} color="#FFFFFF" />
-        <Text style={styles.deviceText}>{item.name}</Text>
+        <MaterialCommunityIcons name={item.icon} size={30} color={theme.text} />
+        <Text style={[styles.deviceText, { color: theme.text }]}>{item.name}</Text>
       </View>
       <TouchableOpacity
         style={styles.disconnectButton}
@@ -74,18 +87,18 @@ const ConnectedDevices = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={30} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={30} color={headerTextColor} />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Connected Devices</Text>
+        <Text style={[styles.headerText, { color: headerTextColor }]}>Connected Devices</Text>
       </View>
 
       {/* Content */}
       {loading ? (
-        <ActivityIndicator size="large" color="#8e24aa" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
       ) : devices.length > 0 ? (
         <FlatList
           data={devices}
@@ -94,7 +107,9 @@ const ConnectedDevices = () => {
           contentContainerStyle={styles.listContainer}
         />
       ) : (
-        <Text style={styles.noDevicesText}>No devices connected</Text>
+        <Text style={[styles.noDevicesText, { color: theme.subtext }]}>
+          No devices connected
+        </Text>
       )}
     </View>
   );
@@ -103,7 +118,6 @@ const ConnectedDevices = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
     paddingHorizontal: 20,
     paddingTop: 60,
   },
@@ -121,21 +135,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 24,
     fontWeight: "bold",
-    color: "#FFFFFF",
-    marginRight: 30, // to center text with back icon
+    marginRight: 30,
   },
   listContainer: {
     paddingVertical: 10,
   },
   deviceCard: {
-    backgroundColor: "#1E1F23",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 18,
     borderRadius: 12,
     marginBottom: 12,
-    borderColor: "#2D2F33",
     borderWidth: 1,
   },
   deviceInfo: {
@@ -143,13 +154,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   deviceText: {
-    color: "#FFFFFF",
     fontSize: 17,
     marginLeft: 12,
     fontWeight: "500",
   },
   disconnectButton: {
-    backgroundColor: "#D32F2F",
+    backgroundColor: "#D32F2F", // Red for disconnect
     paddingVertical: 6,
     paddingHorizontal: 15,
     borderRadius: 8,
@@ -160,7 +170,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   noDevicesText: {
-    color: "#CCCCCC",
     fontSize: 18,
     textAlign: "center",
     marginTop: 40,

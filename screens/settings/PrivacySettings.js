@@ -12,9 +12,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
+import { useTheme } from "../../contexts/ThemeContext"; // Import ThemeContext
 
 const PrivacySettings = () => {
   const navigation = useNavigation();
+  const { theme } = useTheme(); // Use the theme
   const auth = getAuth();
   const db = getFirestore();
   const user = auth.currentUser;
@@ -59,63 +61,63 @@ const PrivacySettings = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={30} color="#fff" />
+          <Ionicons name="chevron-back" size={30} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Privacy Settings</Text>
+        <Text style={[styles.headerText, { color: theme.text }]}>Privacy Settings</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Toggle Settings */}
-        <View style={styles.settingCard}>
-          <Text style={styles.settingText}>Private Account</Text>
+        <View style={[styles.settingCard, { backgroundColor: theme.card }]}>
+          <Text style={[styles.settingText, { color: theme.text }]}>Private Account</Text>
           <Switch
             value={isPrivate}
             onValueChange={(value) => {
               setIsPrivate(value);
               updatePrivacySetting("isPrivate", value);
             }}
-            trackColor={{ false: "#767577", true: "#8e24aa" }}
+            trackColor={{ false: theme.border, true: theme.primary }}
             thumbColor={isPrivate ? "#fff" : "#bbb"}
           />
         </View>
 
-        <View style={styles.settingCard}>
-          <Text style={styles.settingText}>Allow Location Access</Text>
+        <View style={[styles.settingCard, { backgroundColor: theme.card }]}>
+          <Text style={[styles.settingText, { color: theme.text }]}>Allow Location Access</Text>
           <Switch
             value={isLocationEnabled}
             onValueChange={(value) => {
               setIsLocationEnabled(value);
               updatePrivacySetting("isLocationEnabled", value);
             }}
-            trackColor={{ false: "#767577", true: "#8e24aa" }}
+            trackColor={{ false: theme.border, true: theme.primary }}
             thumbColor={isLocationEnabled ? "#fff" : "#bbb"}
           />
         </View>
 
-        <View style={styles.settingCard}>
-          <Text style={styles.settingText}>Allow Data Sharing</Text>
+        <View style={[styles.settingCard, { backgroundColor: theme.card }]}>
+          <Text style={[styles.settingText, { color: theme.text }]}>Allow Data Sharing</Text>
           <Switch
             value={isDataSharingEnabled}
             onValueChange={(value) => {
               setIsDataSharingEnabled(value);
               updatePrivacySetting("isDataSharingEnabled", value);
             }}
-            trackColor={{ false: "#767577", true: "#8e24aa" }}
+            trackColor={{ false: theme.border, true: theme.primary }}
             thumbColor={isDataSharingEnabled ? "#fff" : "#bbb"}
           />
         </View>
 
         {/* Manage Blocked Users */}
         <TouchableOpacity
-          style={styles.navigateCard}
+          style={[styles.navigateCard, { backgroundColor: theme.card }]}
           onPress={() => navigation.navigate("BlockedUsers")}
         >
-          <Text style={styles.settingText}>Manage Blocked Users</Text>
-          <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+          <Text style={[styles.settingText, { color: theme.text }]}>Manage Blocked Users</Text>
+          <Ionicons name="chevron-forward" size={20} color={theme.text} />
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -125,20 +127,18 @@ const PrivacySettings = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#131417",
     paddingHorizontal: 20,
   },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 70,
+    paddingTop: 80,
     paddingBottom: 20,
   },
   backButton: {
     paddingRight: 10,
   },
   headerText: {
-    color: "#fff",
     fontSize: 24,
     fontWeight: "bold",
     flex: 1,
@@ -146,13 +146,13 @@ const styles = StyleSheet.create({
     marginRight: 30,
   },
   scrollContainer: {
+    paddingTop: 15,
     paddingBottom: 30,
   },
   settingCard: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#2B2D31",
     padding: 15,
     borderRadius: 10,
     marginBottom: 12,
@@ -161,13 +161,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#2B2D31",
     padding: 15,
     borderRadius: 10,
     marginTop: 10,
   },
   settingText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "500",
   },

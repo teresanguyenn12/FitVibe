@@ -3,10 +3,22 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTheme } from "../../contexts/ThemeContext"; // Import ThemeContext
+import { useColorScheme } from "react-native"; // To support automatic mode
 
 const UnitsSettings = () => {
   const [selectedUnit, setSelectedUnit] = useState("imperial");
   const navigation = useNavigation();
+  const { theme, themeMode } = useTheme();
+  const systemColorScheme = useColorScheme();
+
+  const headerTextColor = themeMode === "dark"
+    ? "#FFFFFF"
+    : themeMode === "light"
+      ? "#111"
+      : systemColorScheme === "dark"
+        ? "#FFFFFF"
+        : "#111";
 
   useEffect(() => {
     const fetchUnit = async () => {
@@ -22,25 +34,31 @@ const UnitsSettings = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={28} color="#fff" />
+          <Ionicons name="chevron-back" size={28} color={headerTextColor} />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Units of Measurement</Text>
+        <Text style={[styles.headerText, { color: headerTextColor }]}>Units of Measurement</Text>
       </View>
 
+      {/* Options */}
       <View style={styles.optionsContainer}>
         {["imperial", "metric"].map((unit) => (
           <TouchableOpacity
             key={unit}
-            style={[styles.option, selectedUnit === unit && styles.selectedOption]}
+            style={[
+              styles.option,
+              { backgroundColor: theme.card, borderColor: selectedUnit === unit ? theme.primary : theme.card },
+              selectedUnit === unit && styles.selectedOption,
+            ]}
             onPress={() => handleSelect(unit)}
           >
-            <Text style={styles.optionText}>
+            <Text style={[styles.optionText, { color: theme.text }]}>
               {unit === "imperial" ? "Imperial (Miles, lbs)" : "Metric (Km, kg)"}
             </Text>
-            {selectedUnit === unit && <Ionicons name="checkmark" size={20} color="#8e24aa" />}
+            {selectedUnit === unit && <Ionicons name="checkmark" size={20} color={theme.primary} />}
           </TouchableOpacity>
         ))}
       </View>
@@ -51,14 +69,13 @@ const UnitsSettings = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#131417",
     paddingTop: 60,
   },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop:20,
+    marginTop: 20,
     marginBottom: 20,
     position: "relative",
   },
@@ -69,27 +86,25 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#fff",
     textAlign: "center",
   },
   optionsContainer: {
     paddingHorizontal: 20,
+    paddingVertical: 15,
   },
   option: {
-    backgroundColor: "#2B2D31",
     padding: 15,
     borderRadius: 10,
     marginBottom: 15,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-  },
-  selectedOption: {
-    borderColor: "#8e24aa",
     borderWidth: 2,
   },
+  selectedOption: {
+    // Border color is handled dynamically
+  },
   optionText: {
-    color: "#fff",
     fontSize: 16,
   },
 });

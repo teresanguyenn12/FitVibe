@@ -2,9 +2,21 @@ import React from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../../contexts/ThemeContext"; // Import useTheme
+import { useColorScheme } from "react-native"; // For system theme detection
 
 const FAQ = () => {
   const navigation = useNavigation();
+  const { theme, themeMode } = useTheme();
+  const systemColorScheme = useColorScheme();
+
+  const headerTextColor = themeMode === "dark"
+    ? "#FFFFFF"
+    : themeMode === "light"
+      ? "#111"
+      : systemColorScheme === "dark"
+        ? "#FFFFFF"
+        : "#111";
 
   const faqList = [
     {
@@ -30,21 +42,21 @@ const FAQ = () => {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={28} color="#fff" />
+          <Ionicons name="chevron-back" size={28} color={headerTextColor} />
         </TouchableOpacity>
-        <Text style={styles.headerText}>FAQ</Text>
+        <Text style={[styles.headerText, { color: headerTextColor }]}>FAQ</Text>
       </View>
 
       {/* FAQ List */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {faqList.map((faq, index) => (
-          <View key={index} style={styles.faqItem}>
+          <View key={index} style={[styles.faqItem, { backgroundColor: theme.card }]}>
             <Text style={styles.question}>{faq.question}</Text>
-            <Text style={styles.answer}>{faq.answer}</Text>
+            <Text style={[styles.answer, { color: theme.text }]}>{faq.answer}</Text>
           </View>
         ))}
       </ScrollView>
@@ -55,7 +67,6 @@ const FAQ = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#131417",
   },
   headerContainer: {
     flexDirection: "row",
@@ -66,32 +77,31 @@ const styles = StyleSheet.create({
   },
   backButton: {
     paddingRight: 10,
+    paddingTop: 20,
   },
   headerText: {
     flex: 1,
-    color: "#FFFFFF",
     fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",
-    marginRight: 40, // balances the back button space
+    marginRight: 40, // balance spacing with back button
+    paddingTop: 20,
   },
   scrollContainer: {
     padding: 20,
   },
   faqItem: {
     marginBottom: 20,
-    backgroundColor: "#2B2D31",
     padding: 15,
     borderRadius: 10,
   },
   question: {
-    color: "#8e24aa",
+    color: "#8e24aa", // keep the question purple always
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 6,
   },
   answer: {
-    color: "#FFFFFF",
     fontSize: 15,
     lineHeight: 22,
     opacity: 0.85,

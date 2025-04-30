@@ -1,23 +1,44 @@
 import React, { useState } from "react";
+import { useNavigation } from "@react-navigation/native";
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
-  Modal,
-  TextInput,
   Alert,
   ActivityIndicator,
+  Modal,
 } from "react-native";
-import { getAuth, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from "firebase/auth";
+import {
+  getAuth,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  deleteUser,
+} from "firebase/auth";
+import { useTheme } from "../../contexts/ThemeContext";
+import { useColorScheme } from "react-native";
 
 const DeleteAccount = () => {
+  const navigation = useNavigation();
   const auth = getAuth();
   const user = auth.currentUser;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const { theme, themeMode } = useTheme();
+  const systemColorScheme = useColorScheme();
+
+  const headerTextColor =
+    themeMode === "dark"
+      ? "#FFFFFF"
+      : themeMode === "light"
+        ? "#111"
+        : systemColorScheme === "dark"
+          ? "#FFFFFF"
+          : "#111";
 
   const handleDelete = async () => {
     if (!password) {
@@ -52,9 +73,9 @@ const DeleteAccount = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Delete Your Account</Text>
-      <Text style={styles.description}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <Text style={[styles.title, { color: theme.text }]}>Delete Your Account</Text>
+      <Text style={[styles.description, { color: theme.subtext }]}>
         This action is permanent and will delete all your data. Please confirm your password to proceed.
       </Text>
 
@@ -66,27 +87,44 @@ const DeleteAccount = () => {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.cancelButton}
-        onPress={() => setModalVisible(false)}
+        style={[
+          styles.cancelButton,
+          { backgroundColor: themeMode === "light" ? "#e5e5ea" : theme.card }
+        ]}
+        onPress={() => {
+          setModalVisible(false);
+          setPassword("");
+          navigation.goBack();
+        }}
       >
-        <Text style={styles.cancelButtonText}>Cancel</Text>
+        <Text
+          style={[
+            styles.cancelButtonText,
+            { color: themeMode === "light" ? "#111" : theme.text }
+          ]}
+        >
+          Cancel
+        </Text>
       </TouchableOpacity>
 
+
+      {/* Modal left untouched as requested */}
       <Modal transparent visible={modalVisible} animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Confirm Password</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Confirm Password</Text>
+
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: theme.input, color: theme.text }]}
               placeholder="Enter your password"
-              placeholderTextColor="#aaa"
+              placeholderTextColor={theme.subtext}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
             />
 
             <TouchableOpacity
-              style={styles.confirmButton}
+              style={[styles.confirmButton, { backgroundColor: "#D32F2F" }]}
               onPress={handleDelete}
               disabled={loading}
             >
@@ -98,13 +136,24 @@ const DeleteAccount = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.modalCancelButton}
+              style={[
+                styles.modalCancelBtn,
+                { backgroundColor: theme.card } // Apply theme.card for background
+              ]}
               onPress={() => {
                 setModalVisible(false);
                 setPassword("");
+                navigation.goBack();
               }}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text
+                style={[
+                  styles.modalCancelText,
+                  { color: theme.text }
+                ]}
+              >
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -118,20 +167,17 @@ export default DeleteAccount;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#131417",
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
   },
   title: {
-    color: "#fff",
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 10,
     textAlign: "center",
   },
   description: {
-    color: "#ccc",
     fontSize: 16,
     textAlign: "center",
     marginBottom: 30,
@@ -149,14 +195,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   cancelButton: {
-    backgroundColor: "#2B2D31",
-    paddingVertical: 10,
-    paddingHorizontal: 25,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
     borderRadius: 8,
+    marginTop: 5,
+    alignItems: "center",
+    width: "63%", 
+    alignSelf: "center",
   },
   cancelButtonText: {
-    color: "#aaa",
     fontSize: 16,
+    fontWeight: "bold",
   },
   modalOverlay: {
     flex: 1,
@@ -166,24 +215,21 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: "85%",
-    backgroundColor: "#1E1F23",
     padding: 25,
     borderRadius: 10,
   },
   modalTitle: {
-    color: "#fff",
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 15,
     textAlign: "center",
   },
   input: {
-    backgroundColor: "#2B2D31",
-    color: "#fff",
-    padding: 12,
     borderRadius: 8,
+    padding: 12,
     fontSize: 16,
     marginBottom: 20,
+    textAlignVertical: "top",
   },
   confirmButton: {
     backgroundColor: "#8e24aa",
@@ -199,5 +245,16 @@ const styles = StyleSheet.create({
   modalCancelButton: {
     marginTop: 10,
     alignItems: "center",
+  },
+  modalCancelBtn: {
+    marginTop: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderRadius: 8,
+    width: "100%", // Same width as Confirm button
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

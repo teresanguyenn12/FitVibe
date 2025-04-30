@@ -11,10 +11,24 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../../contexts/ThemeContext"; // Use your theme context
+import { useColorScheme } from "react-native"; // To detect system theme
 
 const ReportProblem = () => {
   const navigation = useNavigation();
   const [message, setMessage] = useState("");
+
+  const { theme, themeMode } = useTheme();
+  const systemColorScheme = useColorScheme();
+
+  const headerTextColor =
+    themeMode === "dark"
+      ? "#FFFFFF"
+      : themeMode === "light"
+        ? "#111"
+        : systemColorScheme === "dark"
+          ? "#FFFFFF"
+          : "#111";
 
   const handleSubmit = () => {
     if (!message.trim()) {
@@ -30,23 +44,26 @@ const ReportProblem = () => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={28} color="#fff" />
+          <Ionicons name="chevron-back" size={28} color={headerTextColor} />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Report a Problem</Text>
+        <Text style={[styles.headerText, { color: headerTextColor }]}>Report a Problem</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
-      <Text style={styles.label}>Describe the issue you're facing:</Text>
+      {/* Form */}
+      <Text style={[styles.label, { color: theme.text }]}>Describe the issue you're facing:</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: theme.card, color: theme.text }]}
         multiline
         numberOfLines={6}
         placeholder="Enter your message here..."
-        placeholderTextColor="#aaa"
+        placeholderTextColor={theme.subtext}
         value={message}
         onChangeText={setMessage}
       />
@@ -61,35 +78,33 @@ const ReportProblem = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#131417",
     paddingTop: 60,
     paddingHorizontal: 20,
   },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginTop:20,
+    justifyContent: "space-between",
+    marginTop: 20,
     marginBottom: 30,
-    position: "relative",
   },
   backButton: {
-    position: "absolute",
-    left: 0,
+    paddingRight: 10,
   },
   headerText: {
-    color: "#fff",
+    flex: 1,
     fontSize: 22,
     fontWeight: "bold",
+    textAlign: "center",
+  },
+  headerSpacer: {
+    width: 28,
   },
   label: {
-    color: "#ccc",
     fontSize: 16,
     marginBottom: 10,
   },
   input: {
-    backgroundColor: "#2B2D31",
-    color: "#fff",
     borderRadius: 10,
     padding: 15,
     textAlignVertical: "top",

@@ -23,17 +23,24 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { useTheme } from "../contexts/ThemeContext";
 import PostCard from "../screens/components/PostCard";
 const ProfileScreen = () => {
   const navigation = useNavigation();
   const auth = getAuth();
   const db = getFirestore();
   const currentUser = auth.currentUser;
+  const { theme } = useTheme();
+
+  const isDarkMode = theme.background === "#131417" || theme.background === "#000000"; // <-- dark check
+  const secondaryTextColor = isDarkMode ? "#CCCCCC" : "#555555"; // <-- dynamic color!
 
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [featuredGoals, setFeaturedGoals] = useState([]);
   const [userPosts, setUserPosts] = useState([]);
+
+  const screenWidth = Dimensions.get("window").width;
 
   useFocusEffect(
     useCallback(() => {
@@ -92,8 +99,8 @@ const ProfileScreen = () => {
 
   if (loading || !userData) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8e24aa" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -110,23 +117,26 @@ const ProfileScreen = () => {
   } = userData;
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={26} color="#fff" />
+          <Ionicons name="arrow-back" size={26} color={theme.text} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate("Settings")}>
-          <Ionicons name="settings-outline" size={26} color="#fff" />
+          <Ionicons name="settings-outline" size={26} color={theme.text} />
         </TouchableOpacity>
       </View>
 
+      {/* Profile Info */}
       <View style={styles.profileSection}>
         <Image
           source={{ uri: profilePicture || "https://via.placeholder.com/100" }}
           style={styles.profileImage}
         />
-        <Text style={styles.fullName}>{fullName}</Text>
-        <Text style={styles.username}>@{username || "no-username"}</Text>
+        <Text style={[styles.fullName, { color: theme.text }]}>{fullName}</Text>
+        <Text style={[styles.username, { color: secondaryTextColor }]}>@{username || "no-username"}</Text>
+
         <View style={styles.countContainer}>
           <TouchableOpacity
             onPress={() =>
@@ -152,14 +162,16 @@ const ProfileScreen = () => {
         </View>
       </View>
 
+      {/* Rank */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Rank</Text>
-        <Text style={styles.sectionContent}>Prestige 0 - Rookie</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Rank</Text>
+        <Text style={[styles.sectionContent, { color: secondaryTextColor }]}>Prestige 0 - Rookie</Text>
       </View>
 
+      {/* Career Stats */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>My Career Stats</Text>
-        <View style={styles.statBox}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>My Career Stats</Text>
+        <View style={[styles.statBox, { backgroundColor: theme.card }]}>
           <View style={styles.statItem}>
             <Ionicons
               name="trophy-outline"
@@ -171,50 +183,44 @@ const ProfileScreen = () => {
             <Text style={styles.statLabel}>Challenges</Text>
           </View>
           <View style={styles.statItem}>
-            <Ionicons
-              name="flame-outline"
-              size={22}
-              color="#fff"
-              style={styles.statIcon}
-            />
-            <Text style={styles.statValue}>{burnedCalories}</Text>
-            <Text style={styles.statLabel}>Calories</Text>
+            <Ionicons name="flame-outline" size={22} color={theme.text} />
+            <Text style={[styles.statValue, { color: theme.text }]}>{calories}</Text>
+            <Text style={[styles.statLabel, { color: secondaryTextColor }]}>Calories</Text>
           </View>
           <View style={styles.statItem}>
-            <Ionicons
-              name="barbell-outline"
-              size={22}
-              color="#fff"
-              style={styles.statIcon}
-            />
-            <Text style={styles.statValue}>{workouts}</Text>
-            <Text style={styles.statLabel}>Workouts</Text>
+            <Ionicons name="barbell-outline" size={22} color={theme.text} />
+            <Text style={[styles.statValue, { color: theme.text }]}>{workouts}</Text>
+            <Text style={[styles.statLabel, { color: secondaryTextColor }]}>Workouts</Text>
           </View>
         </View>
       </View>
 
+      {/* Featured Goals */}
       <View style={styles.section}>
         <View style={styles.goalsHeader}>
-          <Text style={styles.sectionTitle}>Featured Goals</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Featured Goals</Text>
           <TouchableOpacity onPress={() => navigation.navigate("Goals")}>
-            <Ionicons name="add-circle-outline" size={22} color="#fff" />
+            <Ionicons name="add-circle-outline" size={22} color={theme.text} />
           </TouchableOpacity>
         </View>
         {featuredGoals.length === 0 ? (
-          <Text style={styles.emptyText}>No featured goals.</Text>
+          <Text style={[styles.emptyText, { color: secondaryTextColor }]}>No featured goals.</Text>
         ) : (
           featuredGoals.map((goal) => (
-            <Text key={goal.id} style={styles.sectionContent}>
+            <Text key={goal.id} style={[styles.sectionContent, { color: secondaryTextColor }]}>
               • {goal.text}
             </Text>
           ))
         )}
       </View>
 
+      {/* My Posts */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>My Posts</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>My Posts</Text>
         {userPosts.length === 0 ? (
-          <Text style={styles.emptyText}>No posts yet.</Text>
+          <Text style={[styles.emptyText, { color: secondaryTextColor, fontStyle: "italic" }]}>
+            No posts yet.
+          </Text>
         ) : (
           <View style={styles.postGrid}>
             {userPosts.map((post) => (

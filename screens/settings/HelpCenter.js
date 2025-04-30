@@ -2,9 +2,21 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../../contexts/ThemeContext"; // Import ThemeContext
+import { useColorScheme } from "react-native"; // To handle system theme
 
 const HelpCenter = () => {
   const navigation = useNavigation();
+  const { theme, themeMode } = useTheme();
+  const systemColorScheme = useColorScheme();
+
+  const headerTextColor = themeMode === "dark"
+    ? "#FFFFFF"
+    : themeMode === "light"
+      ? "#111"
+      : systemColorScheme === "dark"
+        ? "#FFFFFF"
+        : "#111";
 
   const helpItems = [
     { label: "FAQ", screen: "FAQ" },
@@ -15,23 +27,27 @@ const HelpCenter = () => {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={30} color="#fff" />
+          <Ionicons name="chevron-back" size={30} color={headerTextColor} />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Help Center</Text>
+        <Text style={[styles.headerText, { color: headerTextColor }]}>Help Center</Text>
+
+        <View style={{ width: 30 }} />
       </View>
 
+      {/* Options */}
       <ScrollView contentContainerStyle={styles.content}>
         {helpItems.map((item) => (
           <TouchableOpacity
             key={item.label}
-            style={styles.option}
+            style={[styles.option, { backgroundColor: theme.card }]}
             onPress={() => navigation.navigate(item.screen)}
           >
-            <Text style={styles.optionText}>{item.label}</Text>
-            <Ionicons name="chevron-forward" size={20} color="#fff" />
+            <Text style={[styles.optionText, { color: theme.text }]}>{item.label}</Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.text} />
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -42,12 +58,12 @@ const HelpCenter = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#131417",
   },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 60,
+    justifyContent: "space-between",
+    paddingTop: 80,
     paddingBottom: 15,
     paddingHorizontal: 15,
   },
@@ -58,24 +74,21 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 24,
     fontWeight: "bold",
-    color: "#FFFFFF",
     textAlign: "center",
   },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 10,
+    paddingTop: 20,
   },
   option: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#2B2D31",
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
   },
   optionText: {
-    color: "#FFFFFF",
     fontSize: 16,
   },
 });

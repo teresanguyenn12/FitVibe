@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Modal, ScrollView, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { fetchGoals, addGoal, deleteGoal, toggleGoalCompletion, updateGoal } from "../api/todoApi";
+import { useTheme } from '../contexts/ThemeContext';
 
 const GoalsScreen = () => {
     const navigation = useNavigation();
@@ -14,12 +15,14 @@ const GoalsScreen = () => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState("active"); // 'active' or 'completed'
+    const [activeTab, setActiveTab] = useState("active");
     const [modalVisible, setModalVisible] = useState(false);
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [currentGoal, setCurrentGoal] = useState(null);
-    const [displayFeatured, setDisplayFeatured] = useState(false); // New state for display feature
+    const [displayFeatured, setDisplayFeatured] = useState(false);
+    
+    const { theme } = useTheme();
 
     // Fetch goals when component mounts
     useEffect(() => {
@@ -49,12 +52,11 @@ const GoalsScreen = () => {
                     description: description,
                     dueDate: dueDate.toISOString(),
                     completed: false,
-                    displayFeatured: false // Initialize as not featured
+                    displayFeatured: false
                 });
                 setTasks([...tasks, newGoal]);
                 clearForm();
                 setModalVisible(false);
-                // Switch to active tab when adding a new goal
                 setActiveTab("active");
             } catch (err) {
                 setError("Failed to add goal. Please try again.");
@@ -101,7 +103,7 @@ const GoalsScreen = () => {
         setTask(goal.text);
         setDescription(goal.description || "");
         setDueDate(goal.dueDate ? new Date(goal.dueDate) : new Date());
-        setDisplayFeatured(goal.displayFeatured || false); // Set featured display option
+        setDisplayFeatured(goal.displayFeatured || false);
         setEditModalVisible(true);
     };
 
@@ -114,7 +116,7 @@ const GoalsScreen = () => {
                     text: task,
                     description: description,
                     dueDate: dueDate.toISOString(),
-                    displayFeatured: currentGoal.completed ? displayFeatured : false // Only allow featured if completed
+                    displayFeatured: currentGoal.completed ? displayFeatured : false
                 };
 
                 await updateGoal(currentGoal.id, updatedGoalData);
@@ -156,32 +158,34 @@ const GoalsScreen = () => {
         }
     });
 
+    // Count active and completed tasks
+    const activeTasks = tasks.filter(task => !task.completed).length;
+    const completedTasks = tasks.filter(task => task.completed).length;
+    const featuredTasks = tasks.filter(task => task.completed && task.displayFeatured).length;
+
     if (loading) {
         return (
-            <View style={[styles.container, styles.centerContent]}>
-                <ActivityIndicator size="large" color="#5A1A9B" />
+            <View style={[styles.container, styles.centerContent, { backgroundColor: theme.background }]}>
+                <ActivityIndicator size="large" color={theme.primary} />
             </View>
         );
     }
 
-    // Count active and completed tasks
-    const activeTasks = tasks.filter(task => !task.completed).length;
-    const completedTasks = tasks.filter(task => task.completed).length;
-
-    // Count featured completed tasks
-    const featuredTasks = tasks.filter(task => task.completed && task.displayFeatured).length;
-
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor: theme.background }]}>
                 {/* Back Button */}
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={30} color="#fff" />
+                <TouchableOpacity 
+                    style={[styles.backButton, { top: 50 }]} 
+                    onPress={() => navigation.goBack()}
+                >
+                    <Ionicons name="chevron-back" size={30} color={theme.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>My Goals</Text>
+                
+                <Text style={[styles.title, { color: theme.text }]}>My Goals</Text>
 
                 {/* Error message if any */}
-                {error && <Text style={styles.errorText}>{error}</Text>}
+                {error && <Text style={[styles.errorText, { color: 'red' }]}>{error}</Text>}
 
                 {/* Add Goal Button */}
                 <LinearGradient
@@ -202,13 +206,14 @@ const GoalsScreen = () => {
                     <TouchableOpacity
                         style={[
                             styles.tab,
-                            activeTab === "active" && styles.activeTab
+                            activeTab === "active" && styles.activeTab,
+                            { backgroundColor: activeTab === "active" ? theme.primary : theme.card }
                         ]}
                         onPress={() => setActiveTab("active")}
                     >
                         <Text style={[
                             styles.tabText,
-                            activeTab === "active" && styles.activeTabText
+                            activeTab === "active" ? styles.activeTabText : { color: theme.subtext }
                         ]}>
                             Active ({activeTasks})
                         </Text>
@@ -216,13 +221,14 @@ const GoalsScreen = () => {
                     <TouchableOpacity
                         style={[
                             styles.tab,
-                            activeTab === "completed" && styles.activeTab
+                            activeTab === "completed" && styles.activeTab,
+                            { backgroundColor: activeTab === "completed" ? theme.primary : theme.card }
                         ]}
                         onPress={() => setActiveTab("completed")}
                     >
                         <Text style={[
                             styles.tabText,
-                            activeTab === "completed" && styles.activeTabText
+                            activeTab === "completed" ? styles.activeTabText : { color: theme.subtext }
                         ]}>
                             Completed ({completedTasks})
                         </Text>
@@ -237,7 +243,8 @@ const GoalsScreen = () => {
                         <TouchableOpacity
                             style={[
                                 styles.taskItem,
-                                item.completed && item.displayFeatured && styles.featuredTaskItem
+                                item.completed && item.displayFeatured && styles.featuredTaskItem,
+                                { backgroundColor: theme.card }
                             ]}
                             onPress={() => openEditModal(item)}
                         >
@@ -252,12 +259,13 @@ const GoalsScreen = () => {
                                     <Ionicons
                                         name={item.completed ? "checkbox" : "square-outline"}
                                         size={24}
-                                        color={item.completed ? "#5A1A9B" : "#aaa"}
+                                        color={item.completed ? theme.primary : theme.subtext}
                                         style={styles.checkbox}
                                     />
                                     <Text style={[
                                         styles.taskText,
-                                        item.completed && styles.completedTask
+                                        item.completed && styles.completedTask,
+                                        { color: item.completed ? theme.subtext : theme.text }
                                     ]}>
                                         {item.text}
                                     </Text>
@@ -279,7 +287,7 @@ const GoalsScreen = () => {
                             </View>
 
                             {item.description && (
-                                <Text style={styles.descriptionText}>
+                                <Text style={[styles.descriptionText, { color: theme.subtext }]}>
                                     {item.description.length > 50
                                         ? item.description.substring(0, 50) + "..."
                                         : item.description}
@@ -288,8 +296,8 @@ const GoalsScreen = () => {
 
                             {item.dueDate && (
                                 <View style={styles.dueDateContainer}>
-                                    <Ionicons name="time-outline" size={18} color="#aaa" />
-                                    <Text style={styles.dueDateText}>
+                                    <Ionicons name="time-outline" size={18} color={theme.subtext} />
+                                    <Text style={[styles.dueDateText, { color: theme.subtext }]}>
                                         {formatDate(item.dueDate)}
                                     </Text>
                                 </View>
@@ -297,7 +305,7 @@ const GoalsScreen = () => {
                         </TouchableOpacity>
                     )}
                     ListEmptyComponent={
-                        <Text style={styles.emptyText}>
+                        <Text style={[styles.emptyText, { color: theme.subtext }]}>
                             {activeTab === "active"
                                 ? "You don't have any active goals. Add one to get started!"
                                 : "You haven't completed any goals yet. Keep going!"}
@@ -313,56 +321,56 @@ const GoalsScreen = () => {
                     onRequestClose={() => setModalVisible(false)}
                 >
                     <View style={styles.modalContainer}>
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Create New Goal</Text>
+                        <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+                            <Text style={[styles.modalTitle, { color: theme.text }]}>Create New Goal</Text>
 
-                            <Text style={styles.inputLabel}>Goal Name</Text>
+                            <Text style={[styles.inputLabel, { color: theme.text }]}>Goal Name</Text>
                             <TextInput
-                                style={styles.modalInput}
+                                style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text }]}
                                 placeholder="Enter your goal..."
-                                placeholderTextColor="#aaa"
+                                placeholderTextColor={theme.subtext}
                                 value={task}
                                 onChangeText={setTask}
                             />
 
-                            <Text style={styles.inputLabel}>Description</Text>
+                            <Text style={[styles.inputLabel, { color: theme.text }]}>Description</Text>
                             <TextInput
-                                style={[styles.modalInput, styles.textArea]}
+                                style={[styles.modalInput, styles.textArea, { backgroundColor: theme.background, color: theme.text }]}
                                 placeholder="Add details about your goal..."
-                                placeholderTextColor="#aaa"
+                                placeholderTextColor={theme.subtext}
                                 value={description}
                                 onChangeText={setDescription}
                                 multiline
                                 numberOfLines={4}
                             />
 
-                            <Text style={styles.inputLabel}>Due Date</Text>
+                            <Text style={[styles.inputLabel, { color: theme.text }]}>Due Date</Text>
                             <TouchableOpacity
-                                style={styles.dateSelector}
+                                style={[styles.dateSelector, { backgroundColor: theme.background }]}
                                 onPress={() => setShowDatePicker(true)}
                             >
-                                <Ionicons name="calendar-outline" size={24} color="#aaa" />
-                                <Text style={styles.dateText}>{formatDate(dueDate.toISOString())}</Text>
+                                <Ionicons name="calendar-outline" size={24} color={theme.subtext} />
+                                <Text style={[styles.dateText, { color: theme.text }]}>{formatDate(dueDate.toISOString())}</Text>
                             </TouchableOpacity>
 
                             {showDatePicker && (
                                 <DateTimePicker
                                     value={dueDate}
                                     mode="datetime"
-                                    display="default"
+                                    display={theme.mode === 'dark' ? 'spinner' : 'default'}
                                     onChange={onDateChange}
                                 />
                             )}
 
                             <View style={styles.modalButtons}>
                                 <TouchableOpacity
-                                    style={[styles.modalButton, styles.cancelButton]}
+                                    style={[styles.modalButton, styles.cancelButton, { backgroundColor: theme.border }]}
                                     onPress={() => {
                                         clearForm();
                                         setModalVisible(false);
                                     }}
                                 >
-                                    <Text style={styles.buttonText}>Cancel</Text>
+                                    <Text style={[styles.buttonText, { color: theme.text }]}>Cancel</Text>
                                 </TouchableOpacity>
 
                                 <LinearGradient
@@ -378,7 +386,6 @@ const GoalsScreen = () => {
                                         <Text style={styles.buttonText}>Create</Text>
                                     </TouchableOpacity>
                                 </LinearGradient>
-
                             </View>
                         </View>
                     </View>
@@ -392,60 +399,58 @@ const GoalsScreen = () => {
                     onRequestClose={() => setEditModalVisible(false)}
                 >
                     <View style={styles.modalContainer}>
-                        <View style={styles.modalContent}>
-                            <Text style={styles.modalTitle}>Edit Goal</Text>
+                        <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+                            <Text style={[styles.modalTitle, { color: theme.text }]}>Edit Goal</Text>
 
-                            <Text style={styles.inputLabel}>Goal Name</Text>
+                            <Text style={[styles.inputLabel, { color: theme.text }]}>Goal Name</Text>
                             <TextInput
-                                style={styles.modalInput}
+                                style={[styles.modalInput, { backgroundColor: theme.background, color: theme.text }]}
                                 placeholder="Enter your goal..."
-                                placeholderTextColor="#aaa"
+                                placeholderTextColor={theme.subtext}
                                 value={task}
                                 onChangeText={setTask}
                             />
 
-                            <Text style={styles.inputLabel}>Description</Text>
+                            <Text style={[styles.inputLabel, { color: theme.text }]}>Description</Text>
                             <TextInput
-                                style={[styles.modalInput, styles.textArea]}
+                                style={[styles.modalInput, styles.textArea, { backgroundColor: theme.background, color: theme.text }]}
                                 placeholder="Add details about your goal..."
-                                placeholderTextColor="#aaa"
+                                placeholderTextColor={theme.subtext}
                                 value={description}
                                 onChangeText={setDescription}
                                 multiline
                                 numberOfLines={4}
                             />
 
-                            <Text style={styles.inputLabel}>Due Date</Text>
+                            <Text style={[styles.inputLabel, { color: theme.text }]}>Due Date</Text>
                             <TouchableOpacity
-                                style={styles.dateSelector}
+                                style={[styles.dateSelector, { backgroundColor: theme.background }]}
                                 onPress={() => setShowDatePicker(true)}
                             >
-                                <Ionicons name="calendar-outline" size={24} color="#aaa" />
-                                <Text style={styles.dateText}>{formatDate(dueDate.toISOString())}</Text>
+                                <Ionicons name="calendar-outline" size={24} color={theme.subtext} />
+                                <Text style={[styles.dateText, { color: theme.text }]}>{formatDate(dueDate.toISOString())}</Text>
                             </TouchableOpacity>
 
                             {showDatePicker && (
                                 <DateTimePicker
                                     value={dueDate}
                                     mode="datetime"
-                                    display="default"
+                                    display={theme.mode === 'dark' ? 'spinner' : 'default'}
                                     onChange={onDateChange}
                                 />
                             )}
 
-                            {/* Featured Display Option - Only shown for completed goals */}
                             {currentGoal && currentGoal.completed && (
                                 <TouchableOpacity
-                                    style={styles.featuredOption}
+                                    style={[styles.featuredOption, { backgroundColor: 'rgba(255, 215, 0, 0.1)', borderColor: 'rgba(255, 215, 0, 0.3)' }]}
                                     onPress={() => setDisplayFeatured(!displayFeatured)}
                                 >
                                     <Ionicons
                                         name={displayFeatured ? "star" : "star-outline"}
                                         size={24}
-                                        color={displayFeatured ? "#FFD700" : "#aaa"}
-                                        
+                                        color={displayFeatured ? "#FFD700" : theme.subtext}
                                     />
-                                    <Text style={styles.featuredText}>
+                                    <Text style={[styles.featuredText, { color: theme.text }]}>
                                         {displayFeatured ? "Featured in Completed Goals" : "Mark as Featured"}
                                     </Text>
                                 </TouchableOpacity>
@@ -453,14 +458,14 @@ const GoalsScreen = () => {
 
                             <View style={styles.modalButtons}>
                                 <TouchableOpacity
-                                    style={[styles.modalButton, styles.cancelButton]}
+                                    style={[styles.modalButton, styles.cancelButton, { backgroundColor: theme.border }]}
                                     onPress={() => {
                                         clearForm();
                                         setEditModalVisible(false);
                                         setCurrentGoal(null);
                                     }}
                                 >
-                                    <Text style={styles.buttonText}>Cancel</Text>
+                                    <Text style={[styles.buttonText, { color: theme.text }]}>Cancel</Text>
                                 </TouchableOpacity>
 
                                 <LinearGradient
@@ -485,222 +490,198 @@ const GoalsScreen = () => {
     );
 };
 
-    const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-            backgroundColor: "#121212",
-            paddingTop: 80,
-            paddingHorizontal: 20,
-        },
-        centerContent: {
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        backButton: {
-            position: "absolute",
-            top: 90,
-            left: 20,
-            backgroundColor: "rgba(255, 255, 255, 0.1)",
-            padding: 10,
-            borderRadius: 10,
-            zIndex: 1, // Ensures it's above other elements
-            alignItems: "center",
-            justifyContent: "center",
-        },
-        title: {
-            color: "#fff",
-            fontSize: 24,
-            fontWeight: "bold",
-            textAlign: "center",
-            marginBottom: 20,
-        },
-        errorText: {
-            color: "red",
-            textAlign: "center",
-            marginBottom: 10,
-        },
-        addGoalButton: {
-            borderRadius: 10,
-            marginVertical: 15,
-            padding: 12,
-            alignItems: "center",
-        },
-        addGoalButtonText: {
-            color: "#fff",
-            fontWeight: "bold",
-            fontSize: 16,
-        },
-        tabContainer: {
-            flexDirection: "row",
-            marginBottom: 15,
-        },
-        tab: {
-            flex: 1,
-            padding: 12,
-            alignItems: "center",
-            backgroundColor: "#1E1E1E",
-            borderRadius: 10,
-            marginHorizontal: 5,
-        },
-        activeTab: {
-            backgroundColor: "#5A1A9B",
-        },
-        tabText: {
-            color: "#aaa",
-            fontWeight: "600",
-        },
-        activeTabText: {
-            color: "#fff",
-        },
-        taskItem: {
-            backgroundColor: "#1E1E1E",
-            padding: 15,
-            borderRadius: 10,
-            marginTop: 10,
-        },
-        taskTopRow: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-        },
-        taskCheckboxContainer: {
-            flexDirection: "row",
-            alignItems: "center",
-            flex: 1,
-        },
-        checkbox: {
-            marginRight: 10,
-        },
-        taskText: {
-            color: "#fff",
-            fontSize: 16,
-            flex: 1,
-        },
-        completedTask: {
-            textDecorationLine: "line-through",
-            color: "#aaa",
-        },
-        descriptionText: {
-            color: "#aaa",
-            marginTop: 8,
-            marginLeft: 34,
-            fontSize: 14,
-        },
-        dueDateContainer: {
-            flexDirection: "row",
-            alignItems: "center",
-            marginTop: 11,
-            marginLeft: 34,
-        },
-        dueDateText: {
-            color: "#aaa",
-            fontSize: 14,
-            marginLeft: 6,
-        },
-        emptyText: {
-            color: "#aaa",
-            textAlign: "center",
-            marginTop: 40,
-            fontSize: 16,
-        },
-        // Modal Styles
-        modalContainer: {
-            flex: 1,
-            justifyContent: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            padding: 20,
-        },
-        modalContent: {
-            backgroundColor: '#1E1E1E',
-            borderRadius: 15,
-            padding: 20,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            elevation: 5,
-        },
-        modalTitle: {
-            color: '#fff',
-            fontSize: 22,
-            fontWeight: 'bold',
-            textAlign: 'center',
-            marginBottom: 20,
-        },
-        inputLabel: {
-            color: '#fff',
-            fontSize: 16,
-            marginBottom: 5,
-            marginTop: 10,
-        },
-        modalInput: {
-            backgroundColor: '#2A2A2A',
-            borderRadius: 10,
-            color: '#fff',
-            padding: 12,
-            fontSize: 16,
-        },
-        textArea: {
-            height: 100,
-            textAlignVertical: 'top',
-        },
-        dateSelector: {
-            backgroundColor: '#2A2A2A',
-            borderRadius: 10,
-            padding: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-        },
-        dateText: {
-            color: '#fff',
-            marginLeft: 10,
-            fontSize: 16,
-        },
-        modalButtons: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginTop: 20,
-        },
-        modalButton: {
-            padding: 12,
-            borderRadius: 10,
-            flex: 0.48,
-            alignItems: 'center',
-        },
-        cancelButton: {
-            backgroundColor: '#3A3A3A',
-        },
-        gradientButton: {
-            borderRadius: 10,
-            flex: 0.48,
-        },
-        buttonText: {
-            color: '#fff',
-            fontWeight: 'bold',
-            fontSize: 16,
-        },
-        featuredOption: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: 'rgba(255, 215, 0, 0.1)',
-            padding: 12,
-            borderRadius: 8,
-            marginTop: 15,
-            marginBottom: 10,
-            borderWidth: 1,
-            borderColor: 'rgba(255, 215, 0, 0.3)',
-        },
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        paddingTop: 80,
+        paddingHorizontal: 20,
+    },
+    centerContent: {
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    backButton: {
+        position: "absolute",
+        left: 10,
+        zIndex: 1,
+        padding: 10,
+        paddingTop: 30,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: "bold",
+        textAlign: "center",
+        marginBottom: 20,
+    },
+    errorText: {
+        textAlign: "center",
+        marginBottom: 10,
+    },
+    addGoalButton: {
+        borderRadius: 10,
+        marginVertical: 15,
+        padding: 12,
+        alignItems: "center",
+    },
+    addGoalButtonText: {
+        color: "#fff",
+        fontWeight: "bold",
+        fontSize: 16,
+    },
+    tabContainer: {
+        flexDirection: "row",
+        marginBottom: 15,
+    },
+    tab: {
+        flex: 1,
+        padding: 12,
+        alignItems: "center",
+        borderRadius: 10,
+        marginHorizontal: 5,
+    },
+    activeTab: {
+        // This is now handled inline with theme.primary
+    },
+    tabText: {
+        fontWeight: "600",
+    },
+    activeTabText: {
+        color: "#fff",
+    },
+    taskItem: {
+        padding: 15,
+        borderRadius: 10,
+        marginTop: 10,
+    },
+    taskTopRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    taskCheckboxContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        flex: 1,
+    },
+    checkbox: {
+        marginRight: 10,
+    },
+    taskText: {
+        fontSize: 16,
+        flex: 1,
+    },
+    completedTask: {
+        textDecorationLine: "line-through",
+    },
+    descriptionText: {
+        marginTop: 8,
+        marginLeft: 34,
+        fontSize: 14,
+    },
+    dueDateContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 11,
+        marginLeft: 34,
+    },
+    dueDateText: {
+        fontSize: 14,
+        marginLeft: 6,
+    },
+    emptyText: {
+        textAlign: "center",
+        marginTop: 40,
+        fontSize: 16,
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        padding: 20,
+    },
+    modalContent: {
+        borderRadius: 15,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 20,
+    },
+    inputLabel: {
+        fontSize: 16,
+        marginBottom: 5,
+        marginTop: 10,
+    },
+    modalInput: {
+        borderRadius: 10,
+        padding: 12,
+        fontSize: 16,
+    },
+    textArea: {
+        height: 100,
+        textAlignVertical: 'top',
+    },
+    dateSelector: {
+        borderRadius: 10,
+        padding: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    dateText: {
+        marginLeft: 10,
+        fontSize: 16,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 20,
+    },
+    modalButton: {
+        padding: 12,
+        borderRadius: 10,
+        flex: 0.48,
+        alignItems: 'center',
+    },
+    cancelButton: {
+        backgroundColor: '#3A3A3A',
+    },
+    gradientButton: {
+        borderRadius: 10,
+        flex: 0.48,
+    },
+    buttonText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
+    featuredOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 8,
+        marginTop: 15,
+        marginBottom: 10,
+        borderWidth: 1,
+    },
+    featuredText: {
+        marginLeft: 10,
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    taskActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    starIcon: {
+        marginRight: 10,
+    }
+});
 
-        featuredText: {
-            marginLeft: 10,
-            fontSize: 16,
-            fontWeight: '500',
-            color: '#ffff',
-        },
-        taskActions: {
-            flexDirection: 'row',
-            alignItems: 'center',
-        }
-    });
-
-    export default GoalsScreen;
+export default GoalsScreen;

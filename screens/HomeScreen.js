@@ -23,12 +23,15 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { app } from "../firebase";
+import { useTheme } from "../contexts/ThemeContext";
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const [user, setUser] = useState({ firstName: "User", profilePicture: null });
   const [trendingChallenge, setTrendingChallenge] = useState(null);
   const wave = useSharedValue(0);
+  const { theme } = useTheme();
+  
 
   const mutedGradientCombos = [
     {
@@ -148,10 +151,10 @@ const HomeScreen = () => {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.topBar}>
         <View style={styles.logoContainer}>
-          <Text style={styles.logoText}>FitVibe</Text>
+          <Text style={[styles.logoText, { color: theme.text }]}>FitVibe</Text>
           <Image
             source={require("../assets/FVLOGO.png")}
             style={styles.logoImage}
@@ -164,7 +167,7 @@ const HomeScreen = () => {
             <Ionicons
               name="notifications-outline"
               size={24}
-              color="#fff"
+              color={theme.text}
               style={{ marginRight: 16 }}
             />
           </TouchableOpacity>
@@ -184,11 +187,11 @@ const HomeScreen = () => {
       </View>
 
       <View style={styles.greetingWrapper}>
-        <Text style={styles.greeting}>
+        <Text style={[styles.greeting, { color: theme.text }]}>
           Hello {user.firstName}
           <Animated.Text style={[styles.emoji, waveStyle]}> 👋</Animated.Text>
         </Text>
-        <Text style={styles.subtext}>Let’s get active!</Text>
+        <Text style={[styles.subtext, { color: theme.subtext }]}>Let's get active!</Text>
       </View>
 
       {/* Trending Challenge */}
@@ -235,7 +238,7 @@ const HomeScreen = () => {
         </View>
       </LinearGradient>
 
-      <Text style={styles.sectionHeader}>Quick Actions</Text>
+      <Text style={[styles.sectionHeader, { color: theme.text }]}>Quick Actions</Text>
       <View style={styles.gridContainer}>
         {actionCards.map((card, index) => (
           <TouchableOpacity
@@ -243,7 +246,7 @@ const HomeScreen = () => {
             style={styles.gridItem}
             onPress={card.onPress}
           >
-            <BlurView intensity={25} tint="dark" style={styles.blurCard}>
+            <BlurView intensity={25} tint={theme.mode === 'dark' ? 'dark' : 'light'} style={styles.blurCard}>
               <LinearGradient
                 colors={
                   mutedGradientCombos[index % mutedGradientCombos.length].colors
@@ -271,7 +274,6 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#131417",
     paddingTop: 60,
     paddingHorizontal: 20,
   },
@@ -284,7 +286,6 @@ const styles = StyleSheet.create({
   logoContainer: { flexDirection: "row", alignItems: "center", marginLeft: 8 },
   logoText: {
     fontSize: 20,
-    color: "#fff",
     fontWeight: "bold",
     fontFamily: "TiltWarp-Regular",
     marginRight: 8,
@@ -302,11 +303,10 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#fff",
     fontFamily: "TiltWarp-Regular",
   },
   emoji: { fontSize: 32 },
-  subtext: { fontSize: 15, color: "#bbb", marginTop: 4 },
+  subtext: { fontSize: 15, marginTop: 4 },
   trendingCard: {
     borderRadius: 20,
     padding: 0,
@@ -350,7 +350,6 @@ const styles = StyleSheet.create({
   },
   joinText: { fontWeight: "bold", color: "#000", fontSize: 14 },
   sectionHeader: {
-    color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 12,

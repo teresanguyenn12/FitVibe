@@ -10,12 +10,14 @@ import {
     Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useFocusEffect, } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
+import { useTheme } from "../../contexts/ThemeContext"; // Import ThemeContext
 
 const BlockedUsers = () => {
     const navigation = useNavigation();
+    const { theme } = useTheme(); // Use the theme
     const auth = getAuth();
     const db = getFirestore();
     const user = auth.currentUser;
@@ -31,10 +33,7 @@ const BlockedUsers = () => {
             } else {
                 setLoading(false);
             }
-
-            return () => {
-                // Cleanup function if needed
-            };
+            return () => {};
         }, [user])
     );
 
@@ -48,11 +47,9 @@ const BlockedUsers = () => {
                 const blockedIds = data.blockedUsers || [];
                 setBlockedUsers(blockedIds);
 
-                // Fetch detailed information for each blocked user
                 if (blockedIds.length > 0) {
                     await fetchBlockedUsersInfo(blockedIds);
                 } else {
-                    // No blocked users, finish loading
                     setLoading(false);
                 }
             } else {
@@ -67,8 +64,6 @@ const BlockedUsers = () => {
     const fetchBlockedUsersInfo = async (blockedIds) => {
         try {
             const usersData = [];
-
-            // Fetch each blocked user's data individually
             for (const blockedId of blockedIds) {
                 try {
                     const userDoc = await getDoc(doc(db, "users", blockedId));
@@ -78,26 +73,23 @@ const BlockedUsers = () => {
                             ...userDoc.data(),
                         });
                     } else {
-                        // Handle case where user might not exist anymore
                         usersData.push({
                             uid: blockedId,
                             fullName: "Unknown User",
                             username: "unknown",
-                            profilePicture: null
+                            profilePicture: null,
                         });
                     }
                 } catch (userFetchError) {
                     console.error("Error fetching user:", blockedId, userFetchError);
-                    // Add a placeholder for this user
                     usersData.push({
                         uid: blockedId,
                         fullName: "User Unavailable",
                         username: "unavailable",
-                        profilePicture: null
+                        profilePicture: null,
                     });
                 }
             }
-
             setBlockedUsersData(usersData);
         } catch (error) {
             console.error("Error fetching blocked users info:", error);
@@ -112,10 +104,7 @@ const BlockedUsers = () => {
                 "Unblock User",
                 `Are you sure you want to unblock ${blockedUser.fullName || blockedUser.username || 'this user'}?`,
                 [
-                    {
-                        text: "Cancel",
-                        style: "cancel"
-                    },
+                    { text: "Cancel", style: "cancel" },
                     {
                         text: "Unblock",
                         onPress: async () => {
@@ -136,7 +125,7 @@ const BlockedUsers = () => {
     };
 
     const renderBlockedUser = ({ item }) => (
-        <View style={styles.userRow}>
+        <View style={[styles.userRow, { borderBottomColor: theme.border }]}>
             <TouchableOpacity
                 style={styles.profileButton}
                 onPress={() => navigation.navigate('OtherProfile', { userId: item.uid })}
@@ -146,35 +135,39 @@ const BlockedUsers = () => {
                     style={styles.avatar}
                 />
                 <View style={styles.userInfo}>
-                    <Text style={styles.name}>{item.fullName}</Text>
-                    <Text style={styles.handle}>@{item.username || (item.email ? item.email.split('@')[0] : 'user')}</Text>
+                    <Text style={[styles.name, { color: theme.text }]}>{item.fullName}</Text>
+                    <Text style={[styles.handle, { color: theme.subtext }]}>
+                        @{item.username || (item.email ? item.email.split('@')[0] : 'user')}
+                    </Text>
                 </View>
             </TouchableOpacity>
             <TouchableOpacity
-                style={styles.unblockButton}
+                style={[styles.unblockButton, { backgroundColor: theme.card, borderColor: theme.primary }]}
                 onPress={() => unblockUser(item)}
             >
-                <Text style={styles.unblockButtonText}>Unblock</Text>
+                <Text style={[styles.unblockButtonText, { color: theme.primary }]}>Unblock</Text>
             </TouchableOpacity>
         </View>
     );
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
             {/* Header */}
-            <View style={styles.headerContainer}>
+            <View style={[styles.headerContainer, { borderBottomColor: theme.border }]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="chevron-back" size={30} color="#FFFFFF" />
+                    <Ionicons name="chevron-back" size={30} color={theme.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerText}>Blocked Users</Text>
+                <Text style={[styles.headerText, { color: theme.text }]}>Blocked Users</Text>
                 <View style={{ width: 30 }} />
             </View>
 
             {/* Content */}
             {loading ? (
-                <ActivityIndicator size="large" color="#8e24aa" style={{ marginTop: 40 }} />
+                <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
             ) : blockedUsersData.length === 0 ? (
-                <Text style={styles.noBlockedText}>You have no blocked users.</Text>
+                <Text style={[styles.noBlockedText, { color: theme.subtext }]}>
+                    You have no blocked users.
+                </Text>
             ) : (
                 <FlatList
                     data={blockedUsersData}
@@ -190,7 +183,6 @@ const BlockedUsers = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#131417",
         paddingTop: 50,
     },
     headerContainer: {
@@ -199,16 +191,15 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         paddingHorizontal: 15,
         paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: "#2B2D31",
     },
     backButton: {
         padding: 5,
+        marginVertical: 10,
     },
     headerText: {
-        fontSize: 20,
+        paddingTop: 10,
+        fontSize: 24,
         fontWeight: "bold",
-        color: "#FFFFFF",
     },
     userRow: {
         flexDirection: "row",
@@ -216,7 +207,6 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderBottomWidth: 1,
-        borderBottomColor: "#2B2D31",
     },
     profileButton: {
         flexDirection: 'row',
@@ -227,41 +217,35 @@ const styles = StyleSheet.create({
         width: 50,
         height: 50,
         borderRadius: 25,
-        marginRight: 15
+        marginRight: 15,
     },
     userInfo: {
-        flex: 1
+        flex: 1,
     },
     name: {
-        color: '#fff',
         fontSize: 16,
-        fontWeight: "600"
+        fontWeight: "600",
     },
     handle: {
-        color: '#888',
         fontSize: 14,
-        marginTop: 2
+        marginTop: 2,
     },
     unblockButton: {
-        backgroundColor: "#2B2D31",
         paddingVertical: 8,
         paddingHorizontal: 15,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: "#8e24aa",
     },
     unblockButtonText: {
-        color: "#FFFFFF",
         fontWeight: "600",
         fontSize: 14,
     },
     noBlockedText: {
-        color: "#8e8e8e",
         fontSize: 16,
         textAlign: "center",
         marginTop: 40,
         fontStyle: "italic",
-    }
+    },
 });
 
 export default BlockedUsers;

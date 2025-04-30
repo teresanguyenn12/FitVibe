@@ -4,15 +4,28 @@ import { Ionicons } from "@expo/vector-icons";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../../contexts/ThemeContext"; // Import ThemeContext
+import { useColorScheme } from "react-native"; // To detect system theme
 
 const ActivityTracking = () => {
   const navigation = useNavigation();
+  const { theme, themeMode } = useTheme();
+  const systemColorScheme = useColorScheme();
+
   const auth = getAuth();
   const db = getFirestore();
   const user = auth.currentUser;
 
   const [isTrackingEnabled, setIsTrackingEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  const headerTextColor = themeMode === "dark"
+    ? "#FFFFFF"
+    : themeMode === "light"
+      ? "#111"
+      : systemColorScheme === "dark"
+        ? "#FFFFFF"
+        : "#111";
 
   useEffect(() => {
     if (user) fetchActivityTrackingStatus();
@@ -45,36 +58,39 @@ const ActivityTracking = () => {
 
   if (loading) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#8e24aa" />
+      <View style={[styles.loaderContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={30} color="#fff" />
+          <Ionicons name="chevron-back" size={30} color={headerTextColor} />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Activity Tracking</Text>
+        <Text style={[styles.headerText, { color: headerTextColor }]}>Activity Tracking</Text>
       </View>
 
       {/* Switch Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Enable Activity Tracking</Text>
+      <View style={[styles.card, { backgroundColor: theme.card }]}>
+        <Text style={[styles.cardTitle, { color: theme.text }]}>Enable Activity Tracking</Text>
         <Switch
-          trackColor={{ false: "#767577", true: "#8e24aa" }}
+          trackColor={{ 
+            false: theme.mode === "dark" ? "#3A3D42" : "#e5e5ea", // darker gray for dark mode, lighter gray for light mode
+            true: theme.primary 
+          }}
           thumbColor={isTrackingEnabled ? "#fff" : "#aaa"}
-          ios_backgroundColor="#3e3e3e"
+          ios_backgroundColor={theme.mode === "dark" ? "#3A3D42" : "#e5e5ea"}
           onValueChange={toggleTracking}
           value={isTrackingEnabled}
         />
       </View>
 
       {/* Status Message */}
-      <Text style={styles.statusText}>
+      <Text style={[styles.statusText, { color: theme.subtext }]}>
         {isTrackingEnabled ? "Activity tracking is enabled" : "Activity tracking is disabled"}
       </Text>
     </View>
@@ -84,20 +100,18 @@ const ActivityTracking = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#131417",
     paddingHorizontal: 20,
-    paddingTop: 70,
+    paddingTop: 50,
   },
   loaderContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#131417",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    margintop: 40,
+    marginTop: 40,
     marginBottom: 30,
   },
   backButton: {
@@ -106,13 +120,11 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
     fontSize: 24,
-    color: "#fff",
     fontWeight: "bold",
     textAlign: "center",
     marginRight: 30,
   },
   card: {
-    backgroundColor: "#1E1F23",
     borderRadius: 12,
     padding: 18,
     flexDirection: "row",
@@ -121,12 +133,10 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   cardTitle: {
-    color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "500",
   },
   statusText: {
-    color: "#CCCCCC",
     fontSize: 16,
     textAlign: "center",
     marginTop: 25,

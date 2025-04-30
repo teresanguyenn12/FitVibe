@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, useColorScheme } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons, Feather } from "@expo/vector-icons";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, onSnapshot } from "firebase/firestore";
+import { useTheme } from "../contexts/ThemeContext";
 
 // Import the local default profile image correctly
 import defaultProfileImage from "../assets/default-profile.png";
@@ -18,17 +19,28 @@ import {
     ConnectedDevices, 
     NotificationSettings, 
     ThemeSettings, 
-    LanguageSettings, 
+    //LanguageSettings, 
     UnitsSettings, 
     HelpCenter, 
     ReportProblem, 
     PrivacyPolicy, 
     DeleteAccount 
-} from "./settings";  // <- Imports from settings/index.js
+} from "./settings";
 
 const SettingsScreen = () => {
     const navigation = useNavigation();
     const [profileImage, setProfileImage] = useState(null); 
+    const { theme, themeMode } = useTheme();
+    const systemColorScheme = useColorScheme();
+
+    const headerBackgroundColor = themeMode === "light" ? theme.background : theme.headerBg;
+    const headerTextColor = themeMode === "dark"
+        ? "#FFFFFF"
+        : themeMode === "light"
+            ? "#111"
+            : systemColorScheme === "dark"
+                ? "#FFFFFF"
+                : "#111";
 
     useEffect(() => {
         const auth = getAuth();
@@ -71,7 +83,7 @@ const SettingsScreen = () => {
             title: "App Preferences",
             options: [
                 { title: "Theme Mode", icon: "moon", screen: ThemeSettings },
-                { title: "Language", icon: "globe", screen: LanguageSettings },
+                //{ title: "Language", icon: "globe", screen: LanguageSettings },
                 { title: "Units of Measurement", icon: "bar-chart", screen: UnitsSettings },
             ],
         },
@@ -87,35 +99,51 @@ const SettingsScreen = () => {
     ];
 
     return (
-        <View style={styles.container}>
-            <View style={styles.headerContainer}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
+            {/* Header */}
+            <View style={[styles.headerContainer, { backgroundColor: headerBackgroundColor }]}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={30} color="#FFFFFF" />
+                    <Ionicons name="chevron-back" size={30} color={headerTextColor} />
                 </TouchableOpacity>
-                <Text style={styles.headerText}>Settings</Text>
+                <Text style={[styles.headerText, { color: headerTextColor }]}>Settings</Text>
                 <Image 
                     source={profileImage ? { uri: profileImage } : defaultProfileImage} 
                     style={styles.profileAvatar} 
                 />
             </View>
 
+            {/* Settings Sections */}
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 {settingsSections.map((section, sectionIndex) => (
                     <View key={sectionIndex} style={styles.sectionContainer}>
-                        <Text style={styles.sectionTitle}>{section.title}</Text>
-                        <View style={styles.optionsContainer}>
+                        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                            {section.title}
+                        </Text>
+                        <View style={[styles.optionsContainer, { backgroundColor: theme.card }]}>
                             {section.options.map((option, index) => (
                                 <TouchableOpacity
                                     key={index}
                                     style={[
                                         styles.option,
                                         index === section.options.length - 1 ? styles.lastOption : null,
+                                        { borderBottomColor: theme.border }
                                     ]}
                                     onPress={() => navigation.navigate(option.screen)}
                                 >
-                                    <Feather name={option.icon} size={20} color="#FFFFFF" style={styles.optionIcon} />
-                                    <Text style={styles.optionText}>{option.title}</Text>
-                                    <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+                                    <Feather 
+                                        name={option.icon} 
+                                        size={20} 
+                                        color={theme.text} 
+                                        style={styles.optionIcon} 
+                                    />
+                                    <Text style={[styles.optionText, { color: theme.text }]}>
+                                        {option.title}
+                                    </Text>
+                                    <Ionicons 
+                                        name="chevron-forward" 
+                                        size={20} 
+                                        color={theme.text} 
+                                    />
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -129,31 +157,28 @@ const SettingsScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#131417", 
     },
     headerContainer: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between", 
+        justifyContent: "space-between",
         paddingTop: 60,
-        paddingHorizontal: 15, 
+        paddingHorizontal: 15,
         paddingBottom: 10,
-        backgroundColor: "#131417",
     },
     backButton: {
         padding: 10,
     },
     headerText: {
-        color: "#FFFFFF",
         fontSize: 24,
         fontWeight: "bold",
         textAlign: "center",
-        flex: 1, // Centers the title
+        flex: 1,
     },
     profileAvatar: {
         width: 40,
         height: 40,
-        borderRadius: 20, // Circular image
+        borderRadius: 20,
         marginRight: 10,
         borderWidth: 1,
         borderColor: "#FFFFFF",
@@ -165,17 +190,16 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     sectionTitle: {
-        color: "#FFFFFF",
         fontSize: 16,
         fontWeight: "bold",
         paddingHorizontal: 20,
+        paddingVertical: 8,
         marginBottom: 10,
         opacity: 0.7,
     },
     optionsContainer: {
-        backgroundColor: "#2B2D31",
         borderRadius: 12,
-        marginHorizontal: 15, 
+        marginHorizontal: 15,
         paddingVertical: 5,
         elevation: 2,
         shadowColor: "#000",
@@ -190,7 +214,6 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         paddingHorizontal: 20,
         borderBottomWidth: 0.5,
-        borderBottomColor: "#3A3D42",
     },
     lastOption: {
         borderBottomWidth: 0,
@@ -199,7 +222,6 @@ const styles = StyleSheet.create({
         marginRight: 12,
     },
     optionText: {
-        color: "#FFFFFF",
         fontSize: 17,
         flex: 1,
         fontWeight: "500",

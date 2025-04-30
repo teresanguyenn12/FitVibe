@@ -4,9 +4,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { useNavigation } from "@react-navigation/native";
+import { useTheme } from "../../contexts/ThemeContext"; // Import theme
+import { useColorScheme } from "react-native"; // For system automatic mode
 
 const NotificationSettings = () => {
   const navigation = useNavigation();
+  const { theme, themeMode } = useTheme();
+  const systemColorScheme = useColorScheme();
+
   const auth = getAuth();
   const db = getFirestore();
   const user = auth.currentUser;
@@ -17,6 +22,14 @@ const NotificationSettings = () => {
     rewardsNotifications: false,
     friendRequests: false,
   });
+
+  const headerTextColor = themeMode === "dark"
+    ? "#FFFFFF"
+    : themeMode === "light"
+      ? "#111"
+      : systemColorScheme === "dark"
+        ? "#FFFFFF"
+        : "#111";
 
   useEffect(() => {
     if (user) fetchNotificationSettings();
@@ -58,24 +71,27 @@ const NotificationSettings = () => {
       .replace(/^./, (str) => str.toUpperCase());
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={30} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={30} color={headerTextColor} />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Notification Settings</Text>
+        <Text style={[styles.headerText, { color: headerTextColor }]}>Notification Settings</Text>
       </View>
 
       {/* Settings */}
       <View style={styles.settingsContainer}>
         {Object.entries(settings).map(([key, value]) => (
-          <View key={key} style={styles.settingItem}>
-            <Text style={styles.settingLabel}>{formatLabel(key)}</Text>
+          <View key={key} style={[styles.settingItem, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.settingLabel, { color: theme.text }]}>{formatLabel(key)}</Text>
             <Switch
-              trackColor={{ false: "#3A3B3F", true: "#8e24aa" }}
-              thumbColor={value ? "#fff" : "#888"}
-              ios_backgroundColor="#3A3B3F"
+              trackColor={{
+                false: theme.mode === "dark" ? "#3A3D42" : "#e5e5ea", 
+                true: theme.primary
+              }}
+              thumbColor={value ? "#fff" : "#aaa"}
+              ios_backgroundColor={theme.mode === "dark" ? "#3A3D42" : "#e5e5ea"}
               onValueChange={() => toggleSetting(key)}
               value={value}
               style={{ transform: [{ scaleX: 1.1 }, { scaleY: 1.1 }] }}
@@ -90,7 +106,6 @@ const NotificationSettings = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
     paddingHorizontal: 20,
     paddingTop: 60,
   },
@@ -104,15 +119,13 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     fontSize: 24,
-    color: "#fff",
     fontWeight: "bold",
-    marginRight: 30, 
+    marginRight: 30,
   },
   settingsContainer: {
     marginTop: 10,
   },
   settingItem: {
-    backgroundColor: "#1E1F23",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -120,11 +133,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     marginBottom: 12,
-    borderColor: "#2D2F33",
-    borderWidth: 1,
   },
   settingLabel: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "500",
   },

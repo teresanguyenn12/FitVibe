@@ -39,6 +39,7 @@ export default function FeedScreen() {
   const db = getFirestore();
   const auth = getAuth();
   const listRef = useRef(null);
+  const { theme } = useTheme(); // <-- added
   const [posts, setPosts] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -192,7 +193,7 @@ export default function FeedScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.navigate("AddPostsScreen")}>
           <Ionicons name="duplicate-outline" size={24} color="#fff" />

@@ -12,18 +12,17 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import {
-    followUser,
-    unfollowUser,
-    fetchUserById,
-} from '../api/addFriendsApi';
+import { followUser, unfollowUser, fetchUserById } from '../api/addFriendsApi';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { useTheme } from '../contexts/ThemeContext';
 
 const FriendsListScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { type = 'followers' } = route.params || {};
+
+    const { theme, themeMode } = useTheme();
 
     const [activeTab, setActiveTab] = useState(type);
     const [list, setList] = useState([]);
@@ -34,7 +33,6 @@ const FriendsListScreen = () => {
     const db = getFirestore();
     const currentUser = auth.currentUser;
 
-    // Function to fetch updated friends list
     const fetchFriends = async (tabType) => {
         try {
             setLoading(true);
@@ -62,7 +60,6 @@ const FriendsListScreen = () => {
         }
     };
 
-    // Ensure the list updates when navigating back
     useFocusEffect(
         useCallback(() => {
             fetchFriends(activeTab);
@@ -82,7 +79,7 @@ const FriendsListScreen = () => {
                 [userId]: !isFollowing,
             }));
 
-            fetchFriends(activeTab); // Refresh list after following/unfollowing
+            fetchFriends(activeTab);
         } catch (err) {
             Alert.alert('Error', 'Failed to update follow status.');
             console.error(err);
@@ -93,7 +90,7 @@ const FriendsListScreen = () => {
         const isFollowing = followingMap[item.id];
 
         return (
-            <View style={styles.userItem}>
+            <View style={[styles.userItem, { borderBottomColor: theme.border }]}> 
                 <TouchableOpacity
                     style={styles.profileButton}
                     onPress={() => navigation.navigate('OtherProfile', { userId: item.id })}
@@ -103,17 +100,13 @@ const FriendsListScreen = () => {
                         style={styles.avatar}
                     />
                     <View style={styles.userInfo}>
-                        <Text style={styles.name}>{item.fullName}</Text>
-                        <Text style={styles.handle}>@{item.username || item.email?.split('@')[0]}</Text>
+                        <Text style={[styles.name, { color: theme.text }]}>{item.fullName}</Text>
+                        <Text style={[styles.handle, { color: theme.text }]}>@{item.username || item.email?.split('@')[0]}</Text>
                     </View>
                 </TouchableOpacity>
 
-                
                 <TouchableOpacity
-                    style={[
-                        styles.followButton,
-                        isFollowing ? styles.followingButton : styles.notFollowingButton,
-                    ]}
+                    style={[styles.followButton, isFollowing ? styles.followingButton : styles.notFollowingButton]}
                     onPress={() => handleFollowToggle(item.id, isFollowing)}
                 >
                     <Text style={styles.followText}>
@@ -125,41 +118,44 @@ const FriendsListScreen = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Top Bar */}
-            <View style={styles.headerRow}>
-  <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-    <Ionicons name="arrow-back" size={24} color="#fff" />
-  </TouchableOpacity>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}> 
+            <View style={[styles.headerRow, { backgroundColor: theme.headerBg }]}> 
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Ionicons name="arrow-back" size={24} color={theme.text} />
+                </TouchableOpacity>
 
-  <View style={styles.headerTitleWrapper}>
-    <Text style={styles.headerText}>Friends</Text>
-  </View>
-</View>
+                <View style={styles.headerTitleWrapper}>
+                    <Text style={[styles.headerText, { color: theme.text }]}>Friends</Text>
+                </View>
+            </View>
 
-            {/* Tabs */}
             <View style={styles.tabContainer}>
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'followers' && styles.activeTab]}
+                    style={[styles.tab, activeTab === 'followers' && { borderBottomColor: theme.primary }]}
                     onPress={() => setActiveTab('followers')}
                 >
                     <Text
                         style={[
                             styles.tabText,
-                            activeTab === 'followers' && styles.activeTabText,
+                            activeTab === 'followers'
+                                ? { color: theme.primary }
+                                : { color: theme.text },
                         ]}
                     >
                         Followers
                     </Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
-                    style={[styles.tab, activeTab === 'following' && styles.activeTab]}
+                    style={[styles.tab, activeTab === 'following' && { borderBottomColor: theme.primary }]}
                     onPress={() => setActiveTab('following')}
                 >
                     <Text
                         style={[
                             styles.tabText,
-                            activeTab === 'following' && styles.activeTabText,
+                            activeTab === 'following'
+                                ? { color: theme.primary }
+                                : { color: theme.text },
                         ]}
                     >
                         Following
@@ -167,15 +163,12 @@ const FriendsListScreen = () => {
                 </TouchableOpacity>
             </View>
 
-            {/* Friend List */}
             {loading ? (
                 <View style={styles.loaderContainer}>
                     <ActivityIndicator size="large" color="#5A1A9B" />
                 </View>
             ) : list.length === 0 ? (
-                <Text style={styles.emptyText}>
-                    No {activeTab === 'followers' ? 'followers' : 'followings'} yet.
-                </Text>
+                <Text style={[styles.emptyText, { color: theme.text }]}>No {activeTab === 'followers' ? 'followers' : 'followings'} yet.</Text>
             ) : (
                 <FlatList
                     data={list}
@@ -187,109 +180,93 @@ const FriendsListScreen = () => {
     );
 };
 
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111' },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: 15,
-    paddingTop: 10,
-    paddingBottom: 5,
-    position: 'relative',
-  },
-  headerTitleWrapper: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  backButton: {
-    padding: 5,
-  },
-  addButton: {
-    padding: 5,
-  },
-  headerText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginVertical: 10,
-  },
-  tab: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    marginHorizontal: 10,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  activeTab: {
-    borderBottomColor: '#8e24aa',
-  },
-  tabText: {
-    fontSize: 16,
-    color: '#aaa',
-    fontWeight: '500',
-  },
-  activeTabText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  userItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 15,
-  },
-  userInfo: {
-    flex: 1,
-  },
-  name: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  handle: {
-    color: '#888',
-    fontSize: 14,
-  },
-  followButton: {
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-  },
-  followingButton: {
-    backgroundColor: 'purple',
-  },
-  notFollowingButton: {
-    backgroundColor: 'gray',
-  },
-  followText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  emptyText: {
-    color: '#888',
-    textAlign: 'center',
-    marginTop: 40,
-    fontSize: 16,
-    fontStyle: 'italic',
+    container: { flex: 1 },
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        paddingHorizontal: 15,
+        paddingTop: 10,
+        paddingBottom: 5,
+        position: 'relative',
+    },
+    headerTitleWrapper: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+    },
+    backButton: {
+        padding: 5,
+    },
+    headerText: {
+        paddingTop: 20,
+        fontSize: 22,
+        fontWeight: 'bold',
+    },
+    tabContainer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginVertical: 10,
+    },
+    tab: {
+        paddingVertical: 8,
+        paddingHorizontal: 20,
+        marginHorizontal: 10,
+        borderBottomWidth: 2,
+        borderBottomColor: 'transparent',
+    },
+    tabText: {
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    userItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 15,
+        borderBottomWidth: 1,
+    },
+    avatar: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        marginRight: 15,
+    },
+    userInfo: {
+        flex: 1,
+    },
+    name: {
+        fontSize: 16,
+    },
+    handle: {
+        fontSize: 14,
+    },
+    followButton: {
+        paddingVertical: 5,
+        paddingHorizontal: 15,
+        borderRadius: 10,
+    },
+    followingButton: {
+        backgroundColor: 'purple',
+    },
+    notFollowingButton: {
+        backgroundColor: 'gray',
+    },
+    followText: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    emptyText: {
+        textAlign: 'center',
+        marginTop: 40,
+        fontSize: 16,
+        fontStyle: 'italic',
     },
     profileButton: {
         flexDirection: 'row',
-        flex: 1
-    }
+        flex: 1,
+    },
 });
 
 export default FriendsListScreen;

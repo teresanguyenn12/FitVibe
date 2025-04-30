@@ -12,30 +12,53 @@ import {
   Alert,
   Animated,
   Keyboard,
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  SafeAreaView,
+  Alert,
+  Animated,
+  Keyboard,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { fetchAllUsers, followUser, unfollowUser } from "../api/addFriendsApi";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { useTheme } from "../contexts/ThemeContext"; // theme context
 
 const AddFriendsScreen = () => {
   const navigation = useNavigation();
+  const { theme, themeMode } = useTheme(); // get theme + themeMode
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [following, setFollowing] = useState({});
-  const [requested, setRequested] = useState({});
   const [fadeAnim] = useState(new Animated.Value(0));
   const [blockedUsers, setBlockedUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const currentUser = getAuth().currentUser;
   const db = getFirestore();
 
+  // Custom placeholder color depending on mode
+  const placeholderColor = themeMode === "light" ? "#555" : "#ccc";
+  const bigIconColor = themeMode === "light" ? "#bbb" : "#ccc"; // lighter in light mode, softer in dark mode
+
   const fetchBlockedUsers = async () => {
     try {
-      const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-      return userDoc.exists() ? userDoc.data().blockedUsers || [] : [];
+      const userDocRef = doc(db, "users", currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const blockedIds = userData.blockedUsers || [];
+        setBlockedUsers(blockedIds);
+        return blockedIds;
+      }
+      return [];
     } catch (error) {
       console.error("Error fetching blocked users:", error);
       return [];
@@ -47,9 +70,10 @@ const AddFriendsScreen = () => {
     try {
       const blockedUserIds = blockedIds || await fetchBlockedUsers();
       const { userList, followingMap } = await fetchAllUsers();
-
-      const currentUserSnap = await getDoc(doc(db, "users", currentUser.uid));
-      const currentUserData = currentUserSnap.exists() ? currentUserSnap.data() : {};
+      const currentUserDoc = await getDoc(doc(db, "users", currentUser.uid));
+      const currentUserData = currentUserDoc.exists()
+        ? currentUserDoc.data()
+        : {};
       const currentFollowing = currentUserData.following || [];
 
       const requestedMap = {};
@@ -63,8 +87,14 @@ const AddFriendsScreen = () => {
       );
 
       const usersWithMutuals = filteredUserList.map((user) => {
-        const mutuals = (user.followers || []).filter((id) => currentFollowing.includes(id));
-        return { ...user, mutualFriends: mutuals.length };
+        const userFollowers = user.followers || [];
+        const mutuals = userFollowers.filter((follower) =>
+          currentFollowing.includes(follower)
+        );
+        return {
+          ...user,
+          mutualFriends: mutuals.length,
+        };
       });
 
       setUsers(usersWithMutuals);
@@ -79,27 +109,44 @@ const AddFriendsScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      const refresh = async () => {
+      const refreshScreen = async () => {
         const blockedIds = await fetchBlockedUsers();
         loadUsers(blockedIds);
       };
-      refresh();
+      refreshScreen();
+      return () => {};
     }, [])
   );
+
+  useEffect(() => {
+    fetchBlockedUsers();
+  }, []);
+
+  useEffect(() => {
+    if (blockedUsers.length >= 0) {
+      loadUsers(blockedUsers);
+    }
+  }, [blockedUsers]);
 
   useEffect(() => {
     if (search.trim().length === 0) {
       setFilteredUsers([]);
       return;
     }
+
     const searchLower = search.toLowerCase();
     const filtered = users.filter(
       (user) =>
         (user.fullName?.toLowerCase() || "").includes(searchLower) ||
         (user.username?.toLowerCase() || "").includes(searchLower)
     );
+
     setFilteredUsers(filtered);
-    Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   }, [search, users]);
 
   const refreshUsers = async () => {
@@ -180,10 +227,18 @@ const AddFriendsScreen = () => {
           )}
         </View>
 
+        {/* Results or Placeholder */}
         {search.trim().length === 0 ? (
           <View style={styles.placeholderContainer}>
-            <Ionicons name="search-circle-outline" size={90} color="#444" style={{ marginBottom: 16 }} />
-            <Text style={styles.placeholderText}>Start typing to search for friends</Text>
+            <Ionicons
+              name="search-circle-outline"
+              size={90}
+              color={bigIconColor} // lighter giant icon color
+              style={{ marginBottom: 16 }}
+            />
+            <Text style={[styles.placeholderText, { color: placeholderColor }]}>
+              Start typing to search for friends
+            </Text>
           </View>
         ) : (
           <Animated.FlatList
@@ -193,50 +248,56 @@ const AddFriendsScreen = () => {
             keyboardShouldPersistTaps="handled"
             data={filteredUsers}
             keyExtractor={(item) => item.id || item.uid}
-            renderItem={({ item }) => {
-              const userId = item.id || item.uid;
-              const isFollowing = following[userId];
-              const isRequested = requested[userId];
-
-              return (
-                <View style={styles.userItem}>
-                  <TouchableOpacity
-                    style={styles.profileButton}
-                    onPress={() => navigation.navigate("OtherProfile", { userId })}
-                  >
-                    <Image source={{ uri: item.profilePicture || "https://via.placeholder.com/50" }} style={styles.avatar} />
-                    <View style={styles.userInfo}>
-                      <Text style={styles.name}>{item.fullName}</Text>
-                      <Text style={styles.handle}>@{item.username || item.email?.split("@")[0]}</Text>
-                      {item.mutualFriends > 0 && (
-                        <Text style={styles.mutual}>
-                          {item.mutualFriends} mutual friend{item.mutualFriends > 1 ? "s" : ""}
-                        </Text>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.followButton,
-                      isFollowing ? styles.followingButton : styles.notFollowingButton,
-                    ]}
-                    onPress={() => {
-                        if (isFollowing || isRequested) {
-                          handleUnfollow(userId); // 🛠 Unfollow or cancel request
-                        } else {
-                          handleFollow(userId); // ➕ Follow or send request
-                        }
-                      }}
-                  >
-                    <Text style={styles.followText}>
-                      {isFollowing ? "Following" : isRequested ? "Requested" : "Follow"}
+            renderItem={({ item }) => (
+              <View style={[styles.userItem, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                <TouchableOpacity
+                  style={styles.profileButton}
+                  onPress={() =>
+                    navigation.navigate("OtherProfile", { userId: item.id || item.uid })
+                  }
+                >
+                  <Image
+                    source={{
+                      uri: item.profilePicture || "https://via.placeholder.com/50",
+                    }}
+                    style={styles.avatar}
+                  />
+                  <View style={styles.userInfo}>
+                    <Text style={[styles.name, { color: theme.text }]}>{item.fullName}</Text>
+                    <Text style={[styles.handle, { color: placeholderColor }]}>
+                      @{item.username || (item.email && item.email.split("@")[0])}
                     </Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            }}
-            ListEmptyComponent={<Text style={styles.emptyText}>No users found.</Text>}
+                    {item.mutualFriends > 0 && (
+                      <Text style={[styles.mutual, { color: placeholderColor }]}>
+                        {item.mutualFriends} mutual friend{item.mutualFriends > 1 ? "s" : ""}
+                      </Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.followButton,
+                    following[item.id || item.uid]
+                      ? { backgroundColor: theme.background, borderColor: theme.border, borderWidth: 1 }
+                      : { backgroundColor: theme.primary },
+                  ]}
+                  onPress={() =>
+                    following[item.id || item.uid]
+                      ? handleUnfollow(item.id || item.uid)
+                      : handleFollow(item.id || item.uid)
+                  }
+                >
+                  <Text style={[styles.followText, { color: following[item.id || item.uid] ? theme.text : "#fff" }]}>
+                    {following[item.id || item.uid] ? "Following" : "Follow"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            ListEmptyComponent={
+              <Text style={[styles.emptyText, { color: placeholderColor }]}>
+                No users found.
+              </Text>
+            }
           />
         )}
       </TouchableOpacity>
@@ -245,23 +306,20 @@ const AddFriendsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#131417" },
+  container: { flex: 1 },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1A1B1E",
     marginHorizontal: 16,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "#2D2F33",
   },
   searchIcon: { marginRight: 10, opacity: 0.6 },
   searchInput: {
     flex: 1,
-    color: "#fff",
     fontSize: 15,
     fontWeight: "500",
     paddingVertical: 6,
@@ -274,7 +332,6 @@ const styles = StyleSheet.create({
     padding: 30,
   },
   placeholderText: {
-    color: "#bbb",
     fontSize: 16,
     fontStyle: "italic",
     textAlign: "center",
@@ -285,9 +342,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderBottomColor: "#2c2c2c",
     borderBottomWidth: 1,
-    backgroundColor: "#1A1B1E",
     borderRadius: 10,
     marginHorizontal: 16,
     marginBottom: 10,
@@ -302,9 +357,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   userInfo: { flex: 1 },
-  name: { color: "#fff", fontSize: 16, fontWeight: "500" },
-  handle: { color: "#aaa", fontSize: 13, marginTop: 2 },
-  mutual: { color: "#888", fontSize: 12, marginTop: 4 },
+  name: { fontSize: 16, fontWeight: "500" },
+  handle: { fontSize: 13, marginTop: 2 },
+  mutual: { fontSize: 12, marginTop: 4 },
   followButton: {
     paddingVertical: 6,
     paddingHorizontal: 18,
@@ -313,10 +368,16 @@ const styles = StyleSheet.create({
     minWidth: 80,
     alignItems: "center",
   },
-  followingButton: { backgroundColor: "#1e1e1e", borderColor: "#888", borderWidth: 1 },
-  notFollowingButton: { backgroundColor: "#6C38CC" },
-  followText: { color: "#fff", fontWeight: "600", fontSize: 14 },
-  emptyText: { color: "#888", textAlign: "center", marginTop: 40, fontStyle: "italic", fontSize: 16 },
+  followText: {
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  emptyText: {
+    textAlign: "center",
+    marginTop: 40,
+    fontStyle: "italic",
+    fontSize: 16,
+  },
 });
 
 export default AddFriendsScreen;

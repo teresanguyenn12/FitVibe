@@ -14,6 +14,8 @@ import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { getAuth } from "firebase/auth";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
+import { useTheme } from "../../contexts/ThemeContext"; // Import useTheme
+import { useColorScheme } from "react-native"; // Import system color scheme
 
 // Apps with icons & library references
 const availableApps = [
@@ -25,16 +27,27 @@ const availableApps = [
 
 const ConnectedApps = () => {
   const navigation = useNavigation();
-  const auth = getAuth();
-  const db = getFirestore();
-  const user = auth.currentUser;
+  const { theme, themeMode } = useTheme(); 
+  const systemColorScheme = useColorScheme(); // detect device light/dark
 
   const [connectedApps, setConnectedApps] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const headerTextColor = themeMode === "dark"
+    ? "#FFFFFF"
+    : themeMode === "light"
+      ? "#111"
+      : systemColorScheme === "dark"
+        ? "#FFFFFF"
+        : "#111";
+
   useEffect(() => {
     if (user) fetchConnectedApps();
-  }, [user]);
+  }, []);
+
+  const auth = getAuth();
+  const db = getFirestore();
+  const user = auth.currentUser;
 
   const fetchConnectedApps = async () => {
     try {
@@ -102,10 +115,10 @@ const ConnectedApps = () => {
     const IconComponent = item.lib;
 
     return (
-      <View style={styles.appCard}>
+      <View style={[styles.appCard, { backgroundColor: theme.card }]}>
         <View style={styles.appInfo}>
-          <IconComponent name={item.icon} size={26} color="#fff" style={styles.appIcon} />
-          <Text style={styles.appName}>{item.name}</Text>
+          <IconComponent name={item.icon} size={26} color={theme.text} style={styles.appIcon} />
+          <Text style={[styles.appName, { color: theme.text }]}>{item.name}</Text>
         </View>
         <TouchableOpacity
           style={[styles.button, isConnected ? styles.disconnect : styles.connect]}
@@ -120,18 +133,18 @@ const ConnectedApps = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={30} color="#fff" />
+          <Ionicons name="chevron-back" size={30} color={headerTextColor} />
         </TouchableOpacity>
-        <Text style={styles.headerText}>Connected Apps</Text>
+        <Text style={[styles.headerText, { color: headerTextColor }]}>Connected Apps</Text>
       </View>
 
       {/* Loading */}
       {loading ? (
-        <ActivityIndicator size="large" color="#8e24aa" style={{ marginTop: 40 }} />
+        <ActivityIndicator size="large" color={theme.primary} style={{ marginTop: 40 }} />
       ) : (
         <FlatList
           data={availableApps}
@@ -147,14 +160,13 @@ const ConnectedApps = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#131417",
     paddingHorizontal: 20,
     paddingTop: 60,
   },
   headerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop:20,
+    marginTop: 20,
     marginBottom: 20,
   },
   backButton: {
@@ -163,13 +175,11 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
     fontSize: 24,
-    color: "#fff",
     fontWeight: "bold",
     textAlign: "center",
     marginRight: 30,
   },
   appCard: {
-    backgroundColor: "#2B2D31",
     borderRadius: 12,
     padding: 15,
     flexDirection: "row",
@@ -185,7 +195,6 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   appName: {
-    color: "#fff",
     fontSize: 18,
     fontWeight: "500",
   },
