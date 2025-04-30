@@ -213,6 +213,7 @@ function Navigation() {
           ) : (
             <>
               <Stack.Screen name="HomeTabs" component={BottomTabs} />
+              <Stack.Screen name="NotificationScreen" component={NotificationScreen} />
               <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
               <Stack.Screen name="Settings" component={SettingsScreen} />
               <Stack.Screen name="ThemeSettings" component={SettingsScreens.ThemeSettings} />
