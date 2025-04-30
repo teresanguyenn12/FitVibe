@@ -30,13 +30,13 @@ const MessagesScreen = () => {
             setLoading(true);
             const db = getFirestore();
 
+            // Get current user's following/followers data for reference
             const userDoc = await getDoc(doc(db, 'users', user.uid));
             const userData = userDoc.data();
             const following = new Set(userData?.following || []);
             const followers = new Set(userData?.followers || []);
 
-            const mutuals = new Set([...following].filter(id => followers.has(id)));
-
+            // Query all chatrooms where the current user is a participant
             const chatroomsRef = collection(db, 'chatrooms');
             const chatroomsQuery = query(chatroomsRef, where('participantDetails.' + user.uid, '!=', null));
             const chatroomsSnapshot = await getDocs(chatroomsQuery);
@@ -45,11 +45,11 @@ const MessagesScreen = () => {
 
             for (const chatroomDoc of chatroomsSnapshot.docs) {
                 const chatroomData = chatroomDoc.data();
-
                 const participantIds = Object.keys(chatroomData.participantDetails || {});
                 const isGroup = participantIds.length > 2;
 
                 if (isGroup) {
+                    // Handle group chats as before
                     const names = participantIds
                         .filter(id => id !== user.uid)
                         .map(id => chatroomData.participantDetails[id]?.name || "Unknown")
@@ -61,25 +61,52 @@ const MessagesScreen = () => {
                         title: names,
                         lastMessage: chatroomData.lastMessage || 'Group Challenge',
                         participantDetails: chatroomData.participantDetails,
-                        challenge: chatroomData.challenge || null
+                        challenge: chatroomData.challenge || null,
+                        lastMessageTime: chatroomData.lastMessageTime || null
                     });
                 } else {
+                    // For one-on-one chats, include all chats regardless of follow status
                     const otherUserId = participantIds.find(id => id !== user.uid);
-                    if (mutuals.has(otherUserId)) {
+
+                    if (otherUserId) {
+                        // Get the other user's data
                         const otherUserDoc = await getDoc(doc(db, 'users', otherUserId));
+
                         if (otherUserDoc.exists()) {
+                            const otherUserData = otherUserDoc.data();
+
+                            // Determine follow status
+                            const youFollowThem = following.has(otherUserId);
+                            const theyFollowYou = followers.has(otherUserId);
+                            const followStatus = {
+                                youFollowThem,
+                                theyFollowYou,
+                                isMutual: youFollowThem && theyFollowYou
+                            };
+
                             usersMap.set(chatroomDoc.id, {
                                 id: chatroomDoc.id,
                                 isGroup: false,
                                 otherUserId,
-                                ...otherUserDoc.data(),
+                                ...otherUserData,
+                                followStatus,
+                                lastMessage: chatroomData.lastMessage || '',
+                                lastMessageTime: chatroomData.lastMessageTime || null
                             });
                         }
                     }
                 }
             }
 
-            setChatUsers(Array.from(usersMap.values()));
+            // Convert map to array and sort by last message time (if available)
+            const chatUsersArray = Array.from(usersMap.values());
+            chatUsersArray.sort((a, b) => {
+                const timeA = a.lastMessageTime ? a.lastMessageTime.toDate().getTime() : 0;
+                const timeB = b.lastMessageTime ? b.lastMessageTime.toDate().getTime() : 0;
+                return timeB - timeA; // Sort in descending order (newest first)
+            });
+
+            setChatUsers(chatUsersArray);
         } catch (error) {
             console.error('Error fetching chat users:', error);
         } finally {

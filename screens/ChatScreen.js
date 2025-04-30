@@ -7,7 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocs, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, deleteDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDocs, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, deleteDoc, updateDoc, getDoc } from 'firebase/firestore';
 import * as ImagePicker from 'expo-image-picker';
 import { storage } from '../firebase'; // Make sure this path matches your project structure
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -54,6 +54,23 @@ const ChatScreen = () => {
             }
         })();
     }, []);
+
+    // Check if the other user follows the current user
+    const checkIfUserFollowsMe = async () => {
+        try {
+            const otherUserDoc = await getDoc(doc(db, 'users', otherUserId));
+            if (!otherUserDoc.exists()) {
+                return false;
+            }
+
+            const otherUserData = otherUserDoc.data();
+            // Check if the current user's ID is in the other user's following list
+            return otherUserData.following?.includes(currentUser.uid) || false;
+        } catch (error) {
+            console.error('Error checking if user follows current user:', error);
+            return false;
+        }
+    };
 
     const uploadImageToFirebase = async (uri) => {
         if (!uri) return null;
@@ -141,14 +158,17 @@ const ChatScreen = () => {
                 lastMessageTime: serverTimestamp(),
             });
 
-            // Send push notification to the other user
-            axios.post(`https://app.nativenotify.com/api/indie/notification`, {
-                subID: otherUserId,
-                appId: 29298,
-                appToken: 'u04gYyaVKbAobwZ9ojzShp',
-                title: 'FitVibe',
-                message: `${currentUser.displayName || 'Someone'} sent you an image.`
-            });
+            // Only send notification if the other user follows the current user
+            const doesFollowMe = await checkIfUserFollowsMe();
+            if (doesFollowMe) {
+                axios.post(`https://app.nativenotify.com/api/indie/notification`, {
+                    subID: otherUserId,
+                    appId: 29298,
+                    appToken: 'u04gYyaVKbAobwZ9ojzShp',
+                    title: 'FitVibe',
+                    message: `${currentUser.displayName || 'Someone'} sent you an image.`
+                });
+            }
 
             setSelectedImage(null);
         } catch (error) {
@@ -175,14 +195,17 @@ const ChatScreen = () => {
                 lastMessageTime: serverTimestamp(),
             });
 
-            // Send push notification to the other user
-            axios.post(`https://app.nativenotify.com/api/indie/notification`, {
-                subID: otherUserId,
-                appId: 29298,
-                appToken: 'u04gYyaVKbAobwZ9ojzShp',
-                title: 'FitVibe',
-                message: `${currentUser.displayName || 'Someone'} sent you a message.`
-            });
+            // Only send notification if the other user follows the current user
+            const doesFollowMe = await checkIfUserFollowsMe();
+            if (doesFollowMe) {
+                axios.post(`https://app.nativenotify.com/api/indie/notification`, {
+                    subID: otherUserId,
+                    appId: 29298,
+                    appToken: 'u04gYyaVKbAobwZ9ojzShp',
+                    title: 'FitVibe',
+                    message: `${currentUser.displayName || 'Someone'} sent you a message.`
+                });
+            }
 
             setInputText('');
         } catch (error) {
