@@ -73,13 +73,21 @@ export default function FeedScreen() {
             username: userData.username || "user",
             profilePicture: userData.profilePicture || null,
             rank: userData.rank || "Rookie",
+            isPrivate: userData.isPrivate || false,
+            ownerFollowers: userData.followers || [], 
           };
         })
       );
 
-      setPosts(posts.filter((p) => visible.includes(p.userId)));
+      setPosts(
+        posts.filter((p) => {
+          if (p.userId === user.uid) return true;
+          if (!p.isPrivate) return visible.includes(p.userId);
+          return p.ownerFollowers.includes(user.uid);
+        })
+      );
     } catch (err) {
-      console.error("Error fetching posts:", err);
+      console.error("Error fetching posts:", err);  //important to catch any problems
     }
   };
 
@@ -226,7 +234,7 @@ export default function FeedScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#111" },
+  container: { flex: 1, backgroundColor: "#131417" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",

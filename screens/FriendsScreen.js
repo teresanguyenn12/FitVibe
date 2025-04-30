@@ -1,3 +1,5 @@
+// Fully Updated FriendsScreen.js with private-account-aware follow logic
+
 import React, { useEffect, useState, useCallback } from 'react';
 import {
     View, Text, TextInput, FlatList, TouchableOpacity, Image,
@@ -7,74 +9,76 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../authProvider";
 import { fetchUserFriends, unfollowUser, followUser } from "../api/addFriendsApi";
+import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 
 const FriendsScreen = () => {
     const { user } = useAuth();
     const navigation = useNavigation();
+    const db = getFirestore();
     const [friends, setFriends] = useState([]);
     const [search, setSearch] = useState('');
     const [following, setFollowing] = useState({});
+    const [requested, setRequested] = useState({});
 
-    // Function to load friends
     const loadFriends = async () => {
         if (user) {
             const friendsList = await fetchUserFriends();
             setFriends(friendsList);
 
-            // Create a map of following status
             const followingMap = {};
+            const requestedMap = {};
+
+            const currentUserDoc = await getDoc(doc(db, "users", user.uid));
+            const currentUserData = currentUserDoc.data();
+            const currentFollowing = currentUserData.following || [];
+
             friendsList.forEach(friend => {
-                followingMap[friend.id] = true;
+                followingMap[friend.id] = currentFollowing.includes(friend.id);
+                requestedMap[friend.id] = friend.pendingRequests?.includes(user.uid) || false;
             });
+
             setFollowing(followingMap);
+            setRequested(requestedMap);
         }
     };
 
-    // Automatically refresh when the screen comes into focus
     useFocusEffect(
         useCallback(() => {
             loadFriends();
         }, [])
     );
 
-    const handleFollow = async (userId) => {
+    const handleFollowToggle = async (targetId, isFollowing, isRequested) => {
         try {
-            await followUser(userId);
-            setFollowing(prev => ({
-                ...prev,
-                [userId]: true
-            }));
+            const currentUserRef = doc(db, "users", user.uid);
+            const otherUserRef = doc(db, "users", targetId);
 
-            // Add new friend to the list instantly
-            const newFriend = { id: userId, fullName: "New Friend", email: "newfriend@example.com", profilePicture: "" };
-            setFriends(prevFriends => [...prevFriends, newFriend]);
-
+            if (isFollowing) {
+                await updateDoc(currentUserRef, { following: arrayRemove(targetId) });
+                await updateDoc(otherUserRef, { followers: arrayRemove(user.uid) });
+            } else if (isRequested) {
+                await updateDoc(otherUserRef, { pendingRequests: arrayRemove(user.uid) });
+            } else {
+                const otherDoc = await getDoc(otherUserRef);
+                if (otherDoc.exists() && otherDoc.data().isPrivate) {
+                    await updateDoc(otherUserRef, { pendingRequests: arrayUnion(user.uid) });
+                    setRequested(prev => ({ ...prev, [targetId]: true }));
+                } else {
+                    await updateDoc(currentUserRef, { following: arrayUnion(targetId) });
+                    await updateDoc(otherUserRef, { followers: arrayUnion(user.uid) });
+                    setFollowing(prev => ({ ...prev, [targetId]: true }));
+                }
+            }
+            loadFriends();
         } catch (error) {
-            Alert.alert('Error', 'Failed to follow user');
-            console.error('Follow error:', error);
+            Alert.alert('Error', 'Failed to update follow status');
+            console.error(error);
         }
     };
 
-    const handleUnfollow = async (userId) => {
-        try {
-            await unfollowUser(userId);
-            setFollowing(prev => ({
-                ...prev,
-                [userId]: false
-            }));
-
-            // Remove friend instantly
-            setFriends(prevFriends => prevFriends.filter(friend => friend.id !== userId));
-        } catch (error) {
-            Alert.alert('Error', 'Failed to unfollow user');
-            console.error('Unfollow error:', error);
-        }
-    };
-
-    // Filter friends based on search input
     const filteredFriends = friends.filter(friend =>
-        (friend.fullName?.toLowerCase() || "").includes(search.toLowerCase()) ||
-        (friend.email?.toLowerCase() || "").includes(search.toLowerCase())
+        (friend.fullName?.toLowerCase() || '').includes(search.toLowerCase()) ||
+        (friend.email?.toLowerCase() || '').includes(search.toLowerCase())
     );
 
     return (
@@ -104,34 +108,41 @@ const FriendsScreen = () => {
             <FlatList
                 data={filteredFriends}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <View style={styles.userItem}>
-                        <Image
-                            source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }}
-                            style={styles.avatar}
-                        />
-                        <View style={styles.userInfo}>
-                            <Text style={styles.name}>{item.fullName}</Text>
-                            <Text style={styles.handle}>@{item.email?.split('@')[0]}</Text>
+                renderItem={({ item }) => {
+                    const isFollowing = following[item.id];
+                    const isRequested = requested[item.id];
+                    return (
+                        <View style={styles.userItem}>
+                            <Image
+                                source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }}
+                                style={styles.avatar}
+                            />
+                            <View style={styles.userInfo}>
+                                <Text style={styles.name}>{item.fullName}</Text>
+                                <Text style={styles.handle}>@{item.email?.split('@')[0]}</Text>
+                            </View>
+                            <TouchableOpacity
+                                style={[
+                                    styles.followButton,
+                                    isFollowing
+                                        ? styles.followingButton
+                                        : isRequested
+                                        ? styles.requestedButton
+                                        : styles.notFollowingButton
+                                ]}
+                                onPress={() => handleFollowToggle(item.id, isFollowing, isRequested)}
+                            >
+                                <Text style={styles.followText}>
+                                    {isFollowing ? 'Following' : isRequested ? 'Requested' : 'Follow'}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
-                        <TouchableOpacity
-                            style={[
-                                styles.followButton,
-                                following[item.id] ? styles.followingButton : styles.notFollowingButton
-                            ]}
-                            onPress={() => following[item.id] ? handleUnfollow(item.id) : handleFollow(item.id)}
-                        >
-                            <Text style={styles.followText}>
-                                {following[item.id] ? 'Following' : 'Follow'}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
+                    );
+                }}
             />
         </SafeAreaView>
     );
 };
-
 
 const styles = StyleSheet.create({
     container: {
@@ -208,6 +219,9 @@ const styles = StyleSheet.create({
     },
     notFollowingButton: {
         backgroundColor: 'gray'
+    },
+    requestedButton: {
+        backgroundColor: '#555'
     },
     followText: {
         color: '#fff',

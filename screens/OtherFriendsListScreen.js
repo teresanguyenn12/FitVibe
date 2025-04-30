@@ -1,3 +1,5 @@
+// Fully Updated OtherFriendsListScreen.js
+
 import React, { useState, useCallback } from 'react';
 import {
     View,
@@ -33,11 +35,9 @@ const OtherFriendsListScreen = () => {
     const db = getFirestore();
     const currentUser = auth.currentUser;
 
-    // Determine if viewing own profile or someone else's
     const isOwnProfile = !userId || userId === currentUser.uid;
     const viewingUserId = isOwnProfile ? currentUser.uid : userId;
 
-    // Function to fetch the current user's blocked users
     const fetchBlockedUsers = async () => {
         try {
             const currentUserDoc = await getDoc(doc(db, 'users', currentUser.uid));
@@ -52,7 +52,6 @@ const OtherFriendsListScreen = () => {
         }
     };
 
-    // Function to fetch profile owner's data
     const fetchProfileOwner = async () => {
         if (!isOwnProfile) {
             try {
@@ -66,20 +65,15 @@ const OtherFriendsListScreen = () => {
         }
     };
 
-    // Function to fetch updated friends list
     const fetchFriends = async (tabType) => {
         try {
             setLoading(true);
-
-            // Fetch blocked users first
             const blockedUserIds = await fetchBlockedUsers();
             setBlockedUsers(blockedUserIds);
 
-            // Fetch the target user's data to get their followers/following
             const userDoc = await getDoc(doc(db, 'users', viewingUserId));
             const userData = userDoc.data();
 
-            // Fetch current user's data to determine follow status
             const currentUserDoc = await getDoc(doc(db, 'users', currentUser.uid));
             const currentUserData = currentUserDoc.data();
             const currentUserFollowing = currentUserData?.following || [];
@@ -89,13 +83,11 @@ const OtherFriendsListScreen = () => {
             const tempFollowing = {};
 
             for (const id of ids) {
-                // Skip blocked users
                 if (blockedUserIds.includes(id)) continue;
 
                 const friendDoc = await fetchUserById(id);
                 if (friendDoc) {
                     tempList.push(friendDoc);
-                    // Check if current user is following this friend
                     tempFollowing[id] = currentUserFollowing.includes(id);
                 }
             }
@@ -109,7 +101,6 @@ const OtherFriendsListScreen = () => {
         }
     };
 
-    // Ensure the list updates when navigating back or changing tabs
     useFocusEffect(
         useCallback(() => {
             fetchProfileOwner();
@@ -117,20 +108,25 @@ const OtherFriendsListScreen = () => {
         }, [activeTab, viewingUserId])
     );
 
-    const handleFollowToggle = async (userId, isFollowing) => {
+    const handleFollowToggle = async (userId, isFollowing, isRequested) => {
         try {
+            const currentUserRef = doc(db, "users", currentUser.uid);
+            const otherUserRef = doc(db, "users", userId);
+
             if (isFollowing) {
-                await unfollowUser(userId);
+                await updateDoc(currentUserRef, { following: arrayRemove(userId) });
+                await updateDoc(otherUserRef, { followers: arrayRemove(currentUser.uid) });
+            } else if (isRequested) {
+                await updateDoc(otherUserRef, { pendingRequests: arrayRemove(currentUser.uid) });
             } else {
-                await followUser(userId);
+                const otherDoc = await getDoc(otherUserRef);
+                if (otherDoc.exists() && otherDoc.data().isPrivate) {
+                    await updateDoc(otherUserRef, { pendingRequests: arrayUnion(currentUser.uid) });
+                } else {
+                    await updateDoc(currentUserRef, { following: arrayUnion(userId) });
+                    await updateDoc(otherUserRef, { followers: arrayUnion(currentUser.uid) });
+                }
             }
-
-            setFollowingMap((prev) => ({
-                ...prev,
-                [userId]: !isFollowing,
-            }));
-
-            // Refresh list after following/unfollowing
             fetchFriends(activeTab);
         } catch (err) {
             Alert.alert('Error', 'Failed to update follow status.');
@@ -140,6 +136,7 @@ const OtherFriendsListScreen = () => {
 
     const renderItem = ({ item }) => {
         const isFollowing = followingMap[item.id];
+        const isRequested = item.pendingRequests?.includes(currentUser.uid);
         const isCurrentUser = item.id === currentUser.uid;
 
         return (
@@ -154,10 +151,7 @@ const OtherFriendsListScreen = () => {
                         }
                     }}
                 >
-                    <Image
-                        source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }}
-                        style={styles.avatar}
-                    />
+                    <Image source={{ uri: item.profilePicture || 'https://via.placeholder.com/50' }} style={styles.avatar} />
                     <View style={styles.userInfo}>
                         <Text style={styles.name}>{item.fullName}</Text>
                         <Text style={styles.handle}>@{item.username || item.email?.split('@')[0]}</Text>
@@ -168,12 +162,16 @@ const OtherFriendsListScreen = () => {
                     <TouchableOpacity
                         style={[
                             styles.followButton,
-                            isFollowing ? styles.followingButton : styles.notFollowingButton,
+                            isFollowing
+                                ? styles.followingButton
+                                : isRequested
+                                ? styles.requestedButton
+                                : styles.notFollowingButton,
                         ]}
-                        onPress={() => handleFollowToggle(item.id, isFollowing)}
+                        onPress={() => handleFollowToggle(item.id, isFollowing, isRequested)}
                     >
                         <Text style={styles.followText}>
-                            {isFollowing ? 'Following' : 'Follow'}
+                            {isFollowing ? 'Following' : isRequested ? 'Requested' : 'Follow'}
                         </Text>
                     </TouchableOpacity>
                 )}
@@ -181,7 +179,6 @@ const OtherFriendsListScreen = () => {
         );
     };
 
-    // Get title for the header based on whose list we're viewing
     const getHeaderTitle = () => {
         if (isOwnProfile) {
             return "Friends";
@@ -191,71 +188,51 @@ const OtherFriendsListScreen = () => {
         return "Friends";
     };
 
+    const followers = profileOwner?.followers ?? [];
+    const isPrivateAndBlocked = profileOwner?.isPrivate && !followers.includes(currentUser.uid);
+
+
     return (
         <SafeAreaView style={styles.container}>
-            {/* Top Bar */}
             <View style={styles.headerRow}>
-                <TouchableOpacity
-                    onPress={() => navigation.goBack()}
-                    style={styles.backButton}
-                >
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color="#fff" />
                 </TouchableOpacity>
-
                 <Text style={styles.headerText}>{getHeaderTitle()}</Text>
-
-                {isOwnProfile && (
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('AddFriends')}
-                        style={styles.addButton}
-                    >
+                {isOwnProfile ? (
+                    <TouchableOpacity onPress={() => navigation.navigate('AddFriends')} style={styles.addButton}>
                         <Ionicons name="person-add-outline" size={24} color="#fff" />
                     </TouchableOpacity>
-                )}
-
-                {/* Empty view to maintain layout when "Add" button is not shown */}
-                {!isOwnProfile && <View style={styles.addButton} />}
+                ) : <View style={styles.addButton} />}
             </View>
 
-            {/* Tabs */}
             <View style={styles.tabContainer}>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 'followers' && styles.activeTab]}
                     onPress={() => setActiveTab('followers')}
                 >
-                    <Text
-                        style={[
-                            styles.tabText,
-                            activeTab === 'followers' && styles.activeTabText,
-                        ]}
-                    >
-                        Followers
-                    </Text>
+                    <Text style={[styles.tabText, activeTab === 'followers' && styles.activeTabText]}>Followers</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.tab, activeTab === 'following' && styles.activeTab]}
                     onPress={() => setActiveTab('following')}
                 >
-                    <Text
-                        style={[
-                            styles.tabText,
-                            activeTab === 'following' && styles.activeTabText,
-                        ]}
-                    >
-                        Following
-                    </Text>
+                    <Text style={[styles.tabText, activeTab === 'following' && styles.activeTabText]}>Following</Text>
                 </TouchableOpacity>
             </View>
 
-            {/* Friend List */}
-            {loading ? (
+            {isPrivateAndBlocked ? (
+                <View style={styles.privateContainer}>
+                    <Ionicons name="lock-closed-outline" size={60} color="#666" style={{ marginBottom: 16 }} />
+                    <Text style={styles.emptyText}>This user's {activeTab} list is private.</Text>
+                    <Text style={styles.privateSubText}>Follow them to see more.</Text>
+                </View>
+            ) : loading ? (
                 <View style={styles.loadingContainer}>
                     <Text style={styles.loadingText}>Loading...</Text>
                 </View>
             ) : list.length === 0 ? (
-                <Text style={styles.emptyText}>
-                    No {activeTab === 'followers' ? 'followers' : 'followings'} yet.
-                </Text>
+                <Text style={styles.emptyText}>No {activeTab} yet.</Text>
             ) : (
                 <FlatList
                     data={list}
@@ -374,6 +351,21 @@ const styles = StyleSheet.create({
     loadingText: {
         color: '#888',
         fontSize: 16,
+    },
+    privateContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 50,
+        paddingHorizontal: 30,
+      },
+    privateSubText: {
+        textAlign: 'center',
+        fontSize: 14,
+        color: '#777',
+        marginTop: 6,
+      },
+      requestedButton: {
+        backgroundColor: '#555',
     }
 });
 

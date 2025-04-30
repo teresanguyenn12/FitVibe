@@ -29,7 +29,6 @@ const HomeScreen = () => {
   const [user, setUser] = useState({ firstName: "User", profilePicture: null });
   const [trendingChallenge, setTrendingChallenge] = useState(null);
   const wave = useSharedValue(0);
-  
 
   const mutedGradientCombos = [
     {
@@ -82,15 +81,30 @@ const HomeScreen = () => {
       try {
         const db = getFirestore(app);
         const challengesRef = collection(db, "challenges");
-        const q = query(challengesRef, orderBy("popularity", "desc"), limit(1));
+        const q = query(
+          challengesRef,
+          orderBy("participantCount", "desc"),
+          limit(1)
+        );
         const querySnapshot = await getDocs(q);
+
         if (!querySnapshot.empty) {
-          setTrendingChallenge(querySnapshot.docs[0].data());
-        } else {
+          const docSnap = querySnapshot.docs[0];
           setTrendingChallenge({
-            title: "Spring Step-Off",
+            id: docSnap.id,
+            ...docSnap.data(),
+          });
+        } else {
+          // fallback is only triggered when querySnapshot is empty
+          setTrendingChallenge({
+            id: "mockChallengeId",
+            name: "Spring Step-Off",
             description: "Take 10,000 steps each day this week!",
             popularity: 87,
+            category: "Walk",
+            distance: "10,000 steps",
+            duration: "7 days",
+            reward: "+100 XP",
           });
         }
       } catch (error) {
@@ -177,7 +191,7 @@ const HomeScreen = () => {
         <Text style={styles.subtext}>Let’s get active!</Text>
       </View>
 
-      {/* Trending Challenge*/}
+      {/* Trending Challenge */}
       <LinearGradient
         colors={["#8A1E50", "#1A4A80"]}
         start={{ x: 0, y: 0 }}
@@ -194,14 +208,28 @@ const HomeScreen = () => {
             />
             <Text style={styles.trendingLabel}>Trending Challenge</Text>
           </View>
-          <Text style={styles.trendingTitle}>{trendingChallenge?.title}</Text>
+
+          <Text style={styles.trendingTitle}>
+            {trendingChallenge?.name || "No Challenge"}
+          </Text>
+
           <Text style={styles.trendingDesc}>
-            {trendingChallenge?.description}
+            {trendingChallenge?.description ||
+              `Category: ${trendingChallenge?.category || "General"}`}
           </Text>
+
           <Text style={styles.trendingPop}>
-            Popularity: {trendingChallenge?.popularity}%
+            {trendingChallenge?.participantCount || 0} people joined
           </Text>
-          <TouchableOpacity style={styles.joinButton}>
+
+          <TouchableOpacity
+            style={styles.joinButton}
+            onPress={() =>
+              navigation.navigate("ChallengeDetails", {
+                challenge: trendingChallenge,
+              })
+            }
+          >
             <Text style={styles.joinText}>Join Now</Text>
           </TouchableOpacity>
         </View>

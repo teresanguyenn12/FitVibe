@@ -1,4 +1,4 @@
-// PostDetailScreen.js — Matches FeedScreen layout
+// PostDetailScreen.js — Updated with private account restriction
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -66,6 +66,21 @@ const PostDetailScreen = () => {
     return () => unsubscribe();
   }, [post.userId]);
 
+  // Privacy Guard: block non-followers from seeing private posts
+  useEffect(() => {
+    if (
+      authorData?.isPrivate &&
+      !authorData.followers?.includes(user.uid) &&
+      user.uid !== post.userId
+    ) {
+      Alert.alert(
+        "Private Account",
+        "This post belongs to a private account. Follow them to view it.",
+        [{ text: "OK", onPress: () => navigation.goBack() }]
+      );
+    }
+  }, [authorData]);
+
   const liked = likes.includes(user.uid);
 
   const toggleLike = async () => {
@@ -118,14 +133,12 @@ const PostDetailScreen = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#1a1a1a" }}>
-      {/* Floating Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Ionicons name="chevron-back" size={26} color="#fff" />
       </TouchableOpacity>
-  
+
       <ScrollView contentContainerStyle={{ paddingTop: 50 }}>
         <View style={styles.card}>
-          {/* Header */}
           <View style={styles.postHeader}>
             <View style={styles.profileSection}>
               <Image source={{ uri: authorData?.profilePicture }} style={styles.avatar} />
@@ -135,18 +148,16 @@ const PostDetailScreen = () => {
                 <Text style={styles.time}>{timeAgo}</Text>
               </View>
             </View>
-  
+
             {user.uid === post.userId && (
               <TouchableOpacity onPress={handleDelete}>
                 <Ionicons name="ellipsis-vertical" size={20} color="#fff" />
               </TouchableOpacity>
             )}
           </View>
-  
-          {/* Description */}
+
           {post.description && <Text style={styles.description}>{post.description}</Text>}
-  
-          {/* Workout Type Badge */}
+
           {displayLabel && (
             <View style={styles.workoutBadgeWrapper}>
               <LinearGradient colors={["#8e2de2", "#4a00e0"]} style={styles.badge}>
@@ -155,8 +166,7 @@ const PostDetailScreen = () => {
               </LinearGradient>
             </View>
           )}
-  
-          {/* Media Carousel */}
+
           {post.media?.length > 0 && (
             <View style={styles.mediaContainer}>
               <FlatList
@@ -206,8 +216,7 @@ const PostDetailScreen = () => {
               )}
             </View>
           )}
-  
-          {/* Actions */}
+
           <View style={styles.actionsRow}>
             <TouchableOpacity style={styles.actionButton} onPress={toggleLike}>
               <Ionicons
@@ -217,7 +226,7 @@ const PostDetailScreen = () => {
               />
               <Text style={styles.actionText}>{likes.length}</Text>
             </TouchableOpacity>
-  
+
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => navigation.navigate("CommentsScreen", { postId: post.id })}
@@ -225,7 +234,7 @@ const PostDetailScreen = () => {
               <Ionicons name="chatbubble-outline" size={22} color="#aaa" />
               <Text style={styles.actionText}>{post.commentsCount || 0}</Text>
             </TouchableOpacity>
-  
+
             <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
               <Ionicons name="paper-plane-outline" size={22} color="#aaa" />
             </TouchableOpacity>
@@ -234,7 +243,7 @@ const PostDetailScreen = () => {
       </ScrollView>
     </View>
   );
-}  
+};
 
 const styles = StyleSheet.create({
   backButton: {
@@ -250,7 +259,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderRadius: 14,
     overflow: "hidden",
-    marginTop:50,
+    marginTop: 50,
   },
   postHeader: {
     flexDirection: "row",

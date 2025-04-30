@@ -1,398 +1,332 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    Image,
-    TouchableOpacity,
-    ActivityIndicator,
-    Dimensions,
-    Alert,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  ActivityIndicator,
+  Dimensions,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import {
-    useNavigation,
-    useFocusEffect,
-    useRoute,
-} from "@react-navigation/native";
+import { useNavigation, useFocusEffect, useRoute } from "@react-navigation/native";
 import { getAuth } from "firebase/auth";
 import {
-    getFirestore,
-    collection,
-    query,
-    where,
-    onSnapshot,
-    doc,
-    getDocs,
-    updateDoc,
-    arrayUnion,
-    arrayRemove,
-    orderBy,
-    getDoc,
+  getFirestore,
+  collection,
+  query,
+  where,
+  onSnapshot,
+  doc,
+  getDocs,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  orderBy,
+  getDoc,
 } from "firebase/firestore";
+import { followUser, unfollowUser } from "../api/addFriendsApi";
 
 const OtherProfileScreen = () => {
-    const navigation = useNavigation();
-    const route = useRoute();
-    const { userId } = route.params;
-    const auth = getAuth();
-    const db = getFirestore();
-    const currentUser = auth.currentUser;
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { userId } = route.params;
+  const auth = getAuth();
+  const db = getFirestore();
+  const currentUser = auth.currentUser;
 
-    const [userData, setUserData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [featuredGoals, setFeaturedGoals] = useState([]);
-    const [userPosts, setUserPosts] = useState([]);
-    const [isFollowing, setIsFollowing] = useState(false);
-    const [isBlocked, setIsBlocked] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [featuredGoals, setFeaturedGoals] = useState([]);
+  const [userPosts, setUserPosts] = useState([]);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isRequested, setIsRequested] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
-    const screenWidth = Dimensions.get("window").width;
-    const imageSize = Math.floor((screenWidth - 40 - 8) / 3);
+  const screenWidth = Dimensions.get("window").width;
 
-    useFocusEffect(
-        useCallback(() => {
-            const unsubscribeUser = onSnapshot(doc(db, "users", userId), (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    setUserData(data);
-                    // Check if the current user is following this user
-                    setIsFollowing(data.followers?.includes(currentUser.uid) || false);
-                }
-            });
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId || !currentUser?.uid) return;
 
-            // Check if user is blocked
-            const checkIfBlocked = async () => {
-                try {
-                    const currentUserDoc = await getDoc(doc(db, "users", currentUser.uid));
-                    if (currentUserDoc.exists()) {
-                        const blockedUsers = currentUserDoc.data().blockedUsers || [];
-                        setIsBlocked(blockedUsers.includes(userId));
-                    }
-                } catch (error) {
-                    console.error("Error checking block status:", error);
-                }
-            };
-
-            checkIfBlocked();
-
-            const unsubscribePosts = onSnapshot(
-                query(
-                    collection(db, "posts"),
-                    where("userId", "==", userId),
-                    orderBy("timestamp", "desc")
-                ),
-                (snapshot) => {
-                    const posts = snapshot.docs.map((doc) => ({
-                        id: doc.id,
-                        ...doc.data(),
-                    }));
-                    setUserPosts(posts);
-                }
-            );
-
-            const fetchFeaturedGoals = async () => {
-                try {
-                    const q = query(
-                        collection(db, "goals"),
-                        where("displayFeatured", "==", true),
-                        where("userId", "==", userId)
-                    );
-                    const snapshot = await getDocs(q);
-                    setFeaturedGoals(
-                        snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-                    );
-                } catch (err) {
-                    console.error("Failed to fetch featured goals:", err);
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            fetchFeaturedGoals();
-
-            return () => {
-                unsubscribeUser();
-                unsubscribePosts();
-            };
-        }, [userId])
-    );
-
-    const handleFollowToggle = async () => {
-        try {
-            const currentUserRef = doc(db, "users", currentUser.uid);
-            const otherUserRef = doc(db, "users", userId);
-
-            if (isFollowing) {
-                await updateDoc(currentUserRef, { following: arrayRemove(userId) });
-                await updateDoc(otherUserRef, {
-                    followers: arrayRemove(currentUser.uid),
-                });
-                setIsFollowing(false);
-            } else {
-                await updateDoc(currentUserRef, { following: arrayUnion(userId) });
-                await updateDoc(otherUserRef, {
-                    followers: arrayUnion(currentUser.uid),
-                });
-                setIsFollowing(true);
-            }
-        } catch (err) {
-            console.error("Failed to update follow status:", err);
+      const unsubscribeUser = onSnapshot(doc(db, "users", userId), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setUserData(data);
+          setIsFollowing((data.followers ?? []).includes(currentUser.uid));
+          setIsRequested((data.pendingRequests ?? []).includes(currentUser.uid));
         }
-    };
+      });
 
-    const handleBlockToggle = async () => {
-        try {
-            if (isBlocked) {
-                Alert.alert(
-                    "Unblock User",
-                    `Are you sure you want to unblock ${userData.fullName || userData.username || 'this user'}?`,
-                    [
-                        {
-                            text: "Cancel",
-                            style: "cancel"
-                        },
-                        {
-                            text: "Unblock",
-                            onPress: async () => {
-                                const userDocRef = doc(db, "users", currentUser.uid);
-                                const userDoc = await getDoc(userDocRef);
-                                const blockedUsers = userDoc.data().blockedUsers || [];
-                                const updatedBlockedUsers = blockedUsers.filter((uid) => uid !== userId);
-                                await updateDoc(userDocRef, { blockedUsers: updatedBlockedUsers });
-                                setIsBlocked(false);
-                                Alert.alert("Success", `${userData.fullName || userData.username || 'User'} has been unblocked.`);
-                            }
-                        }
-                    ]
-                );
-            } else {
-                Alert.alert(
-                    "Block User",
-                    `Are you sure you want to block ${userData.fullName || userData.username || 'this user'}? You won't see their posts and they won't be able to interact with you.`,
-                    [
-                        {
-                            text: "Cancel",
-                            style: "cancel"
-                        },
-                        {
-                            text: "Block",
-                            style: "destructive",
-                            onPress: async () => {
-                                const userDocRef = doc(db, "users", currentUser.uid);
-                                await updateDoc(userDocRef, {
-                                    blockedUsers: arrayUnion(userId),
-                                    // Remove from following if currently following
-                                    following: arrayRemove(userId)
-                                });
-
-                                // Also remove this user from the other user's followers
-                                const otherUserRef = doc(db, "users", userId);
-                                await updateDoc(otherUserRef, {
-                                    followers: arrayRemove(currentUser.uid)
-                                });
-
-                                setIsBlocked(true);
-                                setIsFollowing(false);
-                                Alert.alert("Success", `${userData.fullName || userData.username || 'User'} has been blocked.`);
-                            }
-                        }
-                    ]
-                );
-            }
-        } catch (error) {
-            console.error("Error blocking/unblocking user:", error);
-            Alert.alert("Error", "Could not update block status.");
+      const checkIfBlocked = async () => {
+        const currentUserDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (currentUserDoc.exists()) {
+          const blockedUsers = currentUserDoc.data().blockedUsers || [];
+          setIsBlocked(blockedUsers.includes(userId));
         }
-    };
+      };
 
-    if (loading || !userData) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#8e24aa" />
-            </View>
+      checkIfBlocked();
+
+      const unsubscribePosts = onSnapshot(
+        query(
+          collection(db, "posts"),
+          where("userId", "==", userId),
+          orderBy("timestamp", "desc")
+        ),
+        (snapshot) => {
+          const posts = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setUserPosts(posts);
+        }
+      );
+
+      const fetchFeaturedGoals = async () => {
+        const q = query(
+          collection(db, "goals"),
+          where("displayFeatured", "==", true),
+          where("userId", "==", userId)
         );
+        const snapshot = await getDocs(q);
+        setFeaturedGoals(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        setLoading(false);
+      };
+
+      fetchFeaturedGoals();
+
+      return () => {
+        unsubscribeUser();
+        unsubscribePosts();
+      };
+    }, [userId])
+  );
+
+  const handleFollowToggle = async () => {
+    try {
+      if (isFollowing) {
+        await unfollowUser(userId);
+        setIsFollowing(false);
+      } else if (isRequested) {
+        const targetUserRef = doc(db, "users", userId);
+        await updateDoc(targetUserRef, {
+          pendingRequests: arrayRemove(currentUser.uid),
+        });
+        setIsRequested(false);
+      } else {
+        await followUser(userId);
+        setIsRequested(true);
+      }
+    } catch (err) {
+      console.error("Failed to toggle follow state:", err);
     }
+  };
 
-    const {
-        fullName,
-        username,
-        profilePicture,
-        followers = [],
-        following = [],
-        challenges = 0,
-        calories = 0,
-        workouts = 0,
-    } = userData;
+  const handleBlockUser = async () => {
+    try {
+      const currentUserRef = doc(db, "users", currentUser.uid);
+      await updateDoc(currentUserRef, {
+        blockedUsers: arrayUnion(userId),
+      });
+      Alert.alert("User Blocked", "You have blocked this user.");
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error blocking user:", error);
+      Alert.alert("Error", "Failed to block user.");
+    }
+  };
 
-    return (
-        <ScrollView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={26} color="#fff" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Profile</Text>
-                <TouchableOpacity onPress={handleBlockToggle}>
-                    <Ionicons
-                        name={isBlocked ? "person-remove" : "person-remove-outline"}
-                        size={26}
-                        color={isBlocked ? "#ff4d4d" : "#fff"}
-                    />
-                </TouchableOpacity>
-            </View>
-
-            <View style={styles.profileSection}>
-                <Image
-                    source={{ uri: profilePicture || "https://via.placeholder.com/100" }}
-                    style={styles.profileImage}
-                />
-                <Text style={styles.fullName}>{fullName}</Text>
-                <Text style={styles.username}>@{username || "no-username"}</Text>
-
-                <TouchableOpacity
-                    style={[
-                        styles.followButton,
-                        isFollowing ? styles.followingButton : styles.notFollowingButton,
-                        isBlocked && styles.disabledButton
-                    ]}
-                    onPress={handleFollowToggle}
-                    disabled={isBlocked}
-                >
-                    <Text style={styles.followButtonText}>
-                        {isBlocked ? "User Blocked" : isFollowing ? "Following" : "Follow"}
-                    </Text>
-                </TouchableOpacity>
-
-                <View style={styles.countContainer}>
-                    <TouchableOpacity
-                        onPress={() =>
-                            navigation.navigate("OtherFriendsList", {
-                                userId,
-                                type: "followers",
-                            })
-                        }
-                        disabled={isBlocked}
-                    >
-                        <Text style={[styles.countNumber, isBlocked && styles.disabledText]}>
-                            {isBlocked ? "--" : followers.length}
-                        </Text>
-                        <Text style={[styles.countLabel, isBlocked && styles.disabledText]}>Followers</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.separator}>|</Text>
-                    <TouchableOpacity
-                        onPress={() =>
-                            navigation.navigate("OtherFriendsList", {
-                                userId,
-                                type: "following",
-                            })
-                        }
-                        disabled={isBlocked}
-                    >
-                        <Text style={[styles.countNumber, isBlocked && styles.disabledText]}>
-                            {isBlocked ? "--" : following.length}
-                        </Text>
-                        <Text style={[styles.countLabel, isBlocked && styles.disabledText]}>Following</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {isBlocked ? (
-                <View style={styles.blockedContainer}>
-                    <Ionicons name="ban" size={50} color="#666" />
-                    <Text style={styles.blockedText}>You have blocked this user</Text>
-                    <Text style={styles.blockedSubtext}>
-                        You won't see their content and they can't interact with you
-                    </Text>
-                    <TouchableOpacity
-                        style={styles.unblockButton}
-                        onPress={handleBlockToggle}
-                    >
-                        <Text style={styles.unblockButtonText}>Unblock User</Text>
-                    </TouchableOpacity>
-                </View>
-            ) : (
-                <>
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Rank</Text>
-                        <Text style={styles.sectionContent}>Prestige 0 - Rookie</Text>
-                    </View>
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Career Stats</Text>
-                        <View style={styles.statBox}>
-                            <View style={styles.statItem}>
-                                <Ionicons
-                                    name="trophy-outline"
-                                    size={22}
-                                    color="#fff"
-                                    style={styles.statIcon}
-                                />
-                                <Text style={styles.statValue}>{challenges}</Text>
-                                <Text style={styles.statLabel}>Challenges</Text>
-                            </View>
-                            <View style={styles.statItem}>
-                                <Ionicons
-                                    name="flame-outline"
-                                    size={22}
-                                    color="#fff"
-                                    style={styles.statIcon}
-                                />
-                                <Text style={styles.statValue}>{calories}</Text>
-                                <Text style={styles.statLabel}>Calories</Text>
-                            </View>
-                            <View style={styles.statItem}>
-                                <Ionicons
-                                    name="barbell-outline"
-                                    size={22}
-                                    color="#fff"
-                                    style={styles.statIcon}
-                                />
-                                <Text style={styles.statValue}>{workouts}</Text>
-                                <Text style={styles.statLabel}>Workouts</Text>
-                            </View>
-                        </View>
-                    </View>
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Featured Goals</Text>
-                        {featuredGoals.length === 0 ? (
-                            <Text style={styles.emptyText}>No featured goals.</Text>
-                        ) : (
-                            featuredGoals.map((goal) => (
-                                <Text key={goal.id} style={styles.sectionContent}>
-                                    • {goal.text}
-                                </Text>
-                            ))
-                        )}
-                    </View>
-
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Posts</Text>
-                        {userPosts.length === 0 ? (
-                            <Text style={styles.emptyText}>No posts yet.</Text>
-                        ) : (
-                            <View style={styles.postGrid}>
-                                {userPosts.map((post) => (
-                                    <TouchableOpacity
-                                        key={post.id}
-                                        onPress={() =>
-                                            navigation.navigate("PostDetailScreen", { post })
-                                        }
-                                        style={styles.postWrapper}
-                                    >
-                                        <Image
-                                            source={{ uri: post.imageUrl }}
-                                            style={styles.postThumbnail}
-                                        />
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        )}
-                    </View>
-                </>
-            )}
-        </ScrollView>
+  const showOptions = () => {
+    Alert.alert(
+      "Options",
+      `What would you like to do?`,
+      [
+        {
+          text: "Block User",
+          onPress: () => handleBlockUser(),
+          style: "destructive",
+        },
+        {
+          text: "Report User",
+          onPress: () => Alert.alert("Report Sent", "Thank you for reporting."),
+        },
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
     );
+  };
+
+  if (loading || !userData) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#8e24aa" />
+      </View>
+    );
+  }
+
+  const {
+    fullName,
+    username,
+    profilePicture,
+    followers = [],
+    following = [],
+    challenges = 0,
+    calories = 0,
+    workouts = 0,
+    isPrivate = false,
+  } = userData;
+
+  const isPrivateAndNotFollowing = isPrivate && !isFollowing;
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={26} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Profile</Text>
+        <TouchableOpacity onPress={showOptions} style={{ padding: 5 }}>
+          <Ionicons name="ellipsis-vertical" size={22} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.profileSection}>
+        <Image
+          source={{ uri: profilePicture || "https://via.placeholder.com/100" }}
+          style={styles.profileImage}
+        />
+        <Text style={styles.fullName}>{fullName}</Text>
+        <Text style={styles.username}>@{username || "no-username"}</Text>
+
+        <TouchableOpacity
+          style={[
+            styles.followButton,
+            isFollowing
+              ? styles.followingButton
+              : isRequested
+              ? styles.requestedButton
+              : styles.notFollowingButton,
+          ]}
+          onPress={handleFollowToggle}
+        >
+          <Text style={styles.followButtonText}>
+            {isFollowing ? "Following" : isRequested ? "Requested" : "Follow"}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.countContainer}>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("OtherFriendsList", { userId, type: "followers" })
+            }
+            disabled={isBlocked}
+            style={styles.countItem}
+          >
+            <Text style={[styles.countNumber, isBlocked && styles.disabledText]}>
+              {isBlocked ? "--" : followers.length}
+            </Text>
+            <Text style={[styles.countLabel, isBlocked && styles.disabledText]}>
+              Followers
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.verticalDivider} />
+
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("OtherFriendsList", { userId, type: "following" })
+            }
+            disabled={isBlocked}
+            style={styles.countItem}
+          >
+            <Text style={[styles.countNumber, isBlocked && styles.disabledText]}>
+              {isBlocked ? "--" : following.length}
+            </Text>
+            <Text style={[styles.countLabel, isBlocked && styles.disabledText]}>
+              Following
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {isPrivateAndNotFollowing ? (
+        <View style={styles.privateContainer}>
+          <Ionicons name="lock-closed-outline" size={50} color="#666" />
+          <Text style={styles.blockedText}>This account is private</Text>
+          <Text style={styles.blockedSubtext}>
+            Follow {fullName || username || "this user"} to see their posts and goals
+          </Text>
+        </View>
+      ) : (
+        <>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Rank</Text>
+            <Text style={styles.sectionContent}>Prestige 0 - Rookie</Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Career Stats</Text>
+            <View style={styles.statBox}>
+              <View style={styles.statItem}>
+                <Ionicons name="trophy-outline" size={22} color="#fff" style={styles.statIcon} />
+                <Text style={styles.statValue}>{challenges}</Text>
+                <Text style={styles.statLabel}>Challenges</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Ionicons name="flame-outline" size={22} color="#fff" style={styles.statIcon} />
+                <Text style={styles.statValue}>{calories}</Text>
+                <Text style={styles.statLabel}>Calories</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Ionicons name="barbell-outline" size={22} color="#fff" style={styles.statIcon} />
+                <Text style={styles.statValue}>{workouts}</Text>
+                <Text style={styles.statLabel}>Workouts</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Featured Goals</Text>
+            {featuredGoals.length === 0 ? (
+              <Text style={styles.emptyText}>No featured goals.</Text>
+            ) : (
+              featuredGoals.map((goal) => (
+                <Text key={goal.id} style={styles.sectionContent}>• {goal.text}</Text>
+              ))
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Posts</Text>
+            {userPosts.length === 0 ? (
+              <Text style={styles.emptyText}>No posts yet.</Text>
+            ) : (
+              <View style={styles.postGrid}>
+                {userPosts.map((post) => (
+                  <TouchableOpacity
+                    key={post.id}
+                    onPress={() => navigation.navigate("PostDetailScreen", { post })}
+                    style={styles.postWrapper}
+                  >
+                    <Image
+                      source={{ uri: post.imageUrl }}
+                      style={styles.postThumbnail}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        </>
+      )}
+    </ScrollView>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -437,16 +371,31 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-        marginTop: 8,
+        marginTop: 16,
     },
+    countItem: {
+        alignItems: "center", // Center the number and label vertically
+        marginHorizontal: 24, // Give some horizontal space between followers and following
+      },
     countNumber: {
         color: "#fff",
+        fontSize: 20,
         fontWeight: "bold",
-        fontSize: 18,
-        textAlign: "center",
     },
-    countLabel: { color: "#aaa", fontSize: 15, textAlign: "center" },
-    disabledText: { color: "#555" },
+    countLabel: {
+        color: "#aaa",
+        fontSize: 14,
+        marginTop: 4,
+      },
+      verticalDivider: {
+        width: 1,
+        height: 20,
+        backgroundColor: "#555",
+        marginHorizontal: 20,
+      },
+    disabledText: {
+        color: "#555",
+      },
     separator: { marginHorizontal: 16, color: "#555", fontSize: 18 },
     section: { marginVertical: 15 },
     sectionTitle: {
@@ -513,6 +462,31 @@ const styles = StyleSheet.create({
         color: "#fff",
         fontWeight: "600",
     },
+    privateContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 30,
+        marginTop: 50,
+      },
+      privateIcon: {
+        marginBottom: 20,
+      },
+      privateMainText: {
+        fontSize: 18,
+        fontWeight: "bold",
+        color: "#ddd",
+        textAlign: "center",
+        marginBottom: 8,
+      },
+      privateSubText: {
+        fontSize: 14,
+        color: "#888",
+        textAlign: "center",
+      },
+      requestedButton: {
+        backgroundColor: "#555", // Slight gray for "Requested" state
+      },
 });
 
 export default OtherProfileScreen;

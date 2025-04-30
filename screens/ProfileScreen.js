@@ -128,19 +128,27 @@ const ProfileScreen = () => {
         <Text style={styles.fullName}>{fullName}</Text>
         <Text style={styles.username}>@{username || "no-username"}</Text>
         <View style={styles.countContainer}>
-          <View style={styles.countItem}>
-            <TouchableOpacity onPress={() => navigation.navigate("FriendsList", { type: "followers" })}>
-              <Text style={styles.countNumber}>{followers.length}</Text>
-              <Text style={styles.countLabel}>Followers</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.separator}>|</Text>
-          <View style={styles.countItem}>
-            <TouchableOpacity onPress={() => navigation.navigate("FriendsList", { type: "following" })}>
-              <Text style={styles.countNumber}>{following.length}</Text>
-              <Text style={styles.countLabel}>Following</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("FriendsList", { type: "followers" })
+            }
+            style={styles.countItem}
+          >
+            <Text style={styles.countNumber}>{followers.length}</Text>
+            <Text style={styles.countLabel}>Followers</Text>
+          </TouchableOpacity>
+
+          <View style={styles.verticalDivider} />
+
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("FriendsList", { type: "following" })
+            }
+            style={styles.countItem}
+          >
+            <Text style={styles.countNumber}>{following.length}</Text>
+            <Text style={styles.countLabel}>Following</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -153,17 +161,32 @@ const ProfileScreen = () => {
         <Text style={styles.sectionTitle}>My Career Stats</Text>
         <View style={styles.statBox}>
           <View style={styles.statItem}>
-            <Ionicons name="trophy-outline" size={22} color="#fff" style={styles.statIcon} />
+            <Ionicons
+              name="trophy-outline"
+              size={22}
+              color="#fff"
+              style={styles.statIcon}
+            />
             <Text style={styles.statValue}>{challenges}</Text>
             <Text style={styles.statLabel}>Challenges</Text>
           </View>
           <View style={styles.statItem}>
-            <Ionicons name="flame-outline" size={22} color="#fff" style={styles.statIcon} />
+            <Ionicons
+              name="flame-outline"
+              size={22}
+              color="#fff"
+              style={styles.statIcon}
+            />
             <Text style={styles.statValue}>{burnedCalories}</Text>
             <Text style={styles.statLabel}>Calories</Text>
           </View>
           <View style={styles.statItem}>
-            <Ionicons name="barbell-outline" size={22} color="#fff" style={styles.statIcon} />
+            <Ionicons
+              name="barbell-outline"
+              size={22}
+              color="#fff"
+              style={styles.statIcon}
+            />
             <Text style={styles.statValue}>{workouts}</Text>
             <Text style={styles.statLabel}>Workouts</Text>
           </View>
@@ -194,29 +217,29 @@ const ProfileScreen = () => {
           <Text style={styles.emptyText}>No posts yet.</Text>
         ) : (
           <View style={styles.postGrid}>
-  {userPosts.map((post) => (
-    <TouchableOpacity
-      key={post.id}
-      onPress={() => navigation.navigate("PostDetailScreen", { post })}
-      style={styles.postWrapper}
-    >
-      <Image
-  source={{ uri: post.media?.[0]?.url || post.imageUrl }}
-  style={styles.postThumbnail}
-/>
-      {post.media?.length > 1 && (
-        <Ionicons
-          name="layers-outline"
-          size={18}
-          color="#fff"
-          style={styles.multipleIcon}
-        />
-      )}
-    </TouchableOpacity>
-  ))}
-</View>
-
-
+            {userPosts.map((post) => (
+              <TouchableOpacity
+                key={post.id}
+                onPress={() =>
+                  navigation.navigate("PostDetailScreen", { post })
+                }
+                style={styles.postWrapper}
+              >
+                <Image
+                  source={{ uri: post.media?.[0]?.url || post.imageUrl }}
+                  style={styles.postThumbnail}
+                />
+                {post.media?.length > 1 && (
+                  <Ionicons
+                    name="layers-outline"
+                    size={18}
+                    color="#fff"
+                    style={styles.multipleIcon}
+                  />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
         )}
       </View>
     </ScrollView>
@@ -225,8 +248,19 @@ const ProfileScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#131417", paddingHorizontal: 20 },
-  loadingContainer: { flex: 1, backgroundColor: "#131417", justifyContent: "center", alignItems: "center" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 70, paddingBottom: 10 },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "#131417",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 70,
+    paddingBottom: 10,
+  },
   profileSection: { alignItems: "center", marginVertical: 20 },
   profileImage: { width: 100, height: 100, borderRadius: 50, marginBottom: 10 },
   fullName: { fontSize: 22, fontWeight: "bold", color: "#fff" },
@@ -237,18 +271,39 @@ const styles = StyleSheet.create({
   countLabel: { color: "#aaa", fontSize: 14 },
   separator: { marginHorizontal: 16, color: "#555", fontSize: 18 },
   section: { marginVertical: 15 },
-  sectionTitle: { color: "#fff", fontSize: 18, fontWeight: "bold", marginBottom: 6 },
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 6,
+  },
   sectionContent: { color: "#ccc", fontSize: 15, marginBottom: 4 },
   emptyText: { color: "#888", fontStyle: "italic", marginTop: 5 },
   postGrid: { flexDirection: "row", flexWrap: "wrap" },
-  postWrapper: { width: (Dimensions.get("window").width - 40 - 8) / 3, aspectRatio: 1, marginBottom: 4 },
+  postWrapper: {
+    width: (Dimensions.get("window").width - 40 - 8) / 3,
+    aspectRatio: 1,
+    marginBottom: 4,
+  },
   postThumbnail: { width: "100%", height: "100%", borderRadius: 6 },
-  statBox: { flexDirection: "row", justifyContent: "space-between", backgroundColor: "#2B2D31", padding: 15, borderRadius: 10, marginTop: 10 },
+  statBox: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#2B2D31",
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 10,
+  },
   statItem: { alignItems: "center", flex: 1 },
   statValue: { color: "#fff", fontSize: 18, fontWeight: "bold" },
   statLabel: { color: "#aaa", fontSize: 13, marginTop: 2 },
   statIcon: { marginBottom: 6 },
-
+  verticalDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: "#555",
+    marginHorizontal: 20,
+  },
   goalsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -261,8 +316,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.6)",
     padding: 4,
     borderRadius: 10,
-  },  
-
+  },
 });
 
 export default ProfileScreen;
