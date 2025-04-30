@@ -25,6 +25,7 @@ import {
   arrayUnion,
   arrayRemove,
 } from 'firebase/firestore';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function NotificationScreen() {
   const navigation = useNavigation();
@@ -36,7 +37,8 @@ export default function NotificationScreen() {
   const currentUser = auth.currentUser;
   const db = getFirestore();
   const APP_ID = 29298;
-const NOTIFY_API_KEY = 'u04gYyaVKbAobwZ9ojzShp';
+  const NOTIFY_API_KEY = 'u04gYyaVKbAobwZ9ojzShp';
+  const { theme, themeMode } = useTheme();
 
   const fetchPersonalNotifications = async () => {
     if (!currentUser?.uid) return;
@@ -104,21 +106,20 @@ const NOTIFY_API_KEY = 'u04gYyaVKbAobwZ9ojzShp';
   
     let senderId = item?.sendbird_channel_url;
 
-if (!senderId && item?.pushData) {
-  try {
-    const parsed = JSON.parse(item.pushData);
-    senderId = parsed.senderId;
-  } catch (err) {
-    console.warn("⚠️ Failed to parse pushData:", item.pushData);
-  }
-}
+    if (!senderId && item?.pushData) {
+      try {
+        const parsed = JSON.parse(item.pushData);
+        senderId = parsed.senderId;
+      } catch (err) {
+        console.warn("⚠️ Failed to parse pushData:", item.pushData);
+      }
+    }
 
-if (!senderId) {
-  console.warn("⚠️ Missing sender ID — item:", item);
-  Alert.alert("Error", "Cannot accept request — missing sender ID.");
-  return;
-}
-
+    if (!senderId) {
+      console.warn("⚠️ Missing sender ID — item:", item);
+      Alert.alert("Error", "Cannot accept request — missing sender ID.");
+      return;
+    }
   
     try {
       const currentRef = doc(db, 'users', currentUser.uid);
@@ -146,7 +147,6 @@ if (!senderId) {
       Alert.alert("Error", "Failed to accept request.");
     }
   };
-  
   
   const handleDecline = async (item) => {
     console.log("🔍 Declining notification:", item);
@@ -188,14 +188,13 @@ if (!senderId) {
       Alert.alert("Error", "Failed to decline request.");
     }
   };
-  
-  
 
   const renderNotificationItem = ({ item }) => {
     const isRequest = item.message?.includes('wants to follow you');
+    const iconColor = isRequest ? theme.primary : theme.subtext;
   
     return (
-      <View style={styles.itemContainer}>
+      <View style={[styles.itemContainer, { backgroundColor: theme.card }]}>
         <View style={{ flexDirection: 'row', flex: 1 }}>
           <Image
             source={{ uri: item.image || 'https://via.placeholder.com/44' }}
@@ -207,20 +206,26 @@ if (!senderId) {
               <Ionicons
                 name={isRequest ? 'person-add-outline' : 'notifications-outline'}
                 size={16}
-                color={isRequest ? '#4CAF50' : '#888'}
+                color={iconColor}
                 style={{ marginRight: 6 }}
               />
-              <Text style={styles.title}>{item.title}</Text>
+              <Text style={[styles.title, { color: theme.text }]}>{item.title}</Text>
             </View>
   
-            <Text style={styles.message}>{item.message}</Text>
+            <Text style={[styles.message, { color: theme.subtext }]}>{item.message}</Text>
   
             {isRequest && (
               <View style={styles.actions}>
-                <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAccept(item)}>
+                <TouchableOpacity 
+                  style={[styles.acceptBtn, { backgroundColor: theme.primary }]} 
+                  onPress={() => handleAccept(item)}
+                >
                   <Text style={styles.actionText}>Accept</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.declineBtn} onPress={() => handleDecline(item)}>
+                <TouchableOpacity 
+                  style={[styles.declineBtn, { backgroundColor: '#FF6B6B' }]} 
+                  onPress={() => handleDecline(item)}
+                >
                   <Text style={styles.actionText}>Decline</Text>
                 </TouchableOpacity>
               </View>
@@ -234,26 +239,25 @@ if (!senderId) {
       </View>
     );
   };
-  
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.headerRow}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.headerRow, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Notifications</Text>
         <TouchableOpacity onPress={fetchNotifications}>
-          <Ionicons name="refresh" size={22} color="#fff" />
+          <Ionicons name="refresh" size={22} color={theme.text} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: theme.card }]}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'personal' && styles.activeTab]}
           onPress={() => setActiveTab('personal')}
         >
-          <Text style={[styles.tabText, activeTab === 'personal' && styles.activeTabText]}>
+          <Text style={[styles.tabText, activeTab === 'personal' ? styles.activeTabText : { color: theme.subtext }]}>
             Personal
           </Text>
         </TouchableOpacity>
@@ -261,20 +265,25 @@ if (!senderId) {
           style={[styles.tab, activeTab === 'system' && styles.activeTab]}
           onPress={() => setActiveTab('system')}
         >
-          <Text style={[styles.tabText, activeTab === 'system' && styles.activeTabText]}>
+          <Text style={[styles.tabText, activeTab === 'system' ? styles.activeTabText : { color: theme.subtext }]}>
             System
           </Text>
         </TouchableOpacity>
       </View>
 
       {loading ? (
-        <ActivityIndicator color="#8e24aa" style={{ marginTop: 20 }} />
+        <ActivityIndicator color={theme.primary} style={{ marginTop: 20 }} />
       ) : (
         <FlatList
           data={activeTab === 'personal' ? personalData : systemData}
           keyExtractor={(item) => item.notification_id.toString()}
           renderItem={renderNotificationItem}
           contentContainerStyle={{ padding: 20 }}
+          ListEmptyComponent={
+            <Text style={[styles.emptyText, { color: theme.subtext }]}>
+              No notifications found
+            </Text>
+          }
         />
       )}
     </SafeAreaView>
@@ -282,21 +291,22 @@ if (!senderId) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1A1A1A' },
+  container: { flex: 1 },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
   },
-  headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  headerTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold' 
+  },
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 20,
     marginTop: 10,
-    backgroundColor: '#2B2D31',
     borderRadius: 20,
     padding: 4,
   },
@@ -307,29 +317,52 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   activeTab: { backgroundColor: '#8e24aa' },
-  tabText: { color: '#aaa', fontWeight: '600' },
+  tabText: { fontWeight: '600' },
   activeTabText: { color: '#fff' },
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    padding: 15,
+    borderRadius: 10,
   },
-  avatar: { width: 44, height: 44, borderRadius: 22, marginRight: 15 },
-  title: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
-  message: { color: '#aaa', fontSize: 13, marginTop: 2 },
-  actions: { flexDirection: 'row', marginTop: 6 },
+  avatar: { 
+    width: 44, 
+    height: 44, 
+    borderRadius: 22, 
+    marginRight: 15 
+  },
+  title: { 
+    fontWeight: 'bold', 
+    fontSize: 15 
+  },
+  message: { 
+    fontSize: 13, 
+    marginTop: 2 
+  },
+  actions: { 
+    flexDirection: 'row', 
+    marginTop: 6 
+  },
   acceptBtn: {
-    backgroundColor: '#4CAF50',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 16,
     marginRight: 8,
   },
   declineBtn: {
-    backgroundColor: '#FF6B6B',
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 16,
   },
-  actionText: { color: '#fff', fontWeight: '600', fontSize: 12 },
+  actionText: { 
+    color: '#fff', 
+    fontWeight: '600', 
+    fontSize: 12 
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+  }
 });
