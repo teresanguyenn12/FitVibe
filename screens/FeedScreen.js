@@ -73,13 +73,22 @@ export default function FeedScreen() {
             username: userData.username || "user",
             profilePicture: userData.profilePicture || null,
             rank: userData.rank || "Rookie",
+            isPrivate: userData.isPrivate || false,
+            ownerFollowers: userData.followers || [], 
           };
         })
       );
 
-      setPosts(posts.filter((p) => visible.includes(p.userId)));
+      setPosts(
+        posts.filter((p) => {
+          if (!p.isPrivate) {
+            return visible.includes(p.userId);
+          }
+          return p.ownerFollowers.includes(user.uid);
+        })
+      );
     } catch (err) {
-      console.error("Error fetching posts:", err);
+      console.error("Error fetching posts:", err);  //important to catch any problems
     }
   };
 
