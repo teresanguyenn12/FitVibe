@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "../contexts/ThemeContext";
 
 const CurrentProgressionScreen = () => {
   const navigation = useNavigation();
+  const { theme } = useTheme();
   const level = 3;
   const maxXP = 1000;
   const currentXP = 720;
@@ -13,37 +15,35 @@ const CurrentProgressionScreen = () => {
   const progress = currentXP / maxXP; 
 
   return (
-    <View style = {styles.container}>
-      <TouchableOpacity style = {styles.backButton} onPress = {() => navigation.navigate("HomeTabs")}>
-        <Ionicons name = "close" size = {28} color = "#fff" />
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("HomeTabs")}>
+        <Ionicons name="close" size={28} color={theme.text} />
       </TouchableOpacity>
 
-      <Text style = {styles.header}>Progression</Text>
-      <Text style = {styles.subtext}>
-        <Text style = {{color: "#B76DF5"}}>{currentXP}/{maxXP}</Text> XP til next level
+      <Text style={[styles.header, { color: theme.text }]}>Progression</Text>
+      <Text style={[styles.subtext, { color: theme.text }]}>
+        <Text style={{ color: "#B76DF5" }}>{currentXP}/{maxXP}</Text> XP til next level
       </Text>
 
       {/* Rank Icon */}
-      <Image source = {require("../assets/rookie.png")} style = {styles.iconImage} />
+      <Image source={require("../assets/rookie.png")} style={styles.iconImage} />
 
       {/* Progress Bar */}
-      <View style = {styles.progressBarContainer}>
-        <View style = {styles.progressBarBackground}>
-          <LinearGradient
-            colors = {["#A0004D", "#000000"]}
-            style = {[styles.progressBarFill, { width: `${progress * 100}%` }]}
-          />
-        </View>
+      <View style={[styles.progressBarContainer, { backgroundColor: "#E0E0E0" }]}>
+        <LinearGradient
+          colors={["#A0004D", "#B76DF5"]}
+          style={[styles.progressBarFill, { width: `${progress * 100}%` }]}
+        />
       </View>
 
-      <Text style = {styles.rankText}>{rank}</Text>
-      <Text style = {styles.levelText}>Lvl {level}</Text>
+      <Text style={[styles.rankText, { color: theme.text }]}>{rank}</Text>
+      <Text style={styles.levelText}>Lvl {level}</Text>
 
       <TouchableOpacity
-        style = {styles.infoButton}
-        onPress = {() => navigation.navigate("ProgressionInfo")}
+        style={styles.infoButton}
+        onPress={() => navigation.navigate("ProgressionInfo")}
       >
-        <Text style = {styles.infoButtonText}>Progression Information</Text>
+        <Text style={styles.infoButtonText}>Progression Information</Text>
       </TouchableOpacity>
     </View>
   );
@@ -52,7 +52,6 @@ const CurrentProgressionScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0B0B0D",
     paddingTop: 80,
     alignItems: "center",
     paddingHorizontal: 24,
@@ -70,41 +69,30 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#fff",
     marginBottom: 40,
   },
   subtext: {
     fontSize: 16,
-    color: "#ccc",
     marginBottom: 30,
   },
   progressBarContainer: {
     width: "100%",
     height: 10,
-    backgroundColor: "#444",
     borderRadius: 5,
-    marginBottom: 20, 
-  },
-  progressBarBackground: {
-    width: "100%",
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#333",
+    marginBottom: 20,
+    overflow: "hidden",
   },
   progressBarFill: {
     height: "100%",
-    borderRadius: 5,
-    backgroundColor: "#B76DF5",
   },
   iconImage: {
     width: 100,
     height: 100,
-    borderRadius: 30, 
+    borderRadius: 30,
     marginBottom: 30,
   },
   rankText: {
     fontSize: 20,
-    color: "#fff",
     fontWeight: "500",
   },
   levelText: {

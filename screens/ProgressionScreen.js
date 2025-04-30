@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from "rea
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "../contexts/ThemeContext";
 
 const rankImages = {
   "Rookie": require("../assets/rookie.png"),
@@ -18,30 +19,35 @@ const levels = [
   { title: "Prestige 1", rank: "Competitor", perks: ["100 FitCoins", "'Competitor Mindset' Badge", "Unlocks Monthly Challenges", "Bonus: 10% Boost on FitCoin Earnings"], locked: false },
   { title: "Prestige 2", rank: "Warrior", perks: ["150 FitCoins", "'Competitor Mindset' Badge", "Unlocks Friend Leaderboards", "Bonus: 1 Free Streak Recovery Per Month"], locked: false },
   { title: "Prestige 3", rank: "Elite", perks: ["200 FitCoins", "'Elite Competitor' Badge", "Unlocks Friend Leaderboards", "Bonus: 15% Discount on Special Fitness Gear"], locked: true },
-  { title: "Prestige 4", rank: "Titan", perks: ["250 FitCoins", "'Titan’s Legacy' Badge", "Unlocks Friend Leaderboards", "Titan-Only Monthly Challenges"], locked: true },
+  { title: "Prestige 4", rank: "Titan", perks: ["250 FitCoins", "'Titan's Legacy' Badge", "Unlocks Friend Leaderboards", "Titan-Only Monthly Challenges"], locked: true },
   { title: "Prestige 5", rank: "Master", perks: ["500 FitCoins", "'Master of the Game' Badge", "VIP Access to All Fitness Challenges & Leaderboards", "Bonus: Double XP & FitCoin Earnings for a Week Each Month"], locked: true }
 ];
 
 const ProgressionScreen = () => {
   const navigation = useNavigation();
+  const { theme } = useTheme();
 
   return (
-    <View style = {styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="close" size={28} color="#fff" />
+        <Ionicons name="close" size={28} color={theme.text} />
       </TouchableOpacity>
-      <Text style = {styles.header}>Progression Info</Text>
-      <ScrollView style = {styles.scrollContainer}>
+      <Text style={[styles.header, { color: theme.text }]}>Progression Info</Text>
+      <ScrollView style={styles.scrollContainer}>
         {levels.map((level, index) => (
-          <LinearGradient colors={["#A0004D", "#000000"]}key = {index} style = {[styles.levelContainer, level.locked && styles.locked]}>
-            <Text style = {styles.levelTitle}>{level.title}</Text>
-            <Image source={rankImages[level.rank]}  style = {styles.icon}/>
-            <Text style = {styles.rank}>{level.rank}</Text>
-            <Text style = {styles.perksTitle}>Perks:</Text>
+          <LinearGradient 
+            colors={["#A0004D", "#000000"]} 
+            key={index} 
+            style={[styles.levelContainer, level.locked && styles.locked]}
+          >
+            <Text style={styles.levelTitle}>{level.title}</Text>
+            <Image source={rankImages[level.rank]} style={styles.icon} />
+            <Text style={styles.rank}>{level.rank}</Text>
+            <Text style={styles.perksTitle}>Perks:</Text>
             {level.perks.map((perk, idx) => (
-              <Text key = {idx} style = {styles.perkItem}>• {perk}</Text>
+              <Text key={idx} style={styles.perkItem}>• {perk}</Text>
             ))}
-            {level.locked && <Ionicons name = "lock-closed" size = {24} color = "#fff" style = {styles.lockIcon}/>}
+            {level.locked && <Ionicons name="lock-closed" size={24} color="#fff" style={styles.lockIcon} />}
           </LinearGradient>
         ))}
       </ScrollView>
@@ -52,7 +58,6 @@ const ProgressionScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
     paddingTop: 78,
   },
   backButton: {
@@ -66,7 +71,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   header: {
-    color: "#fff",
     fontSize: 24,
     fontWeight: "bold",
     textAlign: "center",

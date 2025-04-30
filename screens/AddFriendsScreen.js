@@ -35,6 +35,9 @@ const AddFriendsScreen = () => {
 
   const placeholderColor = themeMode === "light" ? "#555" : "#ccc";
   const bigIconColor = themeMode === "light" ? "#bbb" : "#ccc";
+  const searchBarTextColor = themeMode === "light" ? "#333" : theme.text;
+  const searchBarBorderColor = themeMode === "light" ? "#888" : theme.border;
+  const searchIconColor = themeMode === "light" ? "#666" : "#ccc";
 
   const fetchBlockedUsers = async () => {
     try {
@@ -195,18 +198,18 @@ const AddFriendsScreen = () => {
           Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => Keyboard.dismiss());
         }}
       >
-        <View style={[styles.searchContainer, { borderColor: theme.border }]}>
-          <Ionicons name="search" size={20} color={placeholderColor} style={styles.searchIcon} />
+        <View style={[styles.searchContainer, { borderColor: searchBarBorderColor }]}>
+          <Ionicons name="search" size={20} color={searchIconColor} style={styles.searchIcon} />
           <TextInput
             placeholder="Search by name or @username"
-            placeholderTextColor={placeholderColor}
-            style={[styles.searchInput, { color: theme.text }]}
+            placeholderTextColor={searchIconColor}
+            style={[styles.searchInput, { color: searchBarTextColor }]}
             value={search}
             onChangeText={setSearch}
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch("")} style={styles.clearButton}>
-              <Ionicons name="close-circle" size={20} color={placeholderColor} />
+              <Ionicons name="close-circle" size={20} color={searchIconColor} />
             </TouchableOpacity>
           )}
         </View>
