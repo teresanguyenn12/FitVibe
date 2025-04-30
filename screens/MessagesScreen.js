@@ -30,11 +30,12 @@ const MessagesScreen = () => {
             setLoading(true);
             const db = getFirestore();
 
-            // Get current user's following/followers data for reference
+            // Get current user's following/followers data and blocked users
             const userDoc = await getDoc(doc(db, 'users', user.uid));
             const userData = userDoc.data();
             const following = new Set(userData?.following || []);
             const followers = new Set(userData?.followers || []);
+            const blockedUsers = new Set(userData?.blockedUsers || []);
 
             // Query all chatrooms where the current user is a participant
             const chatroomsRef = collection(db, 'chatrooms');
@@ -49,6 +50,16 @@ const MessagesScreen = () => {
                 const isGroup = participantIds.length > 2;
 
                 if (isGroup) {
+                    // Check if any group member is blocked
+                    const blockedMemberPresent = participantIds.some(id =>
+                        id !== user.uid && blockedUsers.has(id)
+                    );
+
+                    // Skip this group if it contains blocked users
+                    if (blockedMemberPresent) {
+                        continue;
+                    }
+
                     // Handle group chats as before
                     const names = participantIds
                         .filter(id => id !== user.uid)
@@ -65,8 +76,13 @@ const MessagesScreen = () => {
                         lastMessageTime: chatroomData.lastMessageTime || null
                     });
                 } else {
-                    // For one-on-one chats, include all chats regardless of follow status
+                    // For one-on-one chats, include all chats except those with blocked users
                     const otherUserId = participantIds.find(id => id !== user.uid);
+
+                    // Skip if the other user is blocked
+                    if (otherUserId && blockedUsers.has(otherUserId)) {
+                        continue;
+                    }
 
                     if (otherUserId) {
                         // Get the other user's data
@@ -153,6 +169,7 @@ const MessagesScreen = () => {
                     style={styles.userItem}
                     onPress={() => navigation.navigate(item.isGroup ? 'ChallengeChatScreen' : 'ChatScreen', {
                         chatroomId: item.id,
+                        otherUserName: item.isGroup ? item.title : item.fullName,
                         ...(item.isGroup ? { challenge: item.challenge } : { otherUserId: item.otherUserId })
                     })}
                 >
@@ -161,7 +178,12 @@ const MessagesScreen = () => {
                         style={styles.avatar}
                     />
                     <View style={styles.userInfo}>
-                        <Text style={styles.name}>{item.isGroup ? item.title : item.fullName}</Text>
+                        <View style={styles.nameContainer}>
+                            <Text style={styles.name}>{item.isGroup ? item.title : item.fullName}</Text>
+                            {!item.isGroup && !item.followStatus?.theyFollowYou && item.followStatus?.youFollowThem && (
+                                <Text style={styles.notFollowing}> (Not following you)</Text>
+                            )}
+                        </View>
                         <Text style={styles.handle}>{item.lastMessage || '@' + (item.username || item.email?.split('@')[0])}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={24} color="#666" />
@@ -195,6 +217,12 @@ const MessagesScreen = () => {
 
             {loading ? (
                 <ActivityIndicator size="large" color="purple" style={{ marginTop: 20 }} />
+            ) : chatUsers.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="chatbubbles-outline" size={60} color="#666" />
+                    <Text style={styles.emptyText}>No messages yet</Text>
+                    <Text style={styles.emptySubtext}>Start a conversation with your fitness buddies</Text>
+                </View>
             ) : (
                 <FlatList
                     data={filteredUsers}
@@ -260,9 +288,19 @@ const styles = StyleSheet.create({
     userInfo: {
         flex: 1
     },
+    nameContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        
+    },
     name: {
         color: '#fff',
         fontSize: 16
+    },
+    notFollowing: {
+        color: '#FF6B6B',
+        fontSize: 12,
+        fontStyle: 'italic'
     },
     handle: {
         color: '#888'
@@ -274,6 +312,24 @@ const styles = StyleSheet.create({
         width: 75,
         marginVertical: 5,
         borderRadius: 10
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    emptyText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
+        marginTop: 20,
+        marginBottom: 8,
+    },
+    emptySubtext: {
+        color: '#888',
+        fontSize: 14,
+        textAlign: 'center',
     }
 });
 
