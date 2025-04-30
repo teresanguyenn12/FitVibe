@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Dimensions } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../contexts/ThemeContext";
 
 const { width } = Dimensions.get("window");
 
@@ -17,32 +18,37 @@ const workoutOptions = [
 
 const StartWorkoutScreen = () => {
     const navigation = useNavigation();
+    const { theme } = useTheme();
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
             {/* Header Section */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={28} color="white" />
+                    <Ionicons name="arrow-back" size={28} color={theme.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Start Workout</Text>
+                <Text style={[styles.title, { color: theme.text }]}>Start Workout</Text>
             </View>
 
-            {/* Workout Options List */}
+            {/* Workout Options List - No theme changes here */}
             <ScrollView contentContainerStyle={styles.listContainer}>
                 {workoutOptions.map((item, index) => (
                     <TouchableOpacity 
                         key={index} 
                         style={styles.workoutCard}
-                        onPress={() => {navigation.navigate(item.name)}
-                        }
+                        onPress={() => {navigation.navigate(item.name)}}
                     >
-                        
                         <Image source={item.image} style={styles.image} />
                         <View style={styles.overlay} />
                         <Text style={styles.workoutText}>
                             {item.name === "StrengthTraining" ? "Strength Training" : item.name}
                         </Text>
+                        <Ionicons 
+                            name="arrow-forward-circle" 
+                            size={32} 
+                            color="white" 
+                            style={styles.arrowIcon}
+                        />
                     </TouchableOpacity>
                 ))}
             </ScrollView>
@@ -53,7 +59,6 @@ const StartWorkoutScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#121212",
         paddingTop: 80, 
     },
     header: {
@@ -65,15 +70,13 @@ const styles = StyleSheet.create({
         position: "relative",
     },
     title: {
-      fontSize: 24,
-      fontWeight: "bold",
-      color: "#fff",
-      textAlign: "center", 
-      flex: 1, 
-      marginRight: 21, 
-      fontFamily: "TiltWarp-Regular",
-  },
-  
+        fontSize: 24,
+        fontWeight: "bold",
+        textAlign: "center", 
+        flex: 1, 
+        marginRight: 21, 
+        fontFamily: "TiltWarp-Regular",
+    },
     listContainer: {
         paddingHorizontal: 20,
         paddingBottom: 20,
@@ -105,6 +108,11 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: "bold",
         fontFamily: "TiltWarp-Regular",
+    },
+    arrowIcon: {
+        position: "absolute",
+        bottom: 15,
+        right: 15,
     },
 });
 

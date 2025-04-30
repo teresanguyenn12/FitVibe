@@ -8,13 +8,15 @@ import { collection, query, where, getDocs, deleteDoc, doc, updateDoc } from "fi
 import { startOfMonth, endOfMonth } from "date-fns"; 
 import DraggableFlatList, { ScaleDecorator } from "react-native-draggable-flatlist";
 import { Swipeable } from "react-native-gesture-handler";
+import { useTheme } from "../contexts/ThemeContext";
 
 const MyWorkoutsScreen = () => {
     const navigation = useNavigation();
+    const { theme } = useTheme();
     const [selectedDate, setSelectedDate] = useState("");
     const [workouts, setWorkouts] = useState([]);
     const [cachedWorkouts, setCachedWorkouts] = useState([]); 
-    const cacheFetchedRef = useRef(false); // avoid re-fetching same month
+    const cacheFetchedRef = useRef(false);
 
     const formatTime = (seconds) => {
         const hrs = Math.floor(seconds / 3600);
@@ -179,12 +181,12 @@ const MyWorkoutsScreen = () => {
     );
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
             <View style={styles.header}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="arrow-back" size={28} color="white" />
+                    <Ionicons name="arrow-back" size={28} color={theme.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>My Workouts</Text>
+                <Text style={[styles.title, { color: theme.text }]}>My Workouts</Text>
             </View>
 
             <DraggableFlatList
@@ -194,19 +196,19 @@ const MyWorkoutsScreen = () => {
                 onDragEnd={({ data }) => setWorkouts(data)}
                 ListHeaderComponent={
                     <View>
-                        <View style={styles.calendarContainer}>
+                        <View style={[styles.calendarContainer, { backgroundColor: theme.cardBackground }]}>
                             <Calendar
                                 theme={{
-                                    backgroundColor: "#1E1E1E",
-                                    calendarBackground: "#1E1E1E",
-                                    textSectionTitleColor: "#fff",
-                                    selectedDayBackgroundColor: "#7C3AED",
+                                    backgroundColor: theme.cardBackground,
+                                    calendarBackground: theme.cardBackground,
+                                    textSectionTitleColor: theme.text,
+                                    selectedDayBackgroundColor: "#7C3AED", // Kept purple
                                     selectedDayTextColor: "#fff",
-                                    todayTextColor: "#7C3AED",
-                                    dayTextColor: "#fff",
-                                    arrowColor: "#fff",
-                                    monthTextColor: "#fff",
-                                    textDisabledColor: "#555",
+                                    todayTextColor: "#7C3AED", // Kept purple
+                                    dayTextColor: theme.text,
+                                    arrowColor: theme.text,
+                                    monthTextColor: theme.text,
+                                    textDisabledColor: theme.disabledText,
                                 }}
                                 onDayPress={(day) => setSelectedDate(day.dateString)}
                                 style={styles.calendar}
@@ -214,13 +216,13 @@ const MyWorkoutsScreen = () => {
                         </View>
 
                         {selectedDate && (
-                            <View style={styles.infoBox}>
-                                <Text style={styles.infoText}>Selected Date:</Text>
-                                <Text style={styles.selectedDate}>{selectedDate}</Text>
+                            <View style={[styles.infoBox, { backgroundColor: theme.cardBackground }]}>
+                                <Text style={[styles.infoText, { color: theme.subtext }]}>Selected Date:</Text>
+                                <Text style={[styles.selectedDate, { color: theme.text }]}>{selectedDate}</Text>
                             </View>
                         )}
                         {!selectedDate && (
-                            <Text style={styles.placeholderText}>Select a date to see workouts</Text>
+                            <Text style={[styles.placeholderText, { color: theme.text }]}>Select a date to see workouts</Text>
                         )}
                     </View>
                 }
@@ -231,7 +233,10 @@ const MyWorkoutsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#121212", paddingTop: 60 },
+    container: { 
+        flex: 1, 
+        paddingTop: 60 
+    },
     header: {
         flexDirection: "row",
         alignItems: "center",
@@ -240,12 +245,20 @@ const styles = StyleSheet.create({
         marginBottom: 15,
         position: "relative",
     },
-    backButton: { padding: 10, borderRadius: 10 },
-    title: { fontSize: 24, fontWeight: "bold", color: "#fff", textAlign: "center", flex: 1, marginRight: 40 },
+    backButton: { 
+        padding: 10, 
+        borderRadius: 10 
+    },
+    title: { 
+        fontSize: 24, 
+        fontWeight: "bold", 
+        textAlign: "center", 
+        flex: 1, 
+        marginRight: 40 
+    },
     calendarContainer: {
         alignSelf: "center",
         width: Dimensions.get("window").width * 0.9,
-        backgroundColor: "#1E1E1E",
         borderRadius: 15,
         padding: 10,
         elevation: 5,
@@ -253,18 +266,70 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 5,
     },
-    calendar: { borderRadius: 15, padding: 10 },
-    workoutCard: { backgroundColor: "#1E1E1E", borderColor: "#7C3AED", borderWidth: 1, borderRadius: 12, marginVertical: 8, padding: 12, width: Dimensions.get("window").width * 0.85, alignSelf: "center" },
-    swipeableWrapper: { marginHorizontal: Dimensions.get("window").width * 0.075 },
-    swipeDeleteContainer: { justifyContent: "center" },
-    swipeDelete: { backgroundColor: "#ff4d4d", justifyContent: "center", alignItems: "center", width: 80, height: "90%", borderRadius: 10 },
-    swipeDeleteText: { color: "#fff", fontWeight: "bold" },
-    infoBoxHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-    workoutTitle: { fontSize: 18, fontWeight: "bold", color: "#fff" },
-    infoText: { color: "#bbb", fontSize: 15, marginBottom: 4 },
-    selectedDate: { color: "#fff", fontSize: 18, fontWeight: "bold" },
-    placeholderText: { textAlign: "center", color: "#666", fontSize: 16, marginTop: 20 },
-    infoBox: { alignSelf: "center", backgroundColor: "#1E1E1E", padding: 10, borderRadius: 10, width: Dimensions.get("window").width * 0.85, marginTop: 10 },
+    calendar: { 
+        borderRadius: 15, 
+        padding: 10 
+    },
+    workoutCard: { 
+        backgroundColor: "#1E1E1E", 
+        borderColor: "#7C3AED", 
+        borderWidth: 1, 
+        borderRadius: 12, 
+        marginVertical: 8, 
+        padding: 12, 
+        width: Dimensions.get("window").width * 0.85, 
+        alignSelf: "center" 
+    },
+    swipeableWrapper: { 
+        marginHorizontal: Dimensions.get("window").width * 0.075 
+    },
+    swipeDeleteContainer: { 
+        justifyContent: "center" 
+    },
+    swipeDelete: { 
+        backgroundColor: "#ff4d4d", 
+        justifyContent: "center", 
+        alignItems: "center", 
+        width: 80, 
+        height: "90%", 
+        borderRadius: 10 
+    },
+    swipeDeleteText: { 
+        color: "#fff", 
+        fontWeight: "bold" 
+    },
+    infoBoxHeader: { 
+        flexDirection: "row", 
+        justifyContent: "space-between", 
+        alignItems: "center", 
+        marginBottom: 8 
+    },
+    workoutTitle: { 
+        fontSize: 18, 
+        fontWeight: "bold", 
+        color: "#fff" 
+    },
+    infoText: { 
+        color: "#bbb", 
+        fontSize: 15, 
+        marginBottom: 4 
+    },
+    selectedDate: { 
+        fontSize: 18, 
+        fontWeight: "bold" 
+    },
+    placeholderText: { 
+        textAlign: "center", 
+        fontSize: 16, 
+        marginTop: 20 
+    },
+    infoBox: { 
+        alignSelf: "center", 
+        padding: 10, 
+        borderRadius: 10, 
+        width: Dimensions.get("window").width * 0.85, 
+        marginTop: 10 
+    },
 });
 
 export default MyWorkoutsScreen;
