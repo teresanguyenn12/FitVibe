@@ -6,6 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { auth, db } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useTheme } from "../contexts/ThemeContext";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -21,6 +22,7 @@ const PilatesScreen = () => {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const timerRef = useRef(null);
+    const { theme } = useTheme();
 
     useEffect(() => {
         return () => clearInterval(timerRef.current);
@@ -183,7 +185,7 @@ const PilatesScreen = () => {
                                         display="spinner"
                                         onChange={handleDateChange}
                                         //style={{ backgroundColor: "#1e1e1e" }}
-                                        themeVariant="dark"
+                                        themeVariant={theme.mode === 'dark' ? 'dark' : 'light'}
                                     />
                                 <TouchableOpacity onPress={() => setShowDatePicker(false)} style={styles.doneButton}>
                                     <Text style={styles.doneButtonText}>Done</Text>
