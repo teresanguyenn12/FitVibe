@@ -1,21 +1,23 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Dimensions } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Dimensions, Modal } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Modal, Platform } from "react-native";
 import { auth, db } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useTheme } from "../contexts/ThemeContext";
 
 const screenWidth = Dimensions.get("window").width;
 
 const SwimmingScreen = () => {
+    const { theme } = useTheme();
     const navigation = useNavigation();
     const [time, setTime] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [laps, setLaps] = useState([]);
     const [notes, setNotes] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
     const timerRef = useRef(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -54,6 +56,8 @@ const SwimmingScreen = () => {
     };
 
     const handleSavePress = async () => {
+        if (isSaving) return;
+        
         const user = auth.currentUser;
     
         if (!user) {
@@ -66,6 +70,7 @@ const SwimmingScreen = () => {
             return;
         }
     
+        setIsSaving(true);
         const workoutData = {
             userId: user.uid,
             type: "swimming",
@@ -92,6 +97,8 @@ const SwimmingScreen = () => {
                 errorMessage = "Network error. Please check your connection.";
             }
             Alert.alert("Error", errorMessage);
+        } finally {
+            setIsSaving(false);
         }
     };
     
@@ -102,21 +109,211 @@ const SwimmingScreen = () => {
         }
     };
 
+    const styles = StyleSheet.create({
+        container: {
+            flex: 1,
+            backgroundColor: theme.background,
+            alignItems: "center",
+            paddingTop: 80,
+        },
+        backButton: {
+            position: "absolute",
+            top: 80,
+            left: 20,
+        },
+        title: {
+            fontSize: 30,
+            fontWeight: "bold",
+            color: theme.text,
+            marginBottom: 15,
+            fontFamily: "TiltWarp-Regular",
+        },
+        titleUnderline: {
+            height: 1,
+            backgroundColor: theme.border,
+            width: "90%",
+        },
+        centeredContent: {
+            width: "100%",
+            alignItems: "center",
+            justifyContent: "center",
+        },
+        scrollContainer: {
+            paddingBottom: 50,
+        },
+        timerContainer: {
+            backgroundColor: theme.card,
+            padding: 30,
+            borderRadius: 10,
+            alignItems: "center",
+            width: "90%",
+            marginBottom: 20,
+            borderColor: theme.border,
+            borderWidth: 1,
+        },
+        timer: {
+            fontSize: 50,
+            fontWeight: "bold",
+            color: theme.text,
+            marginBottom: 20,
+        },
+        button: {
+            backgroundColor: theme.primary,
+            padding: 12,
+            borderRadius: 30,
+            width: "60%",
+            alignItems: "center",
+            marginVertical: 8,
+        },
+        stopButton: {
+            backgroundColor: "#FF7F7F",
+        },
+        buttonText: {
+            fontSize: 18,
+            fontWeight: "bold",
+            color: "#fff",
+        },
+        lapsContainer: {
+            marginTop: 10,
+            width: "90%",
+        },
+        lapRow: {
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingVertical: 10,
+            borderBottomWidth: 0.5,
+            borderBottomColor: theme.border,
+        },
+        lapNumber: {
+            color: theme.text,
+            fontSize: 18,
+        },
+        lapTime: {
+            color: theme.text,
+            fontSize: 18,
+        },
+        lapButton: {
+            backgroundColor: theme.mode === 'dark' ? '#333' : '#e0e0e0',
+            padding: 12,
+            borderRadius: 30,
+            width: "60%",
+            alignItems: "center",
+            marginVertical: 8,
+        },
+        lapButtonText: {
+            fontSize: 18,
+            fontWeight: "bold",
+            color: theme.text,
+        },
+        notesContainer: {
+            width: "100%",
+            alignItems: "center",
+        },
+        notesHeading: {
+            color: theme.text,
+            fontSize: 20,
+            fontWeight: "bold",
+            alignSelf: "flex-start",
+            marginLeft: 20,
+            marginTop: 30,
+        },
+        notesBox: {
+            width: 320,
+            height: 100,
+            backgroundColor: theme.card,
+            color: theme.text,
+            paddingLeft: 10,
+            paddingTop: 10,
+            borderRadius: 10,
+            textAlignVertical: "top",
+            marginTop: 10,
+            borderColor: theme.border,
+            borderWidth: 1,
+        },
+        saveButton: {
+            marginTop: 20,
+            alignItems: "center",
+            width: "40%",
+            borderRadius: 30,
+            padding: 8,
+        },
+        gradientButton: {
+            padding: 15,
+            borderRadius: 30,
+            alignItems: "center",
+            width: "100%",
+        },
+        saveButtonText: {
+            color: "#fff",
+            fontSize: 18,
+            fontWeight: "bold",
+        },
+        datePickerContainer: {
+            marginTop: 30,
+            marginBottom: 20,
+            width: "100%",
+            alignItems: "center",
+        },
+        datePickerLabel: {
+            color: theme.text,
+            fontSize: 20,
+            marginBottom: 10,
+            fontWeight: "bold",
+        },
+        datePickerButton: {
+            backgroundColor: theme.card,
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            borderRadius: 8,
+            borderColor: theme.border,
+            borderWidth: 1,
+        },
+        datePickerButtonText: {
+            color: theme.text,
+            fontSize: 16,
+        },
+        modalBackground: {
+            flex: 1,
+            justifyContent: "flex-end",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+        },
+        iosDatePickerContainer: {
+            backgroundColor: theme.card,
+            padding: 20,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            alignItems: "center",
+        },
+        darkPickerBackground: {
+            backgroundColor: theme.card,
+            borderRadius: 10,
+            overflow: "hidden",
+        },
+        doneButton: {
+            marginTop: 10,
+            backgroundColor: theme.primary,
+            paddingVertical: 10,
+            paddingHorizontal: 30,
+            borderRadius: 30,
+        },
+        doneButtonText: {
+            color: "#fff",
+            fontSize: 16,
+            fontWeight: "bold",
+        },
+    });
+
     return (
         <View style={styles.container}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={28} color="white" />
+                <Ionicons name="arrow-back" size={28} color={theme.text} />
             </TouchableOpacity>
             <Text style={styles.title}>Swimming</Text>
             <View style={styles.titleUnderline} />
 
-            <ScrollView
-                contentContainerStyle={styles.scrollContainer}
-                horizontal={false} 
-                showsHorizontalScrollIndicator={false} 
-            >
+            <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.centeredContent}>
-                    {/* Date Picker */}
                     <View style={styles.datePickerContainer}>
                         <Text style={styles.datePickerLabel}>Select Date:</Text>
                         <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
@@ -139,7 +336,7 @@ const SwimmingScreen = () => {
                                             mode="date"
                                             display="spinner"
                                             onChange={handleDateChange}
-                                            themeVariant="dark"
+                                            themeVariant={theme.mode === 'dark' ? 'dark' : 'light'}
                                         />
                                     </View>
                                     <TouchableOpacity onPress={() => setShowDatePicker(false)} style={styles.doneButton}>
@@ -149,7 +346,7 @@ const SwimmingScreen = () => {
                             </View>
                         </Modal>
                     </View>
-                    {/* Timer Section */}
+                    
                     <View style={styles.timerContainer}>
                         <Text style={styles.timer}>{formatTime(time)}</Text>
                         <TouchableOpacity onPress={recordLap} style={styles.lapButton}>
@@ -180,9 +377,8 @@ const SwimmingScreen = () => {
                         <Text style={styles.notesHeading}>Notes</Text>
                         <TextInput
                             style={styles.notesBox}
-                            
                             placeholder="Enter notes here"
-                            placeholderTextColor="#999"
+                            placeholderTextColor={theme.subtext || "#999"}
                             multiline
                             textAlignVertical="top"
                             value={notes}
@@ -190,14 +386,20 @@ const SwimmingScreen = () => {
                         />
                     </View>
 
-                    <TouchableOpacity style={styles.saveButton} onPress={handleSavePress}>
+                    <TouchableOpacity 
+                        style={styles.saveButton} 
+                        onPress={handleSavePress}
+                        disabled={isSaving}
+                    >
                         <LinearGradient
                             colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.gradientButton}
                         >
-                            <Text style={styles.saveButtonText}>Save</Text>
+                            <Text style={styles.saveButtonText}>
+                                {isSaving ? "Saving..." : "Save"}
+                            </Text>
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
@@ -205,203 +407,5 @@ const SwimmingScreen = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#121212",
-        alignItems: "center",
-        paddingTop: 80,
-    },
-    backButton: {
-        position: "absolute",
-        top: 80,
-        left: 20,
-    },
-    title: {
-        fontSize: 30,
-        fontWeight: "bold",
-        color: "#fff",
-        marginBottom: 15,
-        fontFamily: "TiltWarp-Regular",
-    },
-    titleUnderline: {
-        height: 1,
-        backgroundColor: "#aaa",
-        width: "90%",
-    },
-    centeredContent: {
-        width: "100%",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    scrollContainer: {
-        width: "100%",
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    timerContainer: {
-        backgroundColor: "#1e1e1e",
-        padding: 45,
-        borderRadius: 10,
-        alignItems: "center",
-        width: screenWidth * 0.8, 
-    },
-    timer: {
-        fontSize: 50,
-        fontWeight: "bold",
-        color: "#fff",
-        marginBottom: 20,
-    },
-    button: {
-        backgroundColor: "#fff",
-        padding: 12,
-        borderRadius: 10,
-        width: 160,
-        alignItems: "center",
-        alignSelf: "center",
-        marginVertical: 8,
-        marginHorizontal: 80,
-        flexGrow: 1,
-        maxWidth: "90%",
-    },
-    stopButton: {
-        backgroundColor: "#FF7F7F",
-        width: 160,
-    },
-    buttonText: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "#121212",
-    },
-    lapsContainer: {
-        marginTop: 10,
-        paddingLeft: 10,
-        paddingRight: 10,
-        width: "85%",
-    },
-    lapRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        paddingVertical: 10,
-        borderBottomWidth: 0.5,
-        borderBottomColor: "#A9A9A9",
-        width: "100%",
-    },
-    lapNumber: {
-        color: "#fff",
-        fontSize: 18,
-    },
-    lapTime: {
-        color: "#fff",
-        fontSize: 18,
-    },
-    lapButton: {
-        backgroundColor: "#333",
-        padding: 12,
-        borderRadius: 10,
-        width: 160,
-        alignItems: "center",
-        verticalAlign: "center",
-        marginVertical: 8,
-    },
-    lapButtonText: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "#B0B0B0",
-    },
-    notesContainer: {
-        width: "100%",
-        alignItems: "center",
-    },
-    notesHeading: {
-        color: "#fff",
-        fontSize: 20,
-        fontWeight: "bold",
-        alignSelf: "flex-start", 
-        marginLeft: 5, 
-        marginTop: 30,
-    },
-    notesBox: {
-        width: 320,
-        height: 100,
-        backgroundColor: "#1e1e1e",
-        color: "#fff",
-        paddingLeft: 10,
-        paddingTop: 10,
-        borderRadius: 10,
-        textAlignVertical: "top",
-        marginTop: 10,
-    },
-    saveButton: {
-        marginTop: 20,
-        alignItems: "center",
-        width: 140,
-        borderRadius: 10,
-        padding: 8,
-    },
-    gradientButton: {
-        padding: 15,
-        borderRadius: 10,
-        alignItems: "center",
-        width: "100%",
-    },
-    saveButtonText: {
-        color: "#fff",
-        fontSize: 18,
-        fontWeight: "bold",
-    },
-    datePickerContainer: {
-        marginTop: 30,
-        marginBottom: 20,
-        width: "100%",
-        alignItems: "center",
-    },
-    datePickerLabel: {
-        color: "#fff",
-        fontSize: 20,
-        marginBottom: 10,
-        fontWeight: "bold",
-    },
-    datePickerButton: {
-        backgroundColor: "#1e1e1e",
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 8,
-    },
-    datePickerButtonText: {
-        color: "#fff",
-        fontSize: 16,
-    },
-    modalBackground: {
-        flex: 1,
-        justifyContent: "flex-end",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-    },
-    iosDatePickerContainer: {
-        backgroundColor: "#1e1e1e",
-        padding: 20,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        alignItems: "center",
-    },
-    darkPickerBackground: {
-        backgroundColor: "#1e1e1e",
-        borderRadius: 10,
-        overflow: "hidden",
-    },
-    doneButton: {
-        marginTop: 10,
-        backgroundColor: "#5A1A9B",
-        paddingVertical: 10,
-        paddingHorizontal: 30,
-        borderRadius: 10,
-    },
-    doneButtonText: {
-        color: "#fff",
-        fontSize: 16,
-        fontWeight: "bold",
-    },
-});
 
 export default SwimmingScreen;
