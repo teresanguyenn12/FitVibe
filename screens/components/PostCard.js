@@ -157,7 +157,7 @@ export default function PostCard({ item, handleLike, handleDelete }) {
         <View
   style={[
     styles.mediaItemWrapper,
-    item.media.length === 1 && { marginBottom: 16 }, // ✅ Add spacing if only 1 media item
+    item.media.length === 1 && { marginBottom: 16 }, // Add spacing if only 1 media item
   ]}
 >
           {mediaItem.type === "video" ? (
@@ -238,9 +238,8 @@ export default function PostCard({ item, handleLike, handleDelete }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#131417",
     marginBottom: 16,
-    marginHorizontal: 12,
     borderRadius: 14,
     overflow: "hidden",
   },

@@ -138,7 +138,7 @@ export default function AddPostScreen() {
       mediaItems,
       userId: user.uid,
     };
-    setShowFinalPreview(false); 
+    setShowFinalPreview(false);
     navigation.navigate("HomeTabs", {
       screen: "Feed",
       params: { pendingPost: postPayload },
@@ -225,20 +225,22 @@ export default function AddPostScreen() {
                 ]}
                 onPress={() => setSelectedWorkout(item.type)}
               >
-                <LinearGradient
-                  colors={
-                    selectedWorkout === item.type
-                      ? ["#8e2de2", "#4a00e0"]
-                      : ["#222", "#222"]
-                  }
-                  style={styles.iconCircle}
-                >
-                  <MaterialCommunityIcons
-                    name={item.icon}
-                    size={22}
-                    color={selectedWorkout === item.type ? "#fff" : "#aaa"}
-                  />
-                </LinearGradient>
+                <View style={styles.iconCircleWrapper}>
+  <View style={[styles.iconCircle, { backgroundColor: "#2B2D31" }]}>
+    {selectedWorkout === item.type && (
+      <LinearGradient
+        colors={["#8e2de2", "#4a00e0"]}
+        style={styles.iconCircle}
+      />
+    )}
+    <MaterialCommunityIcons
+      name={item.icon}
+      size={22}
+      color={selectedWorkout === item.type ? "#fff" : "#aaa"}
+      style={{ zIndex: 1 }}
+    />
+  </View>
+</View>
                 <Text
                   style={[
                     styles.workoutText,
@@ -341,7 +343,8 @@ export default function AddPostScreen() {
                 showsHorizontalScrollIndicator={false}
                 onScroll={(e) => {
                   const index = Math.round(
-                    e.nativeEvent.contentOffset.x / Dimensions.get("window").width
+                    e.nativeEvent.contentOffset.x /
+                      Dimensions.get("window").width
                   );
                   setCurrentIndex(index);
                 }}
@@ -371,30 +374,52 @@ export default function AddPostScreen() {
                 )}
               />
               {mediaItems.length > 1 && (
-  <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 10 }}>
-    {mediaItems.map((_, index) => (
-      <View
-        key={index}
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: 4,
-          backgroundColor: currentIndex === index ? "#fff" : "#555",
-          marginHorizontal: 4,
-        }}
-      />
-    ))}
-  </View>
-)}
-
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    marginTop: 10,
+                  }}
+                >
+                  {mediaItems.map((_, index) => (
+                    <View
+                      key={index}
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor:
+                          currentIndex === index ? "#fff" : "#555",
+                        marginHorizontal: 4,
+                      }}
+                    />
+                  ))}
+                </View>
+              )}
             </View>
 
             <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold", marginBottom: 5 }}>
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  marginBottom: 5,
+                }}
+              >
                 Description
               </Text>
-              <Text style={{ color: "#ccc", marginBottom: 15 }}>{description}</Text>
-              <Text style={{ color: "#fff", fontSize: 16, fontWeight: "bold", marginBottom: 5 }}>
+              <Text style={{ color: "#ccc", marginBottom: 15 }}>
+                {description}
+              </Text>
+              <Text
+                style={{
+                  color: "#fff",
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  marginBottom: 5,
+                }}
+              >
                 Workout Type
               </Text>
               <Text style={{ color: "#ccc" }}>
@@ -427,7 +452,7 @@ export default function AddPostScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#111" },
+  container: { flex: 1, backgroundColor: "#131417" },
   scrollContainer: {
     padding: 20,
     paddingTop: Platform.OS === "ios" ? 60 : 20,
@@ -448,19 +473,28 @@ const styles = StyleSheet.create({
   },
   workoutContainer: { flexDirection: "row", paddingBottom: 10 },
   workoutButton: { alignItems: "center", marginRight: 14 },
+  iconCircleWrapper: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    overflow: "hidden",
+    marginBottom: 6,
+  },
   iconCircle: {
     width: 60,
     height: 60,
     borderRadius: 30,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 6,
+    position: "absolute",
+    top: 0,
+    left: 0,
   },
   workoutText: { color: "#aaa", fontSize: 11, textAlign: "center", width: 70 },
   selectedWorkout: {},
 
   customWorkoutInput: {
-    backgroundColor: "#222",
+    backgroundColor: "#2B2D31",
     color: "#fff",
     padding: 10,
     borderRadius: 8,
@@ -477,7 +511,7 @@ const styles = StyleSheet.create({
   charCount: { color: "#888", fontSize: 12 },
 
   input: {
-    backgroundColor: "#222",
+    backgroundColor: "#2B2D31",
     color: "#fff",
     height: 120,
     padding: 15,
@@ -487,7 +521,7 @@ const styles = StyleSheet.create({
   },
 
   imageBox: {
-    backgroundColor: "#1b1b1b",
+    backgroundColor: "#2B2D31",
     borderRadius: 16,
     height: 90,
     justifyContent: "center",

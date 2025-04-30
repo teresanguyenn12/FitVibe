@@ -81,9 +81,8 @@ export default function FeedScreen() {
 
       setPosts(
         posts.filter((p) => {
-          if (!p.isPrivate) {
-            return visible.includes(p.userId);
-          }
+          if (p.userId === user.uid) return true;
+          if (!p.isPrivate) return visible.includes(p.userId);
           return p.ownerFollowers.includes(user.uid);
         })
       );
@@ -235,7 +234,7 @@ export default function FeedScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#111" },
+  container: { flex: 1, backgroundColor: "#131417" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
