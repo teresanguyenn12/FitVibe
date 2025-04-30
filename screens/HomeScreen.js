@@ -190,7 +190,7 @@ const HomeScreen = () => {
           Hello {user.firstName}
           <Animated.Text style={[styles.emoji, waveStyle, { color: theme.text }]}> 👋</Animated.Text>
         </Text>
-        <Text style={[styles.subtext, { color: theme.secondaryText }]}>Let's get active!</Text>
+        <Text style={[styles.subtext, { color: theme.text }]}>Let's get active!</Text>
       </View>
 
       {/* Trending Challenge */}
