@@ -1,9 +1,15 @@
-// List all available challenges
 import React, { useState, useEffect } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
-import { Entypo, Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { db } from "../../firebase";
 import { collection, getDocs } from "firebase/firestore";
 
@@ -30,8 +36,18 @@ const JoinChallengesScreen = () => {
     };
 
     const monthNames = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
     const now = new Date();
     setCurrentMonthName(monthNames[now.getMonth()]);
@@ -44,55 +60,77 @@ const JoinChallengesScreen = () => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
         <Ionicons name="arrow-back" size={30} color="#fff" />
       </TouchableOpacity>
 
-      <Text style={styles.header}>Join Challenges</Text>
+      <Text style={styles.header}>Join {currentMonthName} Challenges</Text>
 
-      <LinearGradient colors={["#A0006D", "#552082"]} style={styles.selectedMonthButton}>
-        <Text style={styles.selectedMonthText}>{currentMonthName} Challenges</Text>
-      </LinearGradient>
-
-      <Text style={styles.sectionTitle}>Choose Fitness Challenge</Text>
-
-      {/* Category Buttons */}
+      {/* Category Scroll Row */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoryContainer}
+        style={styles.categoryScroll}
+        contentContainerStyle={styles.categoryScrollContent}
       >
         {categories.map((category) => (
           <TouchableOpacity
             key={category}
-            onPress={() => setSelectedCategory(category)}
             style={[
-              styles.category,
-              selectedCategory === category && styles.selectedCategory,
+              styles.categoryBox,
+              selectedCategory === category && styles.categoryBoxActive,
             ]}
+            onPress={() => setSelectedCategory(category)}
           >
-            <Text style={{ color: selectedCategory === category ? "#fff" : "#bbb" }}>
-              {category}
-            </Text>
+            <Text style={styles.categoryBoxText}>{category}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      {/* Challenge List */}
-      <FlatList
-        data={filteredChallenges}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.challengeItem}
-            onPress={() => navigation.navigate("ChallengeDetails", { challenge: item })}
-          >
-            <Text style={styles.challengeText}>{item.name}</Text>
-            <Entypo name="chevron-right" size={18} color="#bbb" />
-          </TouchableOpacity>
-        )}
-        showsVerticalScrollIndicator={false}
-      />
+      {/* Challenges List */}
+      {filteredChallenges.length === 0 ? (
+        <Text style={styles.noResults}>No results found.</Text>
+      ) : (
+        <FlatList
+          data={filteredChallenges}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={<View style={{ height: 0 }} />} // removes initial offset
+          renderItem={({ item }) => (
+            <LinearGradient
+              colors={["#8A1E50", "#1A4A80"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.challengeCard}
+            >
+              <TouchableOpacity
+                style={styles.challengeCardContent}
+                onPress={() =>
+                  navigation.navigate("ChallengeDetails", { challenge: item })
+                }
+              >
+                <View>
+                  <Text style={styles.challengeName}>{item.name}</Text>
+                  <Text style={styles.challengeMeta}>
+                    {item.duration || "Duration unknown"} •{" "}
+                    {item.participantCount || 0} joined
+                  </Text>
+                </View>
+                <Ionicons
+                  name="arrow-forward-circle"
+                  size={28}
+                  color="#FFD700"
+                />
+              </TouchableOpacity>
+            </LinearGradient>
+          )}
+          style={{ marginTop: -110}}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 30 }}
+        />
+      )}
     </View>
   );
 };
@@ -100,65 +138,69 @@ const JoinChallengesScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
-    paddingTop: 80,
+    backgroundColor: "#131417",
+    paddingTop: 100,
     paddingHorizontal: 20,
   },
   header: {
-    fontSize: 30,
+    fontSize: 26,
     fontWeight: "bold",
     color: "#fff",
     textAlign: "center",
-    marginBottom: 20,
-    marginTop: 30,
+    marginBottom: 12,
   },
-  selectedMonthButton: {
-    paddingVertical: 12,
-    borderRadius: 20,
+  categoryScroll: {
+    marginBottom: 0,
+  },
+  categoryScrollContent: {
+    paddingHorizontal: 4,
+  },
+  categoryBox: {
+    width: 100,
+    height: 50,
+    backgroundColor:"#2B2D31",
+    borderRadius: 14,
     alignItems: "center",
-    marginBottom: 10,
-  },
-  selectedMonthText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  sectionTitle: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "bold",
-    marginTop: 35,
-    marginBottom: 10,
-  },
-  categoryContainer: {
-    flexDirection: "row",
     justifyContent: "center",
-    paddingVertical: 6,
-    marginBottom: 10,
+    marginRight: 10,
   },
-  category: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginHorizontal: 3,
-    backgroundColor: "#222",
-    fontSize: 13,
+  categoryBoxActive: {
+    backgroundColor: "#7C3AED",
+  },
+  categoryBoxText: {
+    color: "#fff",
     fontWeight: "600",
+    textAlign: "center",
   },
-  selectedCategory: {
-    backgroundColor: "#A0006D",
+  challengeCard: {
+    borderRadius: 16,
+    marginBottom: 12,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 4,
   },
-  challengeItem: {
-    backgroundColor: "#222",
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 5,
+  challengeCardContent: {
+    padding: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  challengeText: {
+  challengeName: {
+    fontSize: 17,
+    fontWeight: "bold",
     color: "#fff",
+    marginBottom: 4,
+  },
+  challengeMeta: {
+    color: "#ddd",
+    fontSize: 13,
+  },
+  noResults: {
+    color: "#ccc",
+    textAlign: "center",
+    marginTop: 20,
     fontSize: 16,
   },
   backButton: {
@@ -166,7 +208,9 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     zIndex: 999,
-    backgroundColor: "#00000088",
+    padding: 6,
+    borderRadius: 20,
+    paddingTop: 10,
   },
 });
 

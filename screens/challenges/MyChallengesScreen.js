@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   },
 
   challengeItem: {
-    backgroundColor: "#1E1E1E",
+    backgroundColor: "#2B2D31",
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
