@@ -54,18 +54,15 @@ export default function ChallengeCompletedScreen() {
         await updateDoc(userRef, {
           xp: increment(xpAmount),
           fitcoin: increment(fitcoinReward),
+          challenges: increment(1),
+          burnedCalories: increment(Math.round(estimatedCaloriesBurned)),
+          completedChallenges: increment(1), // Optional: also count in completed challenges
         });
 
         // Update Career Stats: Challenges Completed + Calories Burned
         const MET = challenge?.category === "Walk" ? 3.5 : (challenge?.category === "Run" ? 8 : 6);
         const timeHours = (challenge?.duration ? parseFloat(challenge.duration) : 0) / 60;
         const estimatedCaloriesBurned = MET * 70 * timeHours;
-
-        await updateDoc(userRef, {
-          challenges: increment(1),
-          burnedCalories: increment(Math.round(estimatedCaloriesBurned)),
-          completedChallenges: increment(1), // Optional: also count in completed challenges
-        });
 
         navigation.navigate("Progression");
       } catch (err) {

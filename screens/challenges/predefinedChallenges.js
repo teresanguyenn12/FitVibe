@@ -16,7 +16,7 @@ export const predefinedChallenges = [
     name: "10 Mile Run in 24 hrs",
     duration: "24 hours",
     distance: "10 miles",
-    reward: "500 XP",
+    reward: "1000 XP",
     status: "Active",
     category: "Run",
     distanceGoal: 10,

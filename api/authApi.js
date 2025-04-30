@@ -32,6 +32,7 @@ export const registerUser = async (email, password, fullName, extraData = {}) =>
     showcasedGoals: [],
     posts: [],
     fitCoins: 100,
+    xp: 0,
     createdAt: Timestamp.now(),
   };
 

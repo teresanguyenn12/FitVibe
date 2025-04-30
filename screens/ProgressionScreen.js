@@ -28,26 +28,25 @@ const ProgressionScreen = () => {
   const { theme } = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="close" size={28} color={theme.text} />
+    <View style = {[styles.container, { backgroundColor: theme.background }]}>
+      <TouchableOpacity style = {styles.backButton} onPress = {() => navigation.goBack()}>
+        <Ionicons name = "close" size = {28} color = {theme.text} />
       </TouchableOpacity>
-      <Text style={[styles.header, { color: theme.text }]}>Progression Info</Text>
-      <ScrollView style={styles.scrollContainer}>
+      <Text style = {[styles.header, { color: theme.text }]}>Progression Info</Text>
+      <ScrollView style = {styles.scrollContainer}>
         {levels.map((level, index) => (
           <LinearGradient 
-            colors={["#A0004D", "#000000"]} 
-            key={index} 
-            style={[styles.levelContainer, level.locked && styles.locked]}
-          >
-            <Text style={styles.levelTitle}>{level.title}</Text>
-            <Image source={rankImages[level.rank]} style={styles.icon} />
-            <Text style={styles.rank}>{level.rank}</Text>
-            <Text style={styles.perksTitle}>Perks:</Text>
+            colors = {["#A0004D", "#000000"]} 
+            key = {index} 
+            style = {[styles.levelContainer, level.locked && styles.locked]}>
+            <Text style = {styles.levelTitle}>{level.title}</Text>
+            <Image source = {rankImages[level.rank]} style={styles.icon}/>
+            <Text style = {styles.rank}>{level.rank}</Text>
+            <Text style = {styles.perksTitle}>Perks:</Text>
             {level.perks.map((perk, idx) => (
-              <Text key={idx} style={styles.perkItem}>• {perk}</Text>
+              <Text key = {idx} style={styles.perkItem}>• {perk}</Text>
             ))}
-            {level.locked && <Ionicons name="lock-closed" size={24} color="#fff" style={styles.lockIcon} />}
+            {level.locked && <Ionicons name = "lock-closed" size = {24} color = "#fff" style = {styles.lockIcon}/>}
           </LinearGradient>
         ))}
       </ScrollView>
