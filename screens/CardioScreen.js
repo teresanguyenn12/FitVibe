@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Dimensions} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -284,11 +284,10 @@ const CardioScreen = () => {
             left: 20,
         },
         title: {
-            fontSize: 30,
+            fontSize: 25,
             fontWeight: "bold",
             color: theme.text,
             marginBottom: 15,
-            fontFamily: "TiltWarp-Regular",
         },
         titleUnderline: {
             height: 1,
@@ -303,28 +302,42 @@ const CardioScreen = () => {
         scrollContainer: {
             paddingBottom: 50,
         },
+        tabWrapper: {
+            flexDirection: "row",
+            backgroundColor: theme.mode === "dark" ? "#2B2D31" : "#E0E0E0", // similar to card/border
+            borderRadius: 50,
+            width: "90%",
+            marginBottom: 12,
+        },
+        tabButton: {
+            flex: 1,
+            paddingVertical: 12,
+            borderRadius: 50,
+            alignItems: "center",
+            justifyContent: "center",
+        },
+        activeTabButton: {
+            backgroundColor: theme.primary,
+        },
+        inactiveTabButton: {
+            backgroundColor: "transparent",
+        },
+        tabText: {
+            fontSize: 15,
+            fontWeight: "bold",
+        },
+        activeTabText: {
+            color: "#fff",
+        },
+        inactiveTabText: {
+            color: theme.text,
+        },
         tabs: {
             flexDirection: "row",
             width: "90%",
-            justifyContent: "space-between",
-            marginBottom: 20,
-        },
-        tab: {
-            flex: 1,
-            alignItems: "center",
             justifyContent: "center",
-            paddingVertical: 15,
-            borderRadius: 10,
-            backgroundColor: theme.card,
-            marginHorizontal: 5,
-        },
-        activeTab: {
-            backgroundColor: theme.primary,
-        },
-        tabText: {
-            color: theme.text,
-            fontSize: 18,
-            fontWeight: "bold",
+            marginBottom: 20,
+            gap: 30, // Add space between tabs
         },
         timerHeading: {
             color: theme.subtext,
@@ -332,12 +345,12 @@ const CardioScreen = () => {
             marginBottom: 5,
         },
         timerContainer: {
-            backgroundColor: theme.card,
-            padding: 30,
+            padding: 20,
             borderRadius: 10,
             alignItems: "center",
             width: "90%",
             marginBottom: 20,
+            backgroundColor: 'transparent',
         },
         timer: {
             fontSize: 50,
@@ -348,7 +361,7 @@ const CardioScreen = () => {
         metricsRow: {
             flexDirection: "row",
             justifyContent: "space-between",
-            width: "90%",
+            width: "85%",
             marginBottom: 20,
         },
         metricBox: {
@@ -373,15 +386,15 @@ const CardioScreen = () => {
             backgroundColor: theme.primary,
             padding: 12,
             borderRadius: 30,
-            width: "60%",
+            width: 320,
             alignItems: "center",
             marginVertical: 8,
         },
         stopButton: {
-            backgroundColor: "#FF7F7F",
+            backgroundColor: "#D32F2F",
         },
         buttonText: {
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: "bold",
             color: "#fff",
         },
@@ -415,12 +428,12 @@ const CardioScreen = () => {
             backgroundColor: theme.mode === 'dark' ? '#333' : '#f0f0f0',
             padding: 12,
             borderRadius: 30,
-            width: "60%",
+            width: 320,
             alignItems: "center",
             marginVertical: 8,
         },
         lapButtonText: {
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: "bold",
             color: theme.text,
         },
@@ -433,8 +446,8 @@ const CardioScreen = () => {
             fontSize: 20,
             fontWeight: "bold",
             alignSelf: "flex-start",
-            marginLeft: 20,
-            marginTop: 30,
+            marginLeft: 30,
+            marginTop: 20,
         },
         notesBox: {
             width: 320,
@@ -452,30 +465,25 @@ const CardioScreen = () => {
         saveButton: {
             marginTop: 20,
             alignItems: "center",
-            width: "40%",
+            width: 320,
             borderRadius: 30,
-            padding: 8,
-        },
-        gradientButton: {
-            padding: 15,
-            borderRadius: 30,
-            alignItems: "center",
-            width: "100%",
+            paddingVertical: 12,
+            backgroundColor: theme.primary,
         },
         saveButtonText: {
             color: "#fff",
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: "bold",
         },
         datePickerContainer: {
             marginTop: 30,
-            marginBottom: 20,
+            marginBottom: 30,
             width: "100%",
             alignItems: "center",
         },
         datePickerLabel: {
             color: theme.text,
-            fontSize: 20,
+            fontSize: 17,
             marginBottom: 10,
             fontWeight: "bold",
         },
@@ -564,12 +572,38 @@ const CardioScreen = () => {
                             </View>
                         </Modal>
                     </View>
-                    <View style={styles.tabs}>
-                        <TouchableOpacity onPress={() => switchTab("Walking")} style={[styles.tab, activeTab === "Walking" && styles.activeTab]}>
-                            <Text style={styles.tabText}>Walking</Text>
+                    <View style={styles.tabWrapper}>
+                        <TouchableOpacity
+                            onPress={() => switchTab("Walking")}
+                            style={[
+                            styles.tabButton,
+                            activeTab === "Walking" ? styles.activeTabButton : styles.inactiveTabButton,
+                            ]}
+                        >
+                            <Text
+                            style={[
+                                styles.tabText,
+                                activeTab === "Walking" ? styles.activeTabText : styles.inactiveTabText,
+                            ]}
+                            >
+                            Walking
+                            </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => switchTab("Running")} style={[styles.tab, activeTab === "Running" && styles.activeTab]}>
-                            <Text style={styles.tabText}>Running</Text>
+                        <TouchableOpacity
+                            onPress={() => switchTab("Running")}
+                            style={[
+                            styles.tabButton,
+                            activeTab === "Running" ? styles.activeTabButton : styles.inactiveTabButton,
+                            ]}
+                        >
+                            <Text
+                            style={[
+                                styles.tabText,
+                                activeTab === "Running" ? styles.activeTabText : styles.inactiveTabText,
+                            ]}
+                            >
+                            Running
+                            </Text>
                         </TouchableOpacity>
                     </View>
 
@@ -583,8 +617,8 @@ const CardioScreen = () => {
                             <Text style={styles.buttonText}>{isRunning ? "Stop" : "Start"}</Text>
                         </TouchableOpacity>
                         {!isRunning && time > 0 && (
-                            <TouchableOpacity onPress={resetTimer} style={styles.button}>
-                                <Text style={styles.buttonText}>Reset</Text>
+                            <TouchableOpacity onPress={resetTimer} style={styles.lapButton}>
+                                <Text style={styles.lapButtonText}>Reset</Text>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -634,16 +668,9 @@ const CardioScreen = () => {
                         onPress={handleSavePress}
                         disabled={isSaving}
                     >
-                        <LinearGradient
-                            colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.gradientButton}
-                        >
-                            <Text style={styles.saveButtonText}>
-                                {isSaving ? "Saving..." : "Save"}
-                            </Text>
-                        </LinearGradient>
+                        <Text style={styles.saveButtonText}>
+                            {isSaving ? "Saving..." : "Save"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
