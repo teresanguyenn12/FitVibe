@@ -37,12 +37,11 @@ const HikingScreen = () => {
     const [prevLocation, setPrevLocation] = useState(null);
     const [initialLocation, setInitialLocation] = useState(null);
     const [mileMarkers, setMileMarkers] = useState([]);
-    const [showDatePicker, setShowDatePicker] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(new Date());
     const [isSaving, setIsSaving] = useState(false);
-
     const timerRef = useRef(null);
     const locationSubscription = useRef(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(new Date());
 
     useEffect(() => {
         return () => {
@@ -147,7 +146,7 @@ const HikingScreen = () => {
             return;
         }
         setLaps([...laps, { time, distance }]);
-    };    
+    };
 
     const formatTime = (seconds) => {
         const hrs = Math.floor(seconds / 3600);
@@ -180,7 +179,7 @@ const HikingScreen = () => {
                 time,
                 distance: parseFloat(distance.toFixed(2)),
                 pace,
-                notes,
+                notes: notes.trim(),
                 laps,
                 timestamp: serverTimestamp(),
             });
@@ -199,7 +198,7 @@ const HikingScreen = () => {
         } finally {
             setIsSaving(false);
         }
-    };    
+    };
 
     const handleDateChange = (event, date) => {
         if (date) {
@@ -220,11 +219,10 @@ const HikingScreen = () => {
             left: 20,
         },
         title: {
-            fontSize: 30,
+            fontSize: 25,
             fontWeight: "bold",
             color: theme.text,
             marginBottom: 15,
-            fontFamily: "TiltWarp-Regular",
         },
         titleUnderline: {
             height: 1,
@@ -245,14 +243,12 @@ const HikingScreen = () => {
             marginBottom: 5,
         },
         timerContainer: {
-            backgroundColor: theme.card,
-            padding: 30,
+            padding: 20,
             borderRadius: 10,
             alignItems: "center",
             width: "90%",
             marginBottom: 20,
-            borderColor: theme.border,
-            borderWidth: 1,
+            backgroundColor: 'transparent',
         },
         timer: {
             fontSize: 50,
@@ -263,7 +259,7 @@ const HikingScreen = () => {
         metricsRow: {
             flexDirection: "row",
             justifyContent: "space-between",
-            width: "90%",
+            width: "85%",
             marginBottom: 20,
         },
         metricBox: {
@@ -272,8 +268,6 @@ const HikingScreen = () => {
             borderRadius: 10,
             alignItems: "center",
             width: "48%",
-            borderColor: theme.border,
-            borderWidth: 1,
         },
         metricHeading: {
             color: theme.subtext,
@@ -290,15 +284,15 @@ const HikingScreen = () => {
             backgroundColor: theme.primary,
             padding: 12,
             borderRadius: 30,
-            width: "60%",
+            width: 320,
             alignItems: "center",
             marginVertical: 8,
         },
         stopButton: {
-            backgroundColor: "#FF7F7F",
+            backgroundColor: "#D32F2F",
         },
         buttonText: {
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: "bold",
             color: "#fff",
         },
@@ -329,15 +323,15 @@ const HikingScreen = () => {
             textAlign: "right",
         },
         lapButton: {
-            backgroundColor: theme.mode === 'dark' ? '#333' : '#e0e0e0',
+            backgroundColor: theme.mode === 'dark' ? '#333' : '#f0f0f0',
             padding: 12,
             borderRadius: 30,
-            width: "60%",
+            width: 320,
             alignItems: "center",
             marginVertical: 8,
         },
         lapButtonText: {
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: "bold",
             color: theme.text,
         },
@@ -350,8 +344,8 @@ const HikingScreen = () => {
             fontSize: 20,
             fontWeight: "bold",
             alignSelf: "flex-start",
-            marginLeft: 20,
-            marginTop: 30,
+            marginLeft: 30,
+            marginTop: 20,
         },
         notesBox: {
             width: 320,
@@ -369,30 +363,25 @@ const HikingScreen = () => {
         saveButton: {
             marginTop: 20,
             alignItems: "center",
-            width: "40%",
+            width: 320,
             borderRadius: 30,
-            padding: 8,
-        },
-        gradientButton: {
-            padding: 15,
-            borderRadius: 30,
-            alignItems: "center",
-            width: "100%",
+            paddingVertical: 12,
+            backgroundColor: theme.primary,
         },
         saveButtonText: {
             color: "#fff",
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: "bold",
         },
         datePickerContainer: {
             marginTop: 30,
-            marginBottom: 20,
+            marginBottom: 30,
             width: "100%",
             alignItems: "center",
         },
         datePickerLabel: {
             color: theme.text,
-            fontSize: 20,
+            fontSize: 17,
             marginBottom: 10,
             fontWeight: "bold",
         },
@@ -449,7 +438,6 @@ const HikingScreen = () => {
 
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <View style={styles.centeredContent}>
-                    {/* Date Picker */}
                     <View style={styles.datePickerContainer}>
                         <Text style={styles.datePickerLabel}>Select Date:</Text>
                         <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
@@ -483,7 +471,6 @@ const HikingScreen = () => {
                         </Modal>
                     </View>
                     
-                    {/* Timer Section */}
                     <View style={styles.timerContainer}>
                         <Text style={styles.timerHeading}>Duration</Text>
                         <Text style={styles.timer}>{formatTime(time)}</Text>
@@ -494,13 +481,12 @@ const HikingScreen = () => {
                             <Text style={styles.buttonText}>{isRunning ? "Stop" : "Start"}</Text>
                         </TouchableOpacity>
                         {!isRunning && time > 0 && (
-                            <TouchableOpacity onPress={resetTimer} style={styles.button}>
-                                <Text style={styles.buttonText}>Reset</Text>
+                            <TouchableOpacity onPress={resetTimer} style={styles.lapButton}>
+                                <Text style={styles.lapButtonText}>Reset</Text>
                             </TouchableOpacity>
                         )}
                     </View>
 
-                    {/* Distance and Pace Section */}
                     <View style={styles.metricsRow}>
                         <View style={styles.metricBox}>
                             <Text style={styles.metricValue}>{distance.toFixed(2)}</Text>
@@ -531,7 +517,7 @@ const HikingScreen = () => {
                         <TextInput
                             style={styles.notesBox}
                             placeholder="Enter notes here"
-                            placeholderTextColor={theme.subtext || "#999"}
+                            placeholderTextColor={theme.subtext}
                             multiline
                             textAlignVertical="top"
                             value={notes}
@@ -544,16 +530,9 @@ const HikingScreen = () => {
                         onPress={handleSavePress}
                         disabled={isSaving}
                     >
-                        <LinearGradient
-                            colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.gradientButton}
-                        >
-                            <Text style={styles.saveButtonText}>
-                                {isSaving ? "Saving..." : "Save"}
-                            </Text>
-                        </LinearGradient>
+                        <Text style={styles.saveButtonText}>
+                            {isSaving ? "Saving..." : "Save"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
