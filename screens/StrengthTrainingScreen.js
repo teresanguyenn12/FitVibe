@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, Modal } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { auth, db } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -11,7 +10,7 @@ import { useTheme } from "../contexts/ThemeContext";
 const StrengthTrainingScreen = () => {
     const { theme } = useTheme();
     const navigation = useNavigation();
-    const [time, setTime] = useState(0); // Time in seconds
+    const [time, setTime] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [sets, setSets] = useState([]);
     const [notes, setNotes] = useState("");
@@ -177,11 +176,11 @@ const StrengthTrainingScreen = () => {
             left: 20,
         },
         title: {
-            fontSize: 30,
+            fontSize: 25,
             fontWeight: "bold",
             color: theme.text,
             marginBottom: 18,
-            fontFamily: "TiltWarp-Regular",
+            //fontFamily: "TiltWarp-Regular",
         },
         titleUnderline: {
             height: 1,
@@ -198,81 +197,80 @@ const StrengthTrainingScreen = () => {
             alignItems: "center",
         },
         timerContainer: {
-            backgroundColor: theme.card,
-            padding: 45,
-            borderRadius: 10,
+            padding: 30,
             alignItems: "center",
             width: "100%",
-            borderColor: theme.border,
-            borderWidth: 1,
         },
         timer: {
-            fontSize: 50,
+            fontSize: 55,
             fontWeight: "bold",
             color: theme.text,
             marginBottom: 20,
         },
         timeAdjustButtons: {
             flexDirection: "row",
-            justifyContent: "space-between",
-            width: "60%",
-            marginBottom: 20,
-        },
-        timeAdjustButton: {
-            backgroundColor: theme.primary,
-            padding: 10,
-            borderRadius: 10,
-            width: "45%",
-            alignItems: "center",
-        },
-        timeAdjustButtonText: {
-            fontSize: 16,
-            fontWeight: "bold",
-            color: "#fff",
-        },
-        button: {
-            backgroundColor: theme.primary,
-            padding: 12,
-            borderRadius: 10,
-            width: 160,
-            alignItems: "center",
-            marginVertical: 10,
-        },
-        buttonText: {
-            fontSize: 17,
-            fontWeight: "bold",
-            color: "#fff",
-        },
-        stopButton: {
-            backgroundColor: "#FF7F7F",
-        },
-        logRoutineHeader: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
+            justifyContent: "center",
             width: "100%",
-            marginTop: 20,
-            marginBottom: 20,
-            paddingLeft: 1,
-            paddingRight: 1,
+            //marginBottom: 20,
+            alignItems: "center",
+            //paddingHorizontal: 10, // Added padding to prevent squishing
         },
-        logRoutineText: {
-            fontSize: 20,
-            fontWeight: "bold",
-            color: theme.text,
-            marginLeft: 20,
-        },
-        plusButton: {
-            padding: 5,
-        },
-        plusButtonBorder: {
-            backgroundColor: theme.primary, 
-            borderRadius: 20, 
-            width: 40, 
-            height: 40, 
+        circleButton: {
+            backgroundColor: theme.mode === 'dark' ? theme.card : '#E0E0E0',
+            width: 45, // Reduced from 60
+            height: 45, // Reduced from 60
+            borderRadius: 25, // Half of width/height
             justifyContent: "center",
             alignItems: "center",
-            marginRight: 10,
+            marginHorizontal: 8, // Added spacing between buttons
+        },
+        circleButtonText: {
+            fontSize: 13,
+            fontWeight: "bold",
+            color: theme.text,
+        },
+        timerControlButtons: {
+            flexDirection: "column",
+            alignItems: "center",
+            width: "45%", // Slightly increased to accommodate larger start button
+            marginHorizontal: 10, // Added spacing
+        },
+        ovalButton: {
+            backgroundColor: theme.mode === 'dark' ? theme.card : '#E0E0E0',
+            paddingVertical: 12,
+            paddingHorizontal: 30, // Increased horizontal padding
+            borderRadius: 30,
+            justifyContent: "center",
+            alignItems: "center",
+            marginVertical: 5,
+            minWidth: 140, // Increased minWidth
+        },
+        stopButton: {
+            backgroundColor: "#D32F2F",
+        },
+        buttonText: {
+            fontSize: 16,
+            fontWeight: "bold",
+            color: theme.text,
+        },
+        logRoutineHeader: {
+            width: "100%",
+            marginTop: 5,  // Reduced from 20 to make the gap smaller
+            marginBottom: 10,  // Reduced from 20
+            alignItems: 'center',  // Added to center the button
+        },
+        logRoutineButton: {
+            backgroundColor: theme.primary,
+            paddingVertical: 12,
+            paddingHorizontal: 30,
+            borderRadius: 30,
+            alignItems: "center",
+            width: 320,  // Set to match notes box width
+        },
+        logRoutineButtonText: {
+            fontSize: 15,
+            fontWeight: "bold",
+            color: "#fff",
         },
         loggedSet: {
             width: 320,
@@ -321,7 +319,7 @@ const StrengthTrainingScreen = () => {
         },
         notesBox: {
             width: 320,
-            height: 100,
+            height: 150,
             backgroundColor: theme.card,
             color: theme.text,
             paddingLeft: 10,
@@ -335,21 +333,39 @@ const StrengthTrainingScreen = () => {
         saveButton: {
             marginTop: 20,
             alignItems: "center",
-            width: 140,
-            borderRadius: 10,
-            padding: 8,
-            alignSelf: "center",
-        },
-        gradientButton: {
-            padding: 15,
-            borderRadius: 10,
-            alignItems: "center",
-            width: "100%",
+            width: 320,  // Set to match notes box width
+            borderRadius: 30,
+            paddingVertical: 12,
+            backgroundColor: theme.primary,
         },
         saveButtonText: {
             color: "#fff",
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: "bold",
+        },
+        datePickerContainer: {
+            marginTop: 30,
+            marginBottom: 10,
+            width: "100%",
+            alignItems: "center",
+        },
+        datePickerLabel: {
+            color: theme.text,
+            fontSize: 18,
+            marginBottom: 10,
+            fontWeight: "bold",
+        },
+        datePickerButton: {
+            backgroundColor: theme.card,
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            borderRadius: 8,
+            borderColor: theme.border,
+            borderWidth: 1,
+        },
+        datePickerButtonText: {
+            color: theme.text,
+            fontSize: 16,
         },
         modalContainer: {
             flex: 1,
@@ -406,30 +422,6 @@ const StrengthTrainingScreen = () => {
             fontSize: 16,
             fontWeight: "bold",
             color: "#fff",
-        },
-        datePickerContainer: {
-            marginTop: 30,
-            marginBottom: 20,
-            width: "100%",
-            alignItems: "center",
-        },
-        datePickerLabel: {
-            color: theme.text,
-            fontSize: 20,
-            marginBottom: 10,
-            fontWeight: "bold",
-        },
-        datePickerButton: {
-            backgroundColor: theme.card,
-            paddingVertical: 10,
-            paddingHorizontal: 20,
-            borderRadius: 8,
-            borderColor: theme.border,
-            borderWidth: 1,
-        },
-        datePickerButtonText: {
-            color: theme.text,
-            fontSize: 16,
         },
         modalBackground: {
             flex: 1,
@@ -514,31 +506,48 @@ const StrengthTrainingScreen = () => {
                         <Text style={styles.timer}>{formatTime(time)}</Text>
 
                         <View style={styles.timeAdjustButtons}>
-                            <TouchableOpacity onPress={subtractTime} style={styles.timeAdjustButton} disabled={isRunning}>
-                                <Text style={styles.timeAdjustButtonText}>-30</Text>
+                            {/* -30 Button - now with more spacing */}
+                            <TouchableOpacity 
+                            onPress={subtractTime} 
+                            style={styles.circleButton} 
+                            disabled={isRunning}
+                            >
+                            <Text style={styles.circleButtonText}>-30</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={addTime} style={styles.timeAdjustButton} disabled={isRunning}>
-                                <Text style={styles.timeAdjustButtonText}>+30</Text>
+                            
+                            {/* Start/Stop and Reset Buttons - centered with spacing */}
+                            <View style={styles.timerControlButtons}>
+                            <TouchableOpacity 
+                                onPress={toggleTimer} 
+                                style={[styles.ovalButton, isRunning && styles.stopButton]}
+                            >
+                                <Text style={styles.buttonText}>{isRunning ? "Stop" : "Start Rest"}</Text>
+                            </TouchableOpacity>
+
+                            {!isRunning && time > 0 && (
+                                <TouchableOpacity 
+                                onPress={resetTimer} 
+                                style={styles.ovalButton}
+                                >
+                                <Text style={styles.buttonText}>Reset</Text>
+                                </TouchableOpacity>
+                            )}
+                            </View>
+                            
+                            {/* +30 Button - now with more spacing */}
+                            <TouchableOpacity 
+                            onPress={addTime} 
+                            style={styles.circleButton} 
+                            disabled={isRunning}
+                            >
+                            <Text style={styles.circleButtonText}>+30</Text>
                             </TouchableOpacity>
                         </View>
-
-                        <TouchableOpacity onPress={toggleTimer} style={[styles.button, isRunning && styles.stopButton]}>
-                            <Text style={styles.buttonText}>{isRunning ? "Stop" : "Start Rest Timer"}</Text>
-                        </TouchableOpacity>
-
-                        {!isRunning && time > 0 && (
-                            <TouchableOpacity onPress={resetTimer} style={styles.button}>
-                                <Text style={styles.buttonText}>Reset</Text>
-                            </TouchableOpacity>
-                        )}
                     </View>
 
                     <View style={styles.logRoutineHeader}>
-                        <Text style={styles.logRoutineText}>Log Routine</Text>
-                        <TouchableOpacity onPress={openModal} style={styles.plusButton}>
-                            <View style={styles.plusButtonBorder}>
-                                <Ionicons name="add" size={28} color="white" />
-                            </View>
+                        <TouchableOpacity onPress={openModal} style={styles.logRoutineButton}>
+                            <Text style={styles.logRoutineButtonText}>Log Routine</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -548,7 +557,7 @@ const StrengthTrainingScreen = () => {
                                 style={styles.trashButton}
                                 onPress={() => deleteSet(index)}
                             >
-                                <Ionicons name="trash" size={20} color="#FF7F7F" />
+                                <Ionicons name="trash" size={20} color="#D32F2F" />
                             </TouchableOpacity>
                             <Text style={styles.exerciseHeader}>Exercise {index + 1}: {set.exercise}</Text>
                             <View style={styles.separatorLine} />
@@ -583,16 +592,9 @@ const StrengthTrainingScreen = () => {
                         onPress={handleSavePress}
                         disabled={isSaving}
                     >
-                        <LinearGradient
-                            colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.gradientButton}
-                        >
-                            <Text style={styles.saveButtonText}>
-                                {isSaving ? "Saving..." : "Save"}
-                            </Text>
-                        </LinearGradient>
+                        <Text style={styles.saveButtonText}>
+                            {isSaving ? "Saving..." : "Save"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
