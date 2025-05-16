@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Alert, Modal, Dimensions } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { auth, db } from "../firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
@@ -159,11 +158,10 @@ const YogaScreen = () => {
             left: 20,
         },
         title: {
-            fontSize: 30,
+            fontSize: 25,
             fontWeight: "bold",
             color: theme.text,
-            marginBottom: 15,
-            fontFamily: "TiltWarp-Regular",
+            marginBottom: 18,
         },
         titleUnderline: {
             height: 1,
@@ -176,83 +174,82 @@ const YogaScreen = () => {
             justifyContent: "center",
         },
         centeredContent: {
-            width: "90%",
+            width: "90%", 
             alignItems: "center",
         },
         timerContainer: {
-            backgroundColor: theme.card,
-            padding: 45,
-            borderRadius: 10,
+            padding: 30,
             alignItems: "center",
             width: "100%",
-            borderColor: theme.border,
-            borderWidth: 1,
         },
         timer: {
-            fontSize: 50,
+            fontSize: 55,
             fontWeight: "bold",
             color: theme.text,
             marginBottom: 20,
         },
         timeAdjustButtons: {
             flexDirection: "row",
-            justifyContent: "space-between",
-            width: "60%",
-            marginBottom: 20,
-        },
-        timeAdjustButton: {
-            backgroundColor: theme.primary,
-            padding: 10,
-            borderRadius: 10,
-            width: "45%",
-            alignItems: "center",
-        },
-        timeAdjustButtonText: {
-            fontSize: 16,
-            fontWeight: "bold",
-            color: "#fff",
-        },
-        button: {
-            backgroundColor: theme.primary,
-            padding: 12,
-            borderRadius: 10,
-            width: 160,
-            alignItems: "center",
-            marginVertical: 10,
-        },
-        buttonText: {
-            fontSize: 14,
-            fontWeight: "bold",
-            color: "#fff",
-        },
-        stopButton: {
-            backgroundColor: "#FF7F7F",
-        },
-        logRoutineHeader: {
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
+            justifyContent: "center",
             width: "100%",
-            marginTop: 20,
-            marginBottom: 20,
+            alignItems: "center",
+            paddingRight: 10,
         },
-        logRoutineText: {
-            fontSize: 20,
-            fontWeight: "bold",
-            color: theme.text,
-            marginLeft: 20,
-        },
-        plusButton: {
-            padding: 5,
-        },
-        plusButtonBorder: {
-            backgroundColor: theme.primary, 
-            borderRadius: 20, 
-            width: 40, 
-            height: 40, 
+        circleButton: {
+            backgroundColor: theme.mode === 'dark' ? theme.card : '#E0E0E0',
+            width: 45,
+            height: 45,
+            borderRadius: 25,
             justifyContent: "center",
             alignItems: "center",
-            marginRight: 10,
+            marginHorizontal: 5,
+        },
+        circleButtonText: {
+            fontSize: 13,
+            fontWeight: "bold",
+            color: theme.text,
+        },
+        timerControlButtons: {
+            flexDirection: "column",
+            alignItems: "center",
+            width: "45%",
+            marginHorizontal: 10,
+        },
+        ovalButton: {
+            backgroundColor: theme.mode === 'dark' ? theme.card : '#E0E0E0',
+            paddingVertical: 12,
+            borderRadius: 30,
+            justifyContent: "center",
+            alignItems: "center",
+            marginVertical: 5,
+            minWidth: 135,
+        },
+        stopButton: {
+            backgroundColor: "#D32F2F",
+        },
+        buttonText: {
+            fontSize: 18,
+            fontWeight: "bold",
+            color: theme.text,
+        },
+        logRoutineHeader: {
+            width: "100%",
+            marginTop: 5,
+            marginBottom: 10,
+            alignItems: 'center',
+        },
+        logRoutineButton: {
+            backgroundColor: theme.primary,
+            paddingVertical: 12,
+            paddingHorizontal: 30,
+            borderRadius: 30,
+            alignItems: "center",
+            width: 320,
+        },
+        logRoutineButtonText: {
+            fontSize: 15,
+            fontWeight: "bold",
+            color: "#fff",
         },
         loggedRoutine: {
             width: 320,
@@ -295,13 +292,13 @@ const YogaScreen = () => {
             color: theme.text,
             fontSize: 20,
             fontWeight: "bold",
-            alignSelf: "flex-start",
-            marginLeft: 5,
-            marginTop: 1,
+            alignSelf: "flex-start", 
+            marginLeft: 5, 
+            marginTop: 10,
         },
         notesBox: {
             width: 320,
-            height: 100,
+            height: 150,
             backgroundColor: theme.card,
             color: theme.text,
             paddingLeft: 10,
@@ -315,21 +312,39 @@ const YogaScreen = () => {
         saveButton: {
             marginTop: 20,
             alignItems: "center",
-            width: 140,
-            borderRadius: 10,
-            padding: 8,
-            alignSelf: "center",
-        },
-        gradientButton: {
-            padding: 15,
-            borderRadius: 10,
-            alignItems: "center",
-            width: "100%",
+            width: 320,
+            borderRadius: 30,
+            paddingVertical: 12,
+            backgroundColor: theme.primary,
         },
         saveButtonText: {
             color: "#fff",
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: "bold",
+        },
+        datePickerContainer: {
+            marginTop: 30,
+            marginBottom: 10,
+            width: "100%",
+            alignItems: "center",
+        },
+        datePickerLabel: {
+            color: theme.text,
+            fontSize: 18,
+            marginBottom: 10,
+            fontWeight: "bold",
+        },
+        datePickerButton: {
+            backgroundColor: theme.card,
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            borderRadius: 8,
+            borderColor: theme.border,
+            borderWidth: 1,
+        },
+        datePickerButtonText: {
+            color: theme.text,
+            fontSize: 16,
         },
         modalContainer: {
             flex: 1,
@@ -342,8 +357,6 @@ const YogaScreen = () => {
             backgroundColor: theme.card,
             borderRadius: 10,
             padding: 20,
-            borderColor: theme.border,
-            borderWidth: 1,
         },
         modalTitle: {
             fontSize: 20,
@@ -389,30 +402,6 @@ const YogaScreen = () => {
             fontWeight: "bold",
             color: "#fff",
         },
-        datePickerContainer: {
-            marginTop: 30,
-            marginBottom: 20,
-            width: "100%",
-            alignItems: "center",
-        },
-        datePickerLabel: {
-            color: theme.text,
-            fontSize: 20,
-            marginBottom: 10,
-            fontWeight: "bold",
-        },
-        datePickerButton: {
-            backgroundColor: theme.card,
-            paddingVertical: 10,
-            paddingHorizontal: 20,
-            borderRadius: 8,
-            borderColor: theme.border,
-            borderWidth: 1,
-        },
-        datePickerButtonText: {
-            color: theme.text,
-            fontSize: 16,
-        },
         modalBackground: {
             flex: 1,
             justifyContent: "flex-end",
@@ -456,9 +445,9 @@ const YogaScreen = () => {
                 contentContainerStyle={styles.scrollContainer}
                 horizontal={false}
                 showsHorizontalScrollIndicator={false}
+                showsVerticalScrollIndicator={true}
             >
                 <View style={styles.centeredContent}>
-                    {/* Date Picker */}
                     <View style={styles.datePickerContainer}>
                         <Text style={styles.datePickerLabel}>Select Date:</Text>
                         <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.datePickerButton}>
@@ -492,51 +481,59 @@ const YogaScreen = () => {
                         </Modal>
                     </View>
                     
-                    {/* Timer Container */}
                     <View style={styles.timerContainer}>
                         <Text style={styles.timer}>{formatTime(time)}</Text>
 
-                        {/* -30 and +30 Buttons */}
                         <View style={styles.timeAdjustButtons}>
-                            <TouchableOpacity onPress={subtractTime} style={styles.timeAdjustButton} disabled={isRunning}>
-                                <Text style={styles.timeAdjustButtonText}>-30</Text>
+                            <TouchableOpacity 
+                                onPress={subtractTime} 
+                                style={styles.circleButton} 
+                                disabled={isRunning}
+                            >
+                                <Text style={styles.circleButtonText}>-30</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={addTime} style={styles.timeAdjustButton} disabled={isRunning}>
-                                <Text style={styles.timeAdjustButtonText}>+30</Text>
+                            
+                            <View style={styles.timerControlButtons}>
+                                <TouchableOpacity 
+                                    onPress={toggleTimer} 
+                                    style={[styles.ovalButton, isRunning && styles.stopButton]}
+                                >
+                                    <Text style={styles.buttonText}>{isRunning ? "Stop" : "Start"}</Text>
+                                </TouchableOpacity>
+
+                                {!isRunning && time > 0 && (
+                                    <TouchableOpacity 
+                                        onPress={resetTimer} 
+                                        style={styles.ovalButton}
+                                    >
+                                        <Text style={styles.buttonText}>Reset</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                            
+                            <TouchableOpacity 
+                                onPress={addTime} 
+                                style={styles.circleButton} 
+                                disabled={isRunning}
+                            >
+                                <Text style={styles.circleButtonText}>+30</Text>
                             </TouchableOpacity>
                         </View>
-
-                        {/* Start/Stop Button */}
-                        <TouchableOpacity onPress={toggleTimer} style={[styles.button, isRunning && styles.stopButton]}>
-                            <Text style={styles.buttonText}>{isRunning ? "Stop" : "Start Routine Timer"}</Text>
-                        </TouchableOpacity>
-
-                        {/* Reset Button */}
-                        {!isRunning && time > 0 && (
-                            <TouchableOpacity onPress={resetTimer} style={styles.button}>
-                                <Text style={styles.buttonText}>Reset</Text>
-                            </TouchableOpacity>
-                        )}
                     </View>
 
-                    {/* Log Routine Heading and + Button */}
                     <View style={styles.logRoutineHeader}>
-                        <Text style={styles.logRoutineText}>Log Routine</Text>
-                        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.plusButton}>
-                            <View style={styles.plusButtonBorder}>
-                                <Ionicons name="add" size={28} color="white" />
-                            </View>
+                        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.logRoutineButton}>
+                            <Text style={styles.logRoutineButtonText}>Log Routine</Text>
                         </TouchableOpacity>
                     </View>
 
-                    {/* Logged Routines */}
                     {loggedRoutines.map((routine, index) => (
                         <View key={index} style={styles.loggedRoutine}>
                             <TouchableOpacity
                                 style={styles.trashButton}
                                 onPress={() => deleteRoutine(index)}
                             >
-                                <Ionicons name="trash" size={20} color="#FF7F7F" />
+                                <Ionicons name="trash" size={20} color="#D32F2F" />
                             </TouchableOpacity>
                             <Text style={styles.routineHeader}>Routine {index + 1}: {routine.name}</Text>
                             <View style={styles.separatorLine} />
@@ -547,13 +544,12 @@ const YogaScreen = () => {
                         </View>
                     ))}
 
-                    {/* Notes Section */}
                     <View style={styles.notesContainer}>
                         <Text style={styles.notesHeading}>Notes</Text>
                         <TextInput
                             style={styles.notesBox}
                             placeholder="Enter notes here"
-                            placeholderTextColor={theme.subtext || "#999"}
+                            placeholderTextColor={theme.subtext}
                             multiline
                             textAlignVertical="top"
                             value={notes}
@@ -561,27 +557,18 @@ const YogaScreen = () => {
                         />
                     </View>
 
-                    {/* Save Button */}
                     <TouchableOpacity 
                         style={styles.saveButton} 
                         onPress={handleSavePress}
                         disabled={isSaving}
                     >
-                        <LinearGradient
-                            colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.gradientButton}
-                        >
-                            <Text style={styles.saveButtonText}>
-                                {isSaving ? "Saving..." : "Save"}
-                            </Text>
-                        </LinearGradient>
+                        <Text style={styles.saveButtonText}>
+                            {isSaving ? "Saving..." : "Save"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
 
-            {/* Modal for Logging Routines */}
             <Modal visible={modalVisible} animationType="slide" transparent={true}>
                 <View style={styles.modalContainer}>
                     <View style={styles.modalContent}>
@@ -590,14 +577,14 @@ const YogaScreen = () => {
                         <TextInput
                             style={styles.modalInput}
                             placeholder="Routine Name"
-                            placeholderTextColor={theme.subtext || "#999"}
+                            placeholderTextColor={theme.subtext}
                             value={routineName}
                             onChangeText={setRoutineName}
                         />
                         <TextInput
                             style={styles.modalInput}
                             placeholder="Routine time (secs)"
-                            placeholderTextColor={theme.subtext || "#999"}
+                            placeholderTextColor={theme.subtext}
                             keyboardType="numeric"
                             value={routineTime}
                             onChangeText={setRoutineTime}
