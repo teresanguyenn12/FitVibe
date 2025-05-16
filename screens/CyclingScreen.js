@@ -215,11 +215,10 @@ const CyclingScreen = () => {
             left: 20,
         },
         title: {
-            fontSize: 30,
+            fontSize: 25,
             fontWeight: "bold",
             color: theme.text,
             marginBottom: 15,
-            fontFamily: "TiltWarp-Regular",
         },
         titleUnderline: {
             height: 1,
@@ -238,16 +237,14 @@ const CyclingScreen = () => {
             color: theme.subtext,
             fontSize: 17,
             marginBottom: 5,
-        },   
+        },
         timerContainer: {
-            backgroundColor: theme.card,
-            padding: 30,
+            padding: 20,
             borderRadius: 10,
             alignItems: "center",
             width: "90%",
             marginBottom: 20,
-            borderColor: theme.border,
-            borderWidth: 1,
+            backgroundColor: 'transparent',
         },
         timer: {
             fontSize: 50,
@@ -258,7 +255,7 @@ const CyclingScreen = () => {
         metricsRow: {
             flexDirection: "row",
             justifyContent: "space-between",
-            width: "90%",
+            width: "85%",
             marginBottom: 20,
         },
         metricBox: {
@@ -267,8 +264,6 @@ const CyclingScreen = () => {
             borderRadius: 10,
             alignItems: "center",
             width: "48%",
-            borderColor: theme.border,
-            borderWidth: 1,
         },
         metricHeading: {
             color: theme.subtext,
@@ -285,15 +280,15 @@ const CyclingScreen = () => {
             backgroundColor: theme.primary,
             padding: 12,
             borderRadius: 30,
-            width: "60%",
+            width: 320,
             alignItems: "center",
             marginVertical: 8,
         },
         stopButton: {
-            backgroundColor: "#FF7F7F",
+            backgroundColor: "#D32F2F",
         },
         buttonText: {
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: "bold",
             color: "#fff",
         },
@@ -324,15 +319,15 @@ const CyclingScreen = () => {
             textAlign: "right",
         },
         lapButton: {
-            backgroundColor: theme.mode === 'dark' ? '#333' : '#e0e0e0',
+            backgroundColor: theme.mode === 'dark' ? '#333' : '#f0f0f0',
             padding: 12,
             borderRadius: 30,
-            width: "60%",
+            width: 320,
             alignItems: "center",
             marginVertical: 8,
         },
         lapButtonText: {
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: "bold",
             color: theme.text,
         },
@@ -345,8 +340,8 @@ const CyclingScreen = () => {
             fontSize: 20,
             fontWeight: "bold",
             alignSelf: "flex-start",
-            marginLeft: 20,
-            marginTop: 30,
+            marginLeft: 30,
+            marginTop: 20,
         },
         notesBox: {
             width: 320,
@@ -364,30 +359,25 @@ const CyclingScreen = () => {
         saveButton: {
             marginTop: 20,
             alignItems: "center",
-            width: "40%",
+            width: 320,
             borderRadius: 30,
-            padding: 8,
-        },
-        gradientButton: {
-            padding: 15,
-            borderRadius: 30,
-            alignItems: "center",
-            width: "100%",
+            paddingVertical: 12,
+            backgroundColor: theme.primary,
         },
         saveButtonText: {
             color: "#fff",
-            fontSize: 18,
+            fontSize: 15,
             fontWeight: "bold",
         },
         datePickerContainer: {
             marginTop: 30,
-            marginBottom: 20,
+            marginBottom: 30,
             width: "100%",
             alignItems: "center",
         },
         datePickerLabel: {
             color: theme.text,
-            fontSize: 20,
+            fontSize: 17,
             marginBottom: 10,
             fontWeight: "bold",
         },
@@ -487,8 +477,8 @@ const CyclingScreen = () => {
                             <Text style={styles.buttonText}>{isRunning ? "Stop" : "Start"}</Text>
                         </TouchableOpacity>
                         {!isRunning && time > 0 && (
-                            <TouchableOpacity onPress={resetTimer} style={styles.button}>
-                                <Text style={styles.buttonText}>Reset</Text>
+                            <TouchableOpacity onPress={resetTimer} style={styles.lapButton}>
+                                <Text style={styles.lapButtonText}>Reset</Text>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -508,7 +498,7 @@ const CyclingScreen = () => {
                         <View style={styles.lapsContainer}>
                             {laps.map((lap, index) => (
                                 <View key={index} style={styles.lapRow}>
-                                    <Text style={styles.lapNumber}>{`Lap ${index + 1}`}</Text>
+                                    <Text style={styles.lapNumber}>Lap {index + 1}</Text>
                                     <View>
                                         <Text style={styles.lapTime}>{formatTime(lap.time)}</Text>
                                         <Text style={styles.lapDistance}>{lap.distance.toFixed(2)} miles</Text>
@@ -523,7 +513,7 @@ const CyclingScreen = () => {
                         <TextInput
                             style={styles.notesBox}
                             placeholder="Enter notes here"
-                            placeholderTextColor={theme.subtext || "#999"}
+                            placeholderTextColor={theme.subtext}
                             multiline
                             textAlignVertical="top"
                             value={notes}
@@ -536,16 +526,9 @@ const CyclingScreen = () => {
                         onPress={handleSavePress}
                         disabled={isSaving}
                     >
-                        <LinearGradient
-                            colors={["#5A1A9B", "#1A4A80", "#8A1E50"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={styles.gradientButton}
-                        >
-                            <Text style={styles.saveButtonText}>
-                                {isSaving ? "Saving..." : "Save"}
-                            </Text>
-                        </LinearGradient>
+                        <Text style={styles.saveButtonText}>
+                            {isSaving ? "Saving..." : "Save"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
